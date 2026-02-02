@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
-router.post("/login", loginUser);
+router.post("/loginn", loginUser);
 router.post("/register", registerUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-otp", verifyOtp);
