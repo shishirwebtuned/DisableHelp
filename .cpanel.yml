@@ -1,0 +1,7 @@
+deployment:
+  tasks:
+    - export PATH=/bin:/usr/bin:/usr/local/bin
+    - cd /home/username/DisableHelp/backend
+    - npm install
+    - npm run build || true
+    - touch tmp/restart.txt
