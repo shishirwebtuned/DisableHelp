@@ -1,4 +1,5 @@
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
+import type { dailyAvailabilitySchema } from "../models/workerProfile.model.js";
 
 export type UserRole = "admin" | "client" | "worker";
 export type Gender = "male" | "female" | "other";
@@ -10,95 +11,186 @@ export type VerificationStatus =
 export type UserStatus = "pending" | "verified";
 
 export interface IUser extends Document {
-  name: string;
   email: string;
   password: string;
   role: UserRole;
-  phoneNumber?: string;
-  addressLine1?: string;
-  addressLine2?: {
-    suburb?: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  address?: {
+    line1?: string;
+    line2?: string;
     state?: string;
     postalCode?: string;
   };
 
-  // Worker/Client profile
-  workLocation?: string[];
-  experience?: number;
-  passingRate?: number; // added
-  dateOfBirth?: Date;
-  gender?: Gender;
-  licenseNumber?: string;
+  notificationSettings: {
+    receiveSms: boolean;
+    receiveEmails: boolean;
+  };
+  phoneVerified: boolean;
+  consentToCollectSensitiveInformation: boolean;
 
-  // Credentials & verification
-  credentials?: {
-    ndisScreening?: boolean;
-    wwcc?: boolean;
-    driversLicense?: boolean;
-    firstAid?: boolean;
-    immunisation?: boolean;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
   };
 
-  verificationStatus?: {
-    ndisScreening?: VerificationStatus;
-    wwcc?: VerificationStatus;
-    driversLicense?: VerificationStatus;
-    firstAid?: VerificationStatus;
-    immunisation?: VerificationStatus;
-  };
-
-  // Preferences
-  preferences?: {
-    preferredHours?: string;
-    hourlyRate?: number; // moved inside preferences
-    languages?: string[];
-    culturalBackground?: string;
-    religion?: string;
-    interests?: string[];
-    preferredWorkerType?: string;
-    location?: string;
-  };
-
-  image?: {
-    url?: string;
-    public_id?: string;
-  };
-
-  status: UserStatus;
+  approved: boolean;
   otp: string | null;
   otpExpiry: Date | null;
 
-  bookings: Types.ObjectId[];
-  jobsPosted?: Types.ObjectId[];
-  agreements?: Types.ObjectId[];
-  invoices?: Types.ObjectId[];
+  timezone: string;
 
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface IBooking extends Document {
-  vehicle: Types.ObjectId;
-
-  // Customer info
+type Rate = {
   name: string;
-  email: string;
-  phone: string;
-  message?: string;
+  rate: number;
+};
+export interface IWorkerProfile {
+  user: mongoose.Types.ObjectId;
+  gender?: Gender;
 
-  // Pickup & dropoff details
-  pickupLocation: string;
-  pickupDate: Date;
-  pickupTime: string;
+  services: string[];
+  rates: Rate[];
 
-  dropoffLocation: string;
-  dropoffDate: Date;
-  dropoffTime: string;
+  freeMeetAndGreet: boolean;
 
-  // Booking status
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  availability: {
+    available: boolean;
+    monday: typeof dailyAvailabilitySchema;
+    tuesday: typeof dailyAvailabilitySchema;
+    wednesday: typeof dailyAvailabilitySchema;
+    thursday: typeof dailyAvailabilitySchema;
+    friday: typeof dailyAvailabilitySchema;
+    saturday: typeof dailyAvailabilitySchema;
+    sunday: typeof dailyAvailabilitySchema;
+    desiredHours?: number;
+    hasOvernightAvailability?: boolean;
+    availabilityUpdatedAt?: Date;
+  };
+  locations: {
+    id: string;
+    name: string;
+    postalCode: string;
+    state: string;
+    suburb: string;
+  }[];
 
-  createdAt: Date;
-  updatedAt: Date;
+  experienceSummary?: {
+    disability?: { years: number; description?: string };
+    agedCare?: { years: number; description?: string };
+    mentalHealth?: { years: number; description?: string };
+    chronicMedicalCondition?: { years: number; description?: string };
+  };
+
+  bankDetails?: {
+    accountName: string;
+    bankName: string;
+    bsb: string;
+    accountNumber: string;
+    bankResponsibility: boolean;
+  };
+
+  workHistory?: {
+    organisation: string;
+    jobTitle: string;
+    startDate: Date;
+    currentlyWorkingHere: boolean;
+    endDate?: Date;
+  }[];
+
+  educationAndTraining?: {
+    institution: string;
+    course: string;
+    startDate: Date;
+    currentlyStudyingHere: boolean;
+    endDate?: Date;
+  }[];
+
+  ndisWorkerScreening?: {
+    legal_first_name: string;
+    legal_middle_name: string;
+    legal_last_name: string;
+    date_of_birth: Date;
+    screening_number: string;
+    expiry_date: Date;
+    status: string;
+  };
+
+  lgbtqiaPlusFriendly: boolean;
+
+  immunisation?: {
+    hasSeasonalFluShot: boolean;
+    covidVaccineStatus: "fullyVaccinated" | "medicalCondition" | "remoteWorker";
+    statusConfirmed?: boolean;
+  };
+
+  languages: {
+    firstLanguages: string[];
+    secondLanguages: string[];
+  };
+
+  culturalBackground?: string[];
+  religion?: string[];
+
+  interests?: string[];
+
+  aboutMe?: {
+    nonSmoker: boolean;
+    petFriendly: boolean;
+    personality?: "outgoing" | "relaxed";
+  };
+
+  preferences?: string[];
+
+  personalDetails?: {
+    avatar?: {
+      url: string;
+      publicId: string;
+    };
+    bio?: string;
+    additionalTraining?: {
+      cpr?: {
+        expiryDate: Date;
+        file?: {
+          url: string;
+          publicId: string;
+        };
+        isVerified: boolean;
+      };
+      driverLicense?: {
+        expiryDate: Date;
+        file?: {
+          url: string;
+          publicId: string;
+        };
+        isVerified: boolean;
+      };
+      firstAid?: {
+        expiryDate: Date;
+        file?: {
+          url: string;
+          publicId: string;
+        };
+        isVerified: boolean;
+      };
+    };
+    wwcc?: {
+      wwccNumber: string;
+      expiryDate: Date;
+      file?: {
+        url: string;
+        publicId: string;
+      };
+      isVerified: boolean;
+    };
+  };
+
+  approved: boolean;
+  hasActiveAgreement: boolean;
 }
