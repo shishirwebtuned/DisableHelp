@@ -5,7 +5,8 @@
     username: ${{ secrets.SSH_USER }}
     key: ${{ secrets.SSH_KEY }}
     script: |
-      cd ~/DisableHelpFinal/backend
+      export PATH=/opt/cpanel/ea-nodejs18/bin:$PATH
+      cd /home/go0glecom/DisableHelpFinal/backend
       npm install
       npm run build
       mkdir -p tmp
