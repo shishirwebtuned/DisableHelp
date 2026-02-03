@@ -153,3 +153,13 @@ export const changePassword = catchAsync(async (req, res) => {
     message: "Password changed successfully",
   });
 });
+
+export const getAllUsers = catchAsync(async (req, res) => {
+  const users = await User.find().select("-password -otp -otpExpiry");
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Users retrieved successfully",
+    data: users,
+  });
+});

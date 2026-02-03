@@ -1,7 +1,8 @@
 deployment:
   tasks:
-    - export PATH=/bin:/usr/bin:/usr/local/bin
-    - cd /home/username/DisableHelp/backend
+    - export PATH=/opt/cpanel/ea-nodejs18/bin:$PATH
+    - cd /home/go0glecom/DisableHelpNew/backend
     - npm install
-    - npm run build || true
+    - npm run build
+    - mkdir -p tmp
     - touch tmp/restart.txt
