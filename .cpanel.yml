@@ -1,0 +1,9 @@
+deployment:
+  tasks:
+    - export PATH=/opt/cpanel/ea-nodejs18/bin:$PATH
+    - cd /home/go0glecom/DisableHelpFinal/backend
+    - npm install
+    - npm run build
+    - mkdir -p tmp
+    - touch tmp/restart.txt
+    - debug: true

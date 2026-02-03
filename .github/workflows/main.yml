@@ -15,6 +15,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          port: 2222
           script: |
             export PATH=/opt/cpanel/ea-nodejs18/bin:$PATH
             cd /home/go0glecom/DisableHelpFinal/backend
@@ -22,3 +23,4 @@ jobs:
             npm run build
             mkdir -p tmp
             touch tmp/restart.txt
+          debug: true
