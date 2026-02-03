@@ -1,0 +1,1 @@
+{"version":3,"file":"sendEmail.d.ts","sourceRoot":"","sources":["../../src/utils/sendEmail.ts"],"names":[],"mappings":"AAIA,UAAU,YAAY;IACpB,EAAE,EAAE,MAAM,CAAC;IACX,OAAO,EAAE,MAAM,CAAC;IAChB,IAAI,CAAC,EAAE,MAAM,CAAC;IACd,IAAI,CAAC,EAAE,MAAM,CAAC;IACd,WAAW,CAAC,EAAE,GAAG,EAAE,CAAC;CACrB;AAED,eAAO,MAAM,SAAS,GAAU,2CAM7B,YAAY,8EA4Bd,CAAC"}

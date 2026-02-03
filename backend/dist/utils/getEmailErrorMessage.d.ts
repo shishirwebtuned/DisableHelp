@@ -1,0 +1,2 @@
+export declare function getEmailErrorMessage(err: any): "Invalid email address" | "Recipient mailbox is full" | "Email service is temporarily unavailable" | "Email service authentication failed" | "Failed to send verification email";
+//# sourceMappingURL=getEmailErrorMessage.d.ts.map

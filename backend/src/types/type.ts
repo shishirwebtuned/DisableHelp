@@ -36,7 +36,9 @@ export interface IUser extends Document {
     phone: string;
     relationship: string;
   };
-
+  isVerified: boolean;
+  verificationToken: string | null;
+  verificationTokenExpiry: Date | null;
   approved: boolean;
   otp: string | null;
   otpExpiry: Date | null;

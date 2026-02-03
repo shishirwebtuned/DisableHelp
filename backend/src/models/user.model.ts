@@ -48,7 +48,9 @@ const userSchema = new Schema<IUser>(
     },
 
     approved: { type: Boolean, default: false },
-
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null },
+    verificationTokenExpiry: { type: Date, default: null },
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
     timezone: { type: String, default: "Australia/Perth" },
