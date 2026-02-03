@@ -1,0 +1,12 @@
+- name: Deploy via SSH
+  uses: appleboy/ssh-action@v1.0.0
+  with:
+    host: ${{ secrets.SSH_HOST }}
+    username: ${{ secrets.SSH_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    script: |
+      cd ~/DisableHelpFinal/backend
+      npm install
+      npm run build
+      mkdir -p tmp
+      touch tmp/restart.txt
