@@ -165,7 +165,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
     personalDetails: {
       avatar: {
         url: String,
-        publicId: String,
+        public_id: String,
       },
       bio: String,
       additionalTraining: {
@@ -173,7 +173,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
           expiryDate: Date,
           file: {
             url: String,
-            publicId: String,
+            public_id: String,
           },
           isVerified: { type: Boolean, default: false },
         },
@@ -181,7 +181,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
           expiryDate: Date,
           file: {
             url: String,
-            publicId: String,
+            public_id: String,
           },
           isVerified: { type: Boolean, default: false },
         },
@@ -189,7 +189,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
           expiryDate: Date,
           file: {
             url: String,
-            publicId: String,
+            public_id: String,
           },
           isVerified: { type: Boolean, default: false },
         },
@@ -199,7 +199,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
         expiryDate: Date,
         file: {
           url: String,
-          publicId: String,
+          public_id: String,
         },
         isVerified: { type: Boolean, default: false },
       },

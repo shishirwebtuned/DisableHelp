@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import userRoutes from "./routes/user.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 const baseApi = "/api/v1/en";
 
 app.use(`${baseApi}/users`, userRoutes);
+app.use(`${baseApi}/profile`, profileRoutes);
 
 // Error handler
 app.use(errorHandler);

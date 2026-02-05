@@ -11,6 +11,6 @@ export function getEmailErrorMessage(err) {
     if (err.code === "EAUTH") {
         return "Email service authentication failed";
     }
-    return "Failed to send verification email";
+    return "Failed to send email";
 }
 //# sourceMappingURL=getEmailErrorMessage.js.map

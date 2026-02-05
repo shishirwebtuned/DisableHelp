@@ -1,6 +1,6 @@
 import express from "express";
 import { adminOnly, protect } from "../middleware/auth.middleware.js";
-import { changePassword, forgotPassword, getAllUsers, getMe, loginUser, registerUser, resetPassword, verifyEmail, verifyOtp, } from "../controllers/user.controller.js";
+import { changePassword, forgotPassword, getAllUsers, getMe, loginUser, registerUser, resendVerificationEmail, resetPassword, verifyEmail, verifyOtp, } from "../controllers/user.controller.js";
 const router = express.Router();
 router.post("/login", loginUser);
 router.post("/register", registerUser);
@@ -11,5 +11,6 @@ router.post("/change-password", protect, changePassword);
 router.get("/all", getAllUsers);
 router.get("/me", protect, getMe);
 router.post("/verify-email", verifyEmail);
+router.post("/resend-verify-email", resendVerificationEmail);
 export default router;
 //# sourceMappingURL=user.routes.js.map
