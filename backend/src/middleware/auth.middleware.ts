@@ -43,3 +43,10 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
   }
   next();
 };
+
+export const clientOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role !== "client") {
+    return res.status(403).json({ message: "Client access only" });
+  }
+  next();
+};

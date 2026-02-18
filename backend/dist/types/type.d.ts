@@ -1,7 +1,7 @@
 import mongoose, { Document } from "mongoose";
 import type { dailyAvailabilitySchema } from "../models/workerProfile.model.js";
 export type UserRole = "admin" | "client" | "worker";
-export type Gender = "male" | "female" | "other";
+export type Gender = "male" | "female" | "other" | "prefer not to say";
 export type VerificationStatus = "pending" | "verified" | "rejected" | "expired";
 export type UserStatus = "pending" | "verified";
 export interface IUser extends Document {
@@ -44,7 +44,7 @@ type Rate = {
 };
 export interface IWorkerProfile {
     user: mongoose.Types.ObjectId;
-    gender?: Gender;
+    gender: Gender;
     services: string[];
     rates: Rate[];
     freeMeetAndGreet: boolean;

@@ -27,8 +27,8 @@ const workerProfileSchema = new Schema({
     },
     gender: {
         type: String,
-        enum: ["male", "female", "other"],
-        required: false,
+        enum: ["male", "female", "other", "prefer not to say"],
+        required: true,
     },
     services: { type: [String], default: [] },
     rates: {
@@ -131,7 +131,7 @@ const workerProfileSchema = new Schema({
     personalDetails: {
         avatar: {
             url: String,
-            publicId: String,
+            public_id: String,
         },
         bio: String,
         additionalTraining: {
@@ -139,7 +139,7 @@ const workerProfileSchema = new Schema({
                 expiryDate: Date,
                 file: {
                     url: String,
-                    publicId: String,
+                    public_id: String,
                 },
                 isVerified: { type: Boolean, default: false },
             },
@@ -147,7 +147,7 @@ const workerProfileSchema = new Schema({
                 expiryDate: Date,
                 file: {
                     url: String,
-                    publicId: String,
+                    public_id: String,
                 },
                 isVerified: { type: Boolean, default: false },
             },
@@ -155,7 +155,7 @@ const workerProfileSchema = new Schema({
                 expiryDate: Date,
                 file: {
                     url: String,
-                    publicId: String,
+                    public_id: String,
                 },
                 isVerified: { type: Boolean, default: false },
             },
@@ -165,7 +165,7 @@ const workerProfileSchema = new Schema({
             expiryDate: Date,
             file: {
                 url: String,
-                publicId: String,
+                public_id: String,
             },
             isVerified: { type: Boolean, default: false },
         },

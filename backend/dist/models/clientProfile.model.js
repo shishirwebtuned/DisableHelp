@@ -6,6 +6,11 @@ const clientProfileSchema = new Schema({
         required: true,
         unique: true,
     },
+    gender: {
+        type: String,
+        enum: ["male", "female", "other", "prefer not to say"],
+        required: true,
+    },
     participants: [
         {
             type: Schema.Types.ObjectId,

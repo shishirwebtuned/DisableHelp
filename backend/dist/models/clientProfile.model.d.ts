@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import type { Gender } from "../types/type.js";
 export interface IClientProfile {
     user: mongoose.Types.ObjectId;
+    gender: Gender;
     participants: mongoose.Types.ObjectId[];
     carePreferences?: string[];
     receiveAgreementsEmails: boolean;

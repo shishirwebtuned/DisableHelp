@@ -2,7 +2,7 @@ import mongoose, { Document, Types } from "mongoose";
 import type { dailyAvailabilitySchema } from "../models/workerProfile.model.js";
 
 export type UserRole = "admin" | "client" | "worker";
-export type Gender = "male" | "female" | "other";
+export type Gender = "male" | "female" | "other" | "prefer not to say";
 export type VerificationStatus =
   | "pending"
   | "verified"
@@ -36,12 +36,15 @@ export interface IUser extends Document {
     phone: string;
     relationship: string;
   };
+  accountManagerName?: String;
+  dateOfBirth: Date;
   isVerified: boolean;
   verificationToken: string | null;
   verificationTokenExpiry: Date | null;
   approved: boolean;
   otp: string | null;
   otpExpiry: Date | null;
+  termsAccepted: boolean;
 
   timezone: string;
 
@@ -55,7 +58,7 @@ type Rate = {
 };
 export interface IWorkerProfile {
   user: mongoose.Types.ObjectId;
-  gender?: Gender;
+  gender: Gender;
 
   services: string[];
   rates: Rate[];
@@ -192,7 +195,5 @@ export interface IWorkerProfile {
       isVerified: boolean;
     };
   };
-
-  approved: boolean;
   hasActiveAgreement: boolean;
 }

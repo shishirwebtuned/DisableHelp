@@ -45,8 +45,8 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
 
     gender: {
       type: String,
-      enum: ["male", "female", "other"],
-      required: false,
+      enum: ["male", "female", "other", "prefer not to say"],
+      required: true,
     },
 
     services: { type: [String], default: [] },
@@ -205,7 +205,6 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
       },
     },
 
-    approved: { type: Boolean, default: false },
     hasActiveAgreement: { type: Boolean, default: false },
   },
   { timestamps: true },

@@ -9,14 +9,33 @@ import { sendEmail } from "../utils/sendEmail.js";
 import crypto from "crypto";
 import validator from "validator";
 import { getEmailErrorMessage } from "../utils/getEmailErrorMessage.js";
+import { ClientProfile } from "../models/clientProfile.model.js";
+import { WorkerProfile } from "../models/workerProfile.model.js";
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
 export const registerUser = catchAsync(async (req, res) => {
-  const { email, password, firstName, lastName, role, phoneNumber } = req.body;
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    role,
+    phoneNumber,
+    gender,
+    dateOfBirth,
+    termsAccepted,
+    accountManagerName,
+  } = req.body;
 
+  const allowedRoles = ["client", "worker"];
+
+  if (!allowedRoles.includes(role)) {
+    throw new AppError("Invalid role", 400);
+  }
   const existingUser = await User.findOne({ email });
+
   if (existingUser) {
     throw new AppError("Email already in use", 400);
   }
@@ -42,12 +61,22 @@ export const registerUser = catchAsync(async (req, res) => {
     lastName,
     role,
     phoneNumber,
+    dateOfBirth,
     isVerified: false,
     verificationToken,
+    termsAccepted,
     verificationTokenExpiry,
+    accountManagerName,
   });
 
   await newUser.save();
+
+  const profileModel = role === "client" ? ClientProfile : WorkerProfile;
+
+  await profileModel.create({
+    user: newUser._id,
+    gender,
+  });
 
   const verifyUrl = `${process.env.FRONTEND_URL}/info?token=${rawToken}`;
 
@@ -195,7 +224,10 @@ export const loginUser = catchAsync(async (req, res) => {
     data: {
       user: {
         id: user._id,
-        name: `${user.firstName} ${user.lastName}`,
+        name:
+          user.role === "admin"
+            ? "Admin"
+            : `${user.firstName} ${user.lastName}`,
         email: user.email,
         role: user.role,
         approved: user.approved,
@@ -290,12 +322,69 @@ export const changePassword = catchAsync(async (req, res) => {
 });
 
 export const getAllUsers = catchAsync(async (req, res) => {
-  const users = await User.find().select("-password -otp -otpExpiry");
+  const { page = 1, limit = 10, role, approved, search } = req.query;
+
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const filter: any = {};
+
+  if (role) filter.role = role;
+
+  if (approved !== undefined) {
+    filter.approved = approved === "true";
+  }
+
+  if (search) {
+    filter.$or = [
+      { firstName: { $regex: search, $options: "i" } },
+      { lastName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const users = await User.find(filter)
+    .select("-password -otp -otpExpiry")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limitNumber);
+
+  const total = await User.countDocuments(filter);
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Users retrieved successfully",
-    data: users,
+    data: {
+      users,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    },
+  });
+});
+
+export const getUserById = catchAsync(async (req, res) => {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId).select("-password -otp -otpExpiry");
+
+  if (!user) throw new AppError("User not found", 400);
+
+  const profile =
+    user.role === "worker"
+      ? await WorkerProfile.findOne({ user: userId as string })
+      : await ClientProfile.findOne({ user: userId as string });
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "User data retrieved successfully",
+    data: { user, profile },
   });
 });
 
@@ -304,10 +393,15 @@ export const getMe = catchAsync(async (req, res) => {
   const user = await User.findById(userId).select("-password -otp -otpExpiry");
   if (!user) throw new AppError("User not found", 404);
 
+  const profile =
+    user.role === "worker"
+      ? await WorkerProfile.findOne({ user: userId })
+      : await ClientProfile.findOne({ user: userId });
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "User profile retrieved successfully",
-    data: user,
+    data: { user, profile },
   });
 });

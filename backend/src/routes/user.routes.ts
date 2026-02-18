@@ -5,6 +5,7 @@ import {
   forgotPassword,
   getAllUsers,
   getMe,
+  getUserById,
   loginUser,
   registerUser,
   resendVerificationEmail,
@@ -24,6 +25,7 @@ router.post("/change-password", protect, changePassword);
 
 router.get("/all", getAllUsers);
 router.get("/me", protect, getMe);
+router.get("/:userId", protect, getUserById);
 router.post("/verify-email", verifyEmail);
 router.post("/resend-verify-email", resendVerificationEmail);
 

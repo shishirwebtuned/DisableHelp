@@ -9,10 +9,16 @@ import { sendEmail } from "../utils/sendEmail.js";
 import crypto from "crypto";
 import validator from "validator";
 import { getEmailErrorMessage } from "../utils/getEmailErrorMessage.js";
+import { ClientProfile } from "../models/clientProfile.model.js";
+import { WorkerProfile } from "../models/workerProfile.model.js";
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 export const registerUser = catchAsync(async (req, res) => {
-    const { email, password, firstName, lastName, role, phoneNumber } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, gender } = req.body;
+    const allowedRoles = ["client", "worker"];
+    if (!allowedRoles.includes(role)) {
+        throw new AppError("Invalid role", 400);
+    }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
         throw new AppError("Email already in use", 400);
@@ -39,6 +45,11 @@ export const registerUser = catchAsync(async (req, res) => {
         verificationTokenExpiry,
     });
     await newUser.save();
+    const profileModel = role === "client" ? ClientProfile : WorkerProfile;
+    await profileModel.create({
+        user: newUser._id,
+        gender,
+    });
     const verifyUrl = `${process.env.FRONTEND_URL}/info?token=${rawToken}`;
     try {
         await sendEmail({
@@ -253,11 +264,14 @@ export const getMe = catchAsync(async (req, res) => {
     const user = await User.findById(userId).select("-password -otp -otpExpiry");
     if (!user)
         throw new AppError("User not found", 404);
+    const profile = user.role === "worker"
+        ? await WorkerProfile.findOne({ user: userId })
+        : await ClientProfile.findOne({ user: userId });
     sendResponse(res, {
         success: true,
         statusCode: 200,
         message: "User profile retrieved successfully",
-        data: user,
+        data: { user, profile },
     });
 });
 //# sourceMappingURL=user.controller.js.map
