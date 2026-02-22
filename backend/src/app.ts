@@ -9,6 +9,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 
 import { errorHandler } from "./middleware/error.middleware.js";
+import applicationRoutes from "./routes/application.routes.js";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use(`${baseApi}/profile`, profileRoutes);
 app.use(`${baseApi}/service`, serviceRoutes);
 app.use(`${baseApi}/admin`, adminRoutes);
 app.use(`${baseApi}/job`, jobRoutes);
+app.use(`${baseApi}/application`, applicationRoutes);
 
 // Error handler
 app.use(errorHandler);

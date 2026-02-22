@@ -10,13 +10,16 @@ export const createJob = catchAsync(async (req, res) => {
     frequency,
     location,
     duration,
-    client,
     title,
     supportDetails,
     jobSessions,
     preference,
+    jobSessionByClient,
   } = req.body;
 
+  const client = req.user.id;
+
+  // Validate required fields (excluding boolean)
   if (
     !startDate ||
     !frequency ||
@@ -25,10 +28,20 @@ export const createJob = catchAsync(async (req, res) => {
     !client ||
     !title ||
     !supportDetails ||
-    !jobSessions ||
     !preference
   ) {
     throw new AppError("Missing required fields", 400);
+  }
+
+  // Validate jobSessions if jobSessionByClient is true
+  if (
+    jobSessionByClient === true &&
+    (!jobSessions || jobSessions.length === 0)
+  ) {
+    throw new AppError(
+      "Job Sessions are required when jobSessionByClient is true",
+      400,
+    );
   }
 
   const newJob = new Job({
@@ -39,9 +52,11 @@ export const createJob = catchAsync(async (req, res) => {
     client,
     title,
     supportDetails,
-    jobSessions,
+    jobSessions: jobSessions || [], // default empty array if false
+    jobSessionByClient: !!jobSessionByClient, // ensure boolean
     preference,
   });
+
   await newJob.save();
 
   sendResponse(res, {
@@ -91,7 +106,9 @@ export const deleteJob = catchAsync(async (req, res) => {
 });
 
 export const getAllJobs = catchAsync(async (req, res) => {
-  const jobs = await Job.find({}).sort({ createdAt: -1 });
+  const jobs = await Job.find({})
+    .populate("client", "firstName lastName email")
+    .sort({ createdAt: -1 });
 
   if (!jobs || jobs.length === 0) {
     return sendResponse(res, {
@@ -113,7 +130,10 @@ export const getAllJobs = catchAsync(async (req, res) => {
 export const getJobById = catchAsync(async (req, res) => {
   const { jobId } = req.params;
 
-  const job = await Job.findById(jobId);
+  const job = await Job.findById(jobId).populate(
+    "client",
+    "firstName lastName email",
+  );
 
   if (!job) {
     throw new AppError("No job Found", 404);
@@ -134,7 +154,9 @@ export const getJobsByClient = catchAsync(async (req, res) => {
     throw new AppError("Client ID is required", 400);
   }
 
-  const job = await Job.find({ client: clientId });
+  const job = await Job.find({ client: clientId })
+    .populate("client", "firstName lastName email")
+    .sort({ createdAt: -1 });
 
   if (!job || job.length === 0) {
     throw new AppError("No job Found", 404);
@@ -161,11 +183,9 @@ export const getMyJobs = catchAsync(async (req, res) => {
     throw new AppError("Invalid user id format", 400);
   }
 
-  if (!clientId) {
-    throw new AppError("Client ID is required", 400);
-  }
-
-  const job = await Job.find({ client: clientId });
+  const job = await Job.find({ client: clientId })
+    .populate("client", "firstName lastName email")
+    .sort({ createdAt: -1 });
 
   if (!job || job.length === 0) {
     throw new AppError("No job Found", 404);
