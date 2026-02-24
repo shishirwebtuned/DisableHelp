@@ -11,6 +11,7 @@ import validator from "validator";
 import { getEmailErrorMessage } from "../utils/getEmailErrorMessage.js";
 import { ClientProfile } from "../models/clientProfile.model.js";
 import { WorkerProfile } from "../models/workerProfile.model.js";
+import { buildFilter, getPagination } from "../utils/queryHelper.js";
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -322,33 +323,15 @@ export const changePassword = catchAsync(async (req, res) => {
 });
 
 export const getAllUsers = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10, role, approved, search } = req.query;
+  const { page, limit, skip } = getPagination(req.query);
 
-  const pageNumber = Number(page);
-  const limitNumber = Number(limit);
-  const skip = (pageNumber - 1) * limitNumber;
-
-  const filter: any = {};
-
-  if (role) filter.role = role;
-
-  if (approved !== undefined) {
-    filter.approved = approved === "true";
-  }
-
-  if (search) {
-    filter.$or = [
-      { firstName: { $regex: search, $options: "i" } },
-      { lastName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-    ];
-  }
+  const filter = buildFilter(req.query, ["firstName", "lastName", "email"]);
 
   const users = await User.find(filter)
     .select("-password -otp -otpExpiry")
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(limitNumber);
+    .limit(limit);
 
   const total = await User.countDocuments(filter);
 
@@ -360,9 +343,9 @@ export const getAllUsers = catchAsync(async (req, res) => {
       users,
       pagination: {
         total,
-        page: pageNumber,
-        limit: limitNumber,
-        totalPages: Math.ceil(total / limitNumber),
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     },
   });

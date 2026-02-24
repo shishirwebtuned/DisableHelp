@@ -11,10 +11,11 @@ import validator from "validator";
 import { getEmailErrorMessage } from "../utils/getEmailErrorMessage.js";
 import { ClientProfile } from "../models/clientProfile.model.js";
 import { WorkerProfile } from "../models/workerProfile.model.js";
+import { buildFilter, getPagination } from "../utils/queryHelper.js";
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 export const registerUser = catchAsync(async (req, res) => {
-    const { email, password, firstName, lastName, role, phoneNumber, gender } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, gender, dateOfBirth, termsAccepted, accountManagerName, } = req.body;
     const allowedRoles = ["client", "worker"];
     if (!allowedRoles.includes(role)) {
         throw new AppError("Invalid role", 400);
@@ -40,9 +41,12 @@ export const registerUser = catchAsync(async (req, res) => {
         lastName,
         role,
         phoneNumber,
+        dateOfBirth,
         isVerified: false,
         verificationToken,
+        termsAccepted,
         verificationTokenExpiry,
+        accountManagerName,
     });
     await newUser.save();
     const profileModel = role === "client" ? ClientProfile : WorkerProfile;
@@ -171,7 +175,9 @@ export const loginUser = catchAsync(async (req, res) => {
         data: {
             user: {
                 id: user._id,
-                name: `${user.firstName} ${user.lastName}`,
+                name: user.role === "admin"
+                    ? "Admin"
+                    : `${user.firstName} ${user.lastName}`,
                 email: user.email,
                 role: user.role,
                 approved: user.approved,
@@ -251,12 +257,42 @@ export const changePassword = catchAsync(async (req, res) => {
     });
 });
 export const getAllUsers = catchAsync(async (req, res) => {
-    const users = await User.find().select("-password -otp -otpExpiry");
+    const { page, limit, skip } = getPagination(req.query);
+    const filter = buildFilter(req.query, ["firstName", "lastName", "email"]);
+    const users = await User.find(filter)
+        .select("-password -otp -otpExpiry")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    const total = await User.countDocuments(filter);
     sendResponse(res, {
         success: true,
         statusCode: 200,
         message: "Users retrieved successfully",
-        data: users,
+        data: {
+            users,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        },
+    });
+});
+export const getUserById = catchAsync(async (req, res) => {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("-password -otp -otpExpiry");
+    if (!user)
+        throw new AppError("User not found", 400);
+    const profile = user.role === "worker"
+        ? await WorkerProfile.findOne({ user: userId })
+        : await ClientProfile.findOne({ user: userId });
+    sendResponse(res, {
+        success: true,
+        statusCode: 200,
+        message: "User data retrieved successfully",
+        data: { user, profile },
     });
 });
 export const getMe = catchAsync(async (req, res) => {

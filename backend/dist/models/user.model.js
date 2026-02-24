@@ -15,9 +15,30 @@ const userSchema = new Schema({
         required: true,
         default: "client",
     },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    firstName: {
+        type: String,
+        required: function () {
+            return this.role === "client" || this.role === "worker";
+        },
+    },
+    lastName: {
+        type: String,
+        required: function () {
+            return this.role === "client" || this.role === "worker";
+        },
+    },
+    phoneNumber: {
+        type: String,
+        required: function () {
+            return this.role === "client" || this.role === "worker";
+        },
+    },
+    dateOfBirth: {
+        type: Date,
+        required: function () {
+            return this.role === "client" || this.role === "worker";
+        },
+    },
     address: {
         line1: String,
         line2: String,
@@ -38,9 +59,13 @@ const userSchema = new Schema({
         phone: String,
         relationship: String,
     },
+    termsAccepted: { type: Boolean, default: false },
     approved: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String, default: null },
+    accountManagerName: {
+        type: String,
+    },
     verificationTokenExpiry: { type: Date, default: null },
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },

@@ -10,6 +10,7 @@ import jobRoutes from "./routes/job.routes.js";
 
 import { errorHandler } from "./middleware/error.middleware.js";
 import applicationRoutes from "./routes/application.routes.js";
+import agreementRoutes from "./routes/agreement.routes.js";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use(`${baseApi}/service`, serviceRoutes);
 app.use(`${baseApi}/admin`, adminRoutes);
 app.use(`${baseApi}/job`, jobRoutes);
 app.use(`${baseApi}/application`, applicationRoutes);
+app.use(`${baseApi}/agreement`, agreementRoutes);
 
 // Error handler
 app.use(errorHandler);

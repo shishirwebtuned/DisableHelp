@@ -22,4 +22,10 @@ export const adminOnly = (req, res, next) => {
     }
     next();
 };
+export const clientOnly = (req, res, next) => {
+    if (req.user?.role !== "client") {
+        return res.status(403).json({ message: "Client access only" });
+    }
+    next();
+};
 //# sourceMappingURL=auth.middleware.js.map

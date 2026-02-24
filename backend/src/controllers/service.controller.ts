@@ -3,6 +3,7 @@ import { Service } from "../models/service.model.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { sendResponse } from "../utils/sendResponse.js";
+import { buildFilter, getPagination } from "../utils/queryHelper.js";
 
 export const createService = catchAsync(async (req, res) => {
   const { name, code, categories } = req.body;
@@ -97,7 +98,14 @@ export const deleteService = catchAsync(async (req, res) => {
 });
 
 export const getAllServices = catchAsync(async (req, res) => {
-  const services = await Service.find({}).sort({ createdAt: -1 });
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, ["name", "status", "code"]);
+
+  const services = await Service.find({})
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
 
   if (!services || services.length === 0) {
     return sendResponse(res, {
@@ -107,11 +115,22 @@ export const getAllServices = catchAsync(async (req, res) => {
       data: [],
     });
   }
+
+  const total = await Service.countDocuments(filter);
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Services fetched successfully",
-    data: services,
+    data: {
+      services,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });
 

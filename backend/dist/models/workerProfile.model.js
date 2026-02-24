@@ -170,7 +170,6 @@ const workerProfileSchema = new Schema({
             isVerified: { type: Boolean, default: false },
         },
     },
-    approved: { type: Boolean, default: false },
     hasActiveAgreement: { type: Boolean, default: false },
 }, { timestamps: true });
 export const WorkerProfile = mongoose.model("WorkerProfile", workerProfileSchema);

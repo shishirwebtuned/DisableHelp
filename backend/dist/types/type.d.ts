@@ -28,12 +28,15 @@ export interface IUser extends Document {
         phone: string;
         relationship: string;
     };
+    accountManagerName?: String;
+    dateOfBirth: Date;
     isVerified: boolean;
     verificationToken: string | null;
     verificationTokenExpiry: Date | null;
     approved: boolean;
     otp: string | null;
     otpExpiry: Date | null;
+    termsAccepted: boolean;
     timezone: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -177,7 +180,6 @@ export interface IWorkerProfile {
             isVerified: boolean;
         };
     };
-    approved: boolean;
     hasActiveAgreement: boolean;
 }
 export {};

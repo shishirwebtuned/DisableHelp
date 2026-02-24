@@ -1,0 +1,2 @@
+export declare const acceptAgreementByWorker: (req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => void;
+//# sourceMappingURL=agreement.controller.d.ts.map

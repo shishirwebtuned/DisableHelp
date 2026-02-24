@@ -3,6 +3,8 @@ import { Job } from "../models/job.model.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { sendResponse } from "../utils/sendResponse.js";
+import { Application } from "../models/application.model.js";
+import { buildFilter, getPagination } from "../utils/queryHelper.js";
 
 export const createJob = catchAsync(async (req, res) => {
   const {
@@ -14,6 +16,7 @@ export const createJob = catchAsync(async (req, res) => {
     supportDetails,
     jobSessions,
     preference,
+    hourlyRate,
     jobSessionByClient,
   } = req.body;
 
@@ -27,6 +30,7 @@ export const createJob = catchAsync(async (req, res) => {
     !duration ||
     !client ||
     !title ||
+    !hourlyRate ||
     !supportDetails ||
     !preference
   ) {
@@ -52,6 +56,7 @@ export const createJob = catchAsync(async (req, res) => {
     client,
     title,
     supportDetails,
+    hourlyRate,
     jobSessions: jobSessions || [], // default empty array if false
     jobSessionByClient: !!jobSessionByClient, // ensure boolean
     preference,
@@ -92,11 +97,28 @@ export const updateJob = catchAsync(async (req, res) => {
 export const deleteJob = catchAsync(async (req, res) => {
   const { jobId } = req.params;
 
-  const job = await Job.findByIdAndDelete(jobId);
+  if (Array.isArray(jobId)) {
+    throw new AppError("Invalid job id", 400);
+  }
+
+  const job = await Job.findById(jobId);
 
   if (!job) {
     throw new AppError("Job not found", 404);
   }
+
+  const hasApplications = await Application.exists({
+    job: new mongoose.Types.ObjectId(jobId),
+  });
+
+  if (hasApplications) {
+    throw new AppError(
+      "Job cannot be deleted because workers have already applied",
+      400,
+    );
+  }
+
+  await job.deleteOne();
 
   sendResponse(res, {
     success: true,
@@ -106,9 +128,22 @@ export const deleteJob = catchAsync(async (req, res) => {
 });
 
 export const getAllJobs = catchAsync(async (req, res) => {
-  const jobs = await Job.find({})
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, [
+    "title",
+    "startDate",
+    "hourlyRate",
+    "status",
+    "frequency",
+  ]);
+
+  const jobs = await Job.find(filter)
     .populate("client", "firstName lastName email")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean()
+    .limit(limit)
+    .skip(skip);
 
   if (!jobs || jobs.length === 0) {
     return sendResponse(res, {
@@ -119,59 +154,159 @@ export const getAllJobs = catchAsync(async (req, res) => {
     });
   }
 
+  const jobIds = jobs.map((job) => job._id);
+
+  const applicationCounts = await Application.aggregate([
+    {
+      $match: {
+        job: { $in: jobIds },
+      },
+    },
+    {
+      $group: {
+        _id: "$job",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const countMap = new Map(
+    applicationCounts.map((item) => [item._id.toString(), item.count]),
+  );
+
+  const jobsData = jobs.map((job) => ({
+    ...job,
+    applicationCount: countMap.get(job._id.toString()) || 0,
+  }));
+
+  const total = await Job.countDocuments(filter);
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Jobs fetched successfully",
-    data: jobs,
+    data: {
+      jobsData,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });
 
 export const getJobById = catchAsync(async (req, res) => {
   const { jobId } = req.params;
 
-  const job = await Job.findById(jobId).populate(
-    "client",
-    "firstName lastName email",
-  );
+  const job = await Job.findById(jobId)
+    .populate("client", "firstName lastName email")
+    .lean();
 
   if (!job) {
     throw new AppError("No job Found", 404);
   }
 
+  const applicationCount = await Application.countDocuments({
+    job: job._id,
+  });
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Job fetched successfully",
-    data: job,
+    data: {
+      ...job,
+      applicationCount,
+    },
   });
 });
 
 export const getJobsByClient = catchAsync(async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, [
+    "title",
+    "startDate",
+    "hourlyRate",
+    "status",
+    "frequency",
+  ]);
+
   const { clientId } = req.params;
 
   if (!clientId) {
     throw new AppError("Client ID is required", 400);
   }
 
-  const job = await Job.find({ client: clientId })
+  const jobs = await Job.find({ client: clientId })
     .populate("client", "firstName lastName email")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean()
+    .limit(limit)
+    .skip(skip);
 
-  if (!job || job.length === 0) {
-    throw new AppError("No job Found", 404);
+  if (!jobs || jobs.length === 0) {
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "No Jobs Found",
+      data: [],
+    });
   }
+
+  const jobIds = jobs.map((job) => job._id);
+
+  const applicationCounts = await Application.aggregate([
+    { $match: { job: { $in: jobIds } } },
+    {
+      $group: {
+        _id: "$job",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const countMap = new Map(
+    applicationCounts.map((item) => [item._id.toString(), item.count]),
+  );
+
+  const jobsData = jobs.map((job) => ({
+    ...job,
+    applicationCount: countMap.get(job._id.toString()) || 0,
+  }));
+
+  const total = await Job.countDocuments(filter);
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Jobs fetched successfully",
-    data: job,
+    data: {
+      jobsData,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });
 
 export const getMyJobs = catchAsync(async (req, res) => {
   const clientId = req.user!.id;
+
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, [
+    "title",
+    "startDate",
+    "hourlyRate",
+    "status",
+    "frequency",
+  ]);
 
   console.log("Client ID:", clientId);
 
@@ -183,18 +318,57 @@ export const getMyJobs = catchAsync(async (req, res) => {
     throw new AppError("Invalid user id format", 400);
   }
 
-  const job = await Job.find({ client: clientId })
+  const jobs = await Job.find({ client: clientId })
     .populate("client", "firstName lastName email")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean()
+    .limit(limit)
+    .skip(skip);
 
-  if (!job || job.length === 0) {
-    throw new AppError("No job Found", 404);
+  if (!jobs || jobs.length === 0) {
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "No jobs Found",
+      data: [],
+    });
   }
+
+  const jobIds = jobs.map((job) => job._id);
+
+  const applicationCounts = await Application.aggregate([
+    { $match: { job: { $in: jobIds } } },
+    {
+      $group: {
+        _id: "$job",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const countMap = new Map(
+    applicationCounts.map((item) => [item._id.toString(), item.count]),
+  );
+
+  const jobsData = jobs.map((job) => ({
+    ...job,
+    applicationCount: countMap.get(job._id.toString()) || 0,
+  }));
+
+  const total = await Job.countDocuments(filter);
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Jobs fetched successfully",
-    data: job,
+    data: {
+      jobsData,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });

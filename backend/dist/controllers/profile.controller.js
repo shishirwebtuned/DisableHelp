@@ -128,6 +128,26 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
     const { body, files } = req;
     const updatedData = { ...body };
     const personalDetailsData = { ...(profile.personalDetails || {}) };
+    if (body.personalDetails) {
+        if (body.personalDetails.bio !== undefined) {
+            personalDetailsData.bio = body.personalDetails.bio;
+        }
+        if (body.personalDetails.wwcc) {
+            personalDetailsData.wwcc = personalDetailsData.wwcc || {
+                wwccNumber: "",
+                expiryDate: new Date(),
+                isVerified: false,
+            };
+            if (body.personalDetails.wwcc.wwccNumber !== undefined) {
+                personalDetailsData.wwcc.wwccNumber =
+                    body.personalDetails.wwcc.wwccNumber;
+            }
+            if (body.personalDetails.wwcc.expiryDate !== undefined) {
+                personalDetailsData.wwcc.expiryDate =
+                    body.personalDetails.wwcc.expiryDate;
+            }
+        }
+    }
     const fileMap = {
         avatar: ["avatar"],
         cprFile: ["additionalTraining", "cpr", "file"],
@@ -140,43 +160,44 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
         const fileArray = filesMap?.[fieldName];
         if (!fileArray?.[0])
             continue;
-        let currentObj = personalDetailsData;
+        let parentObj = personalDetailsData;
         for (let i = 0; i < path.length - 1; i++) {
             const key = path[i];
-            if (key && !currentObj[key])
-                currentObj[key] = {};
-            if (key)
-                currentObj = currentObj[key];
+            if (!parentObj[key])
+                parentObj[key] = {};
+            parentObj = parentObj[key];
         }
         const lastKey = path[path.length - 1];
-        const oldFile = lastKey
-            ? currentObj[lastKey]
-            : undefined;
+        const oldFile = parentObj[lastKey];
         if (oldFile?.public_id) {
             try {
                 await cloudinary.uploader.destroy(oldFile.public_id);
             }
             catch (err) {
-                console.warn(`Failed to delete old file ${oldFile.public_id}:`, err);
+                console.warn(`Failed to delete old file ${oldFile.public_id}`, err);
             }
         }
         const uploadResult = await uploadToCloudinary(fileArray[0].buffer, `DisableHelp/supportWorker/${fieldName.replace("File", "")}`);
-        let value = {
+        parentObj[lastKey] = {
             url: uploadResult.url,
             public_id: uploadResult.public_id,
         };
         if (fieldName !== "avatar") {
-            value.isVerified = false;
-            const expiry = body.personalDetails?.additionalTraining?.[fieldName.replace("File", "")]?.expiryDate;
-            if (expiry)
-                value.expiryDate = expiry;
+            parentObj.isVerified = false;
+            const trainingKey = fieldName.replace("File", "");
+            const expiry = body.personalDetails?.additionalTraining?.[trainingKey]?.expiryDate;
+            if (expiry) {
+                parentObj.expiryDate = expiry;
+            }
             if (fieldName === "wwccFile") {
-                value.wwccNumber = body.personalDetails?.wwcc?.wwccNumber;
-                if (body.personalDetails?.wwcc?.expiryDate)
-                    value.expiryDate = body.personalDetails.wwcc.expiryDate;
+                if (body.personalDetails?.wwcc?.expiryDate) {
+                    parentObj.expiryDate = body.personalDetails.wwcc.expiryDate;
+                }
+                if (body.personalDetails?.wwcc?.wwccNumber) {
+                    parentObj.wwccNumber = body.personalDetails.wwcc.wwccNumber;
+                }
             }
         }
-        setNestedValue(personalDetailsData, path, value);
     }
     updatedData.personalDetails = personalDetailsData;
     const updatedProfile = await WorkerProfile.findByIdAndUpdate(profile._id, updatedData, { new: true });
@@ -184,6 +205,66 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
         success: true,
         statusCode: 200,
         message: "Worker profile updated successfully",
+        data: updatedProfile,
+    });
+});
+export const deleteWorkerFile = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    const { fileType } = req.body;
+    if (!fileType) {
+        throw new AppError("fileType is required", 400);
+    }
+    const profile = await WorkerProfile.findOne({ user: userId });
+    if (!profile) {
+        throw new AppError("Worker profile not found", 404);
+    }
+    const personalDetails = profile.personalDetails || {};
+    const fileMap = {
+        avatar: ["avatar"],
+        cprFile: ["additionalTraining", "cpr", "file"],
+        driverLicenseFile: ["additionalTraining", "driverLicense", "file"],
+        firstAidFile: ["additionalTraining", "firstAid", "file"],
+        wwccFile: ["wwcc", "file"],
+    };
+    const path = fileMap[fileType];
+    if (!path) {
+        throw new AppError("Invalid fileType", 400);
+    }
+    let currentObj = personalDetails;
+    for (let i = 0; i < path.length - 1; i++) {
+        const key = path[i];
+        if (key && !currentObj[key])
+            currentObj[key] = {};
+        if (key)
+            currentObj = currentObj[key];
+    }
+    const lastKey = path[path.length - 1];
+    if (!lastKey) {
+        throw new AppError("Invalid file path", 400);
+    }
+    const fileData = currentObj[lastKey];
+    if (!fileData?.public_id) {
+        throw new AppError("File not found", 404);
+    }
+    try {
+        await cloudinary.uploader.destroy(fileData.public_id);
+    }
+    catch (err) {
+        console.warn(`Failed to delete file ${fileData.public_id}:`, err);
+    }
+    // Remove the file reference and reset isVerified if applicable
+    if (fileType === "avatar") {
+        currentObj[lastKey] = {};
+    }
+    else {
+        currentObj[lastKey] = { isVerified: false };
+    }
+    profile.personalDetails = personalDetails;
+    const updatedProfile = await profile.save();
+    sendResponse(res, {
+        success: true,
+        statusCode: 200,
+        message: "File deleted successfully",
         data: updatedProfile,
     });
 });
@@ -268,17 +349,19 @@ export const getProfileById = catchAsync(async (req, res) => {
     });
 });
 export const getProfileStatus = catchAsync(async (req, res) => {
-    console.log("CONTROLLER HIT"); // 🔥 add this
-    const userId = req.user.id;
-    console.log("userId", userId);
-    // const userId = req.params;
-    const userRole = req.user.role;
+    console.log("CONTROLLER HIT"); // 🔥 debug
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+    if (!userId || !userRole) {
+        throw new AppError("User not authenticated", 401);
+    }
+    // Fetch profile as plain JS object (lean) to avoid circular refs
     let profile = null;
     if (userRole === "worker") {
-        profile = await WorkerProfile.findOne({ user: userId });
+        profile = await WorkerProfile.findOne({ user: userId }).lean();
     }
     else if (userRole === "client") {
-        profile = await ClientProfile.findOne({ user: userId });
+        profile = await ClientProfile.findOne({ user: userId }).lean();
     }
     else {
         throw new AppError("Invalid role", 400);
@@ -286,68 +369,97 @@ export const getProfileStatus = catchAsync(async (req, res) => {
     if (!profile) {
         throw new AppError("Profile not found", 404);
     }
-    const isFilled = (value) => {
+    // Universal isFilled checker for deep nested objects/arrays
+    const isFilled = (value, isBooleanField = false) => {
         if (value === undefined || value === null)
             return false;
-        if (Array.isArray(value))
-            return value.length > 0;
-        if (typeof value === "object")
-            return Object.keys(value).length > 0;
-        return true;
+        if (isBooleanField && typeof value === "boolean")
+            return true;
+        if (typeof value === "string")
+            return value.trim().length > 0;
+        if (typeof value === "number")
+            return true;
+        if (Array.isArray(value)) {
+            // At least one item is filled
+            return (value.length > 0 && value.some((item) => isFilled(item, isBooleanField)));
+        }
+        if (typeof value === "object") {
+            // If object has boolean-only fields, consider true even if false
+            return Object.values(value).some((val) => {
+                if (typeof val === "boolean")
+                    return true; // boolean field exists
+                return isFilled(val, isBooleanField);
+            });
+        }
+        return false;
     };
+    // Define worker and client fields to check
     let status = [];
     if (userRole === "worker") {
-        const workerProfile = profile;
         status = [
-            { field: "services", completed: isFilled(workerProfile.services) },
-            { field: "rates", completed: isFilled(workerProfile.rates) },
+            { field: "services", completed: isFilled(profile.services) },
+            { field: "rates", completed: isFilled(profile.rates) },
             {
                 field: "availability",
-                completed: isFilled(workerProfile.availability),
+                completed: isFilled(profile.availability),
             },
-            { field: "locations", completed: isFilled(workerProfile.locations) },
+            { field: "locations", completed: isFilled(profile.locations) },
             {
                 field: "experienceSummary",
-                completed: isFilled(workerProfile.experienceSummary),
+                completed: isFilled(profile.experienceSummary),
             },
-            { field: "bankDetails", completed: isFilled(workerProfile.bankDetails) },
-            { field: "workHistory", completed: isFilled(workerProfile.workHistory) },
+            { field: "bankDetails", completed: isFilled(profile.bankDetails) },
+            { field: "workHistory", completed: isFilled(profile.workHistory) },
             {
                 field: "educationAndTraining",
-                completed: isFilled(workerProfile.educationAndTraining),
+                completed: isFilled(profile.educationAndTraining),
             },
             {
                 field: "personalDetails",
-                completed: isFilled(workerProfile.personalDetails),
+                completed: isFilled(profile.personalDetails),
             },
+            {
+                field: "freeMeetAndGreet",
+                completed: isFilled(profile.freeMeetAndGreet, true),
+            }, // boolean
+            {
+                field: "lgbtqiaPlusFriendly",
+                completed: isFilled(profile.lgbtqiaPlusFriendly, true),
+            },
+            { field: "immunisation", completed: isFilled(profile.immunisation) },
+            { field: "languages", completed: isFilled(profile.languages) },
+            {
+                field: "culturalBackground",
+                completed: isFilled(profile.culturalBackground),
+            },
+            { field: "religion", completed: isFilled(profile.religion) },
+            { field: "interests", completed: isFilled(profile.interests) },
+            { field: "aboutMe", completed: isFilled(profile.aboutMe) },
+            { field: "preferences", completed: isFilled(profile.preferences) },
         ];
     }
     else if (userRole === "client") {
-        const clientProfile = profile;
         status = [
-            {
-                field: "participants",
-                completed: isFilled(clientProfile.participants),
-            },
+            { field: "participants", completed: isFilled(profile.participants) },
             {
                 field: "carePreferences",
-                completed: isFilled(clientProfile.carePreferences),
+                completed: isFilled(profile.carePreferences),
             },
             {
                 field: "receiveAgreementsEmails",
-                completed: clientProfile.receiveAgreementsEmails !== undefined,
+                completed: profile.receiveAgreementsEmails !== undefined,
             },
             {
                 field: "receiveEventDeliveriesEmails",
-                completed: clientProfile.receiveEventDeliveriesEmails !== undefined,
+                completed: profile.receiveEventDeliveriesEmails !== undefined,
             },
             {
                 field: "receivePlannedSessionReminderEmails",
-                completed: clientProfile.receivePlannedSessionReminderEmails !== undefined,
+                completed: profile.receivePlannedSessionReminderEmails !== undefined,
             },
             {
                 field: "isNdisManaged",
-                completed: clientProfile.isNdisManaged !== undefined,
+                completed: profile.isNdisManaged !== undefined,
             },
         ];
     }

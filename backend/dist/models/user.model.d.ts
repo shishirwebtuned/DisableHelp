@@ -28,15 +28,6 @@ declare const userSchema: mongoose.Schema<IUser, mongoose.Model<IUser, any, any,
     }, "id"> & {
         id: string;
     }>;
-    approved?: mongoose.SchemaDefinitionProperty<boolean, IUser, mongoose.Document<unknown, {}, IUser, {
-        id: string;
-    }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
-        _id: mongoose.Types.ObjectId;
-    }> & {
-        __v: number;
-    }, "id"> & {
-        id: string;
-    }>;
     isVerified?: mongoose.SchemaDefinitionProperty<boolean, IUser, mongoose.Document<unknown, {}, IUser, {
         id: string;
     }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
@@ -157,6 +148,24 @@ declare const userSchema: mongoose.Schema<IUser, mongoose.Model<IUser, any, any,
     }, "id"> & {
         id: string;
     }>;
+    accountManagerName?: mongoose.SchemaDefinitionProperty<String | undefined, IUser, mongoose.Document<unknown, {}, IUser, {
+        id: string;
+    }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
+        _id: mongoose.Types.ObjectId;
+    }> & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }>;
+    dateOfBirth?: mongoose.SchemaDefinitionProperty<Date, IUser, mongoose.Document<unknown, {}, IUser, {
+        id: string;
+    }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
+        _id: mongoose.Types.ObjectId;
+    }> & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }>;
     verificationToken?: mongoose.SchemaDefinitionProperty<string | null, IUser, mongoose.Document<unknown, {}, IUser, {
         id: string;
     }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
@@ -175,6 +184,15 @@ declare const userSchema: mongoose.Schema<IUser, mongoose.Model<IUser, any, any,
     }, "id"> & {
         id: string;
     }>;
+    approved?: mongoose.SchemaDefinitionProperty<boolean, IUser, mongoose.Document<unknown, {}, IUser, {
+        id: string;
+    }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
+        _id: mongoose.Types.ObjectId;
+    }> & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }>;
     otp?: mongoose.SchemaDefinitionProperty<string | null, IUser, mongoose.Document<unknown, {}, IUser, {
         id: string;
     }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
@@ -185,6 +203,15 @@ declare const userSchema: mongoose.Schema<IUser, mongoose.Model<IUser, any, any,
         id: string;
     }>;
     otpExpiry?: mongoose.SchemaDefinitionProperty<Date | null, IUser, mongoose.Document<unknown, {}, IUser, {
+        id: string;
+    }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
+        _id: mongoose.Types.ObjectId;
+    }> & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }>;
+    termsAccepted?: mongoose.SchemaDefinitionProperty<boolean, IUser, mongoose.Document<unknown, {}, IUser, {
         id: string;
     }, mongoose.ResolveSchemaOptions<mongoose.DefaultSchemaOptions>> & Omit<IUser & Required<{
         _id: mongoose.Types.ObjectId;

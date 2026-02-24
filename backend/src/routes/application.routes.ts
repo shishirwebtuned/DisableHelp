@@ -1,12 +1,12 @@
 import express from "express";
 import { clientOnly, protect } from "../middleware/auth.middleware.js";
 import {
+  acceptApplication,
   createApplication,
   getAllApplications,
   getApplicationById,
   getApplicationsByApplicantId,
   getApplicationsByJobId,
-  updateApplicationStatus,
 } from "../controllers/application.controller.js";
 
 const router = express.Router();
@@ -17,12 +17,7 @@ router.get("/applicant/:applicantId", protect, getApplicationsByApplicantId);
 router.get("/job/:jobId", protect, getApplicationsByJobId);
 
 router.get("/", protect, getAllApplications);
-router.patch(
-  "/:applicationId/status",
-  protect,
-  clientOnly,
-  updateApplicationStatus,
-);
+router.patch("/:applicationId/accept", protect, clientOnly, acceptApplication);
 router.get("/:applicationId", protect, getApplicationById);
 
 export default router;

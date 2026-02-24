@@ -46,6 +46,11 @@ const applicationSchema = new Schema(
   { timestamps: true },
 );
 
+applicationSchema.index({ job: 1, applicant: 1 }, { unique: true });
+
+applicationSchema.index({ job: 1 });
+applicationSchema.index({ applicant: 1 });
+
 export const Application = mongoose.model("Application", applicationSchema);
 export type ApplicationDocument = mongoose.InferSchemaType<
   typeof applicationSchema

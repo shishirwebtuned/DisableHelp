@@ -55,6 +55,10 @@ const jobSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    hourlyRate: {
+      type: Number,
+      required: true,
+    },
     jobSessions: [sessionSchema],
     preference: {
       gender: { type: String, enum: ["male", "female", "other"] },
