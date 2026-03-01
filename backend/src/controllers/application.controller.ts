@@ -62,7 +62,9 @@ export const createApplication = catchAsync(async (req, res) => {
 export const getAllApplications = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, ["status"]);
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
 
   const applications = await Application.find()
     .populate("job", "title")
@@ -119,8 +121,9 @@ export const getApplicationById = catchAsync(async (req, res) => {
 export const getApplicationsByJobId = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, ["status"]);
-
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
   const jobId = req.params.jobId as string;
 
   const applications = await Application.find({ job: jobId })
@@ -160,7 +163,9 @@ export const getApplicationsByJobId = catchAsync(async (req, res) => {
 export const getApplicationsByApplicantId = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, ["status"]);
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
 
   const applicantId = req.params.applicantId as string;
 

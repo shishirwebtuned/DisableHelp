@@ -130,13 +130,11 @@ export const deleteJob = catchAsync(async (req, res) => {
 export const getAllJobs = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, [
-    "title",
-    "startDate",
-    "hourlyRate",
-    "status",
-    "frequency",
-  ]);
+  const filter = buildFilter(req.query, {
+    searchFields: ["title", "frequency"],
+    exact: ["status"],
+    range: ["hourlyRate", "startDate"],
+  });
 
   const jobs = await Job.find(filter)
     .populate("client", "firstName lastName email")
@@ -226,13 +224,11 @@ export const getJobById = catchAsync(async (req, res) => {
 export const getJobsByClient = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, [
-    "title",
-    "startDate",
-    "hourlyRate",
-    "status",
-    "frequency",
-  ]);
+  const filter = buildFilter(req.query, {
+    searchFields: ["title", "frequency"],
+    exact: ["status"],
+    range: ["hourlyRate", "startDate"],
+  });
 
   const { clientId } = req.params;
 
@@ -300,14 +296,11 @@ export const getMyJobs = catchAsync(async (req, res) => {
 
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, [
-    "title",
-    "startDate",
-    "hourlyRate",
-    "status",
-    "frequency",
-  ]);
-
+  const filter = buildFilter(req.query, {
+    searchFields: ["title", "frequency"],
+    exact: ["status"],
+    range: ["hourlyRate", "startDate"],
+  });
   console.log("Client ID:", clientId);
 
   if (!clientId || typeof clientId !== "string") {

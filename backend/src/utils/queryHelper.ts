@@ -7,15 +7,60 @@ export const getPagination = (query: any) => {
   return { page, limit, skip };
 };
 
-export const buildFilter = (query: any, searchFields: string[] = []) => {
+export const buildFilter = (
+  query: any,
+  options?: {
+    exact?: string[];
+    boolean?: string[];
+    searchFields?: string[];
+    range?: string[];
+  },
+) => {
   const filter: any = {};
 
-  if (query.role) filter.role = query.role;
+  const {
+    exact = [],
+    boolean = [],
+    searchFields = [],
+    range = [],
+  } = options || {};
 
-  if (query.approved !== undefined) {
-    filter.approved = query.approved === "true";
-  }
+  const excludedFields = ["page", "limit", "sort", "search"];
 
+  const queryObj = { ...query };
+
+  excludedFields.forEach((field) => delete queryObj[field]);
+
+  // EXACT MATCH
+  exact.forEach((field) => {
+    if (query[field] !== undefined) {
+      filter[field] = query[field];
+    }
+  });
+
+  // BOOLEAN
+  boolean.forEach((field) => {
+    if (query[field] !== undefined) {
+      filter[field] = query[field] === "true";
+    }
+  });
+
+  // RANGE FILTER
+  range.forEach((field) => {
+    if (query[`${field}Min`] || query[`${field}Max`]) {
+      filter[field] = {};
+
+      if (query[`${field}Min`]) {
+        filter[field].$gte = Number(query[`${field}Min`]);
+      }
+
+      if (query[`${field}Max`]) {
+        filter[field].$lte = Number(query[`${field}Max`]);
+      }
+    }
+  });
+
+  // SEARCH
   if (query.search && searchFields.length > 0) {
     filter.$or = searchFields.map((field) => ({
       [field]: { $regex: query.search, $options: "i" },

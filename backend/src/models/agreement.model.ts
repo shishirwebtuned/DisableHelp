@@ -28,7 +28,7 @@ const agreementSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "active", "terminated"],
+      enum: ["pending", "active", "terminated", "completed"],
       default: "pending",
     },
 
@@ -51,6 +51,10 @@ const agreementSchema = new mongoose.Schema(
     terminatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    terminatedByRole: {
+      type: String,
+      enum: ["client", "worker", "admin"],
     },
     terminationReason: {
       type: String,

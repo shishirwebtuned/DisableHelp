@@ -100,9 +100,12 @@ export const deleteService = catchAsync(async (req, res) => {
 export const getAllServices = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, ["name", "status", "code"]);
+  const filter = buildFilter(req.query, {
+    searchFields: ["name", "code"],
+    exact: ["status"],
+  });
 
-  const services = await Service.find({})
+  const services = await Service.find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);

@@ -23,6 +23,7 @@ export const registerUser = catchAsync(async (req, res) => {
     firstName,
     lastName,
     role,
+    address,
     phoneNumber,
     gender,
     dateOfBirth,
@@ -66,6 +67,7 @@ export const registerUser = catchAsync(async (req, res) => {
     isVerified: false,
     verificationToken,
     termsAccepted,
+    address,
     verificationTokenExpiry,
     accountManagerName,
   });
@@ -231,6 +233,7 @@ export const loginUser = catchAsync(async (req, res) => {
             : `${user.firstName} ${user.lastName}`,
         email: user.email,
         role: user.role,
+        address: user.address,
         approved: user.approved,
       },
       token,
@@ -325,7 +328,11 @@ export const changePassword = catchAsync(async (req, res) => {
 export const getAllUsers = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, ["firstName", "lastName", "email"]);
+  const filter = buildFilter(req.query, {
+    searchFields: ["firstName", "lastName", "email"],
+    exact: ["role"],
+    boolean: ["approved"],
+  });
 
   const users = await User.find(filter)
     .select("-password -otp -otpExpiry")

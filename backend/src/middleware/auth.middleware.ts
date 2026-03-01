@@ -50,3 +50,10 @@ export const clientOnly = (req: Request, res: Response, next: NextFunction) => {
   }
   next();
 };
+
+export const workerOnly = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role !== "worker") {
+    return res.status(403).json({ message: "Worker access only" });
+  }
+  next();
+};
