@@ -1,5 +1,24 @@
 import mongoose from "mongoose";
 
+const timeSlotSchema = new mongoose.Schema(
+  {
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const scheduleSchema = new mongoose.Schema(
+  {
+    day: {
+      type: String,
+      required: true,
+    },
+    period: [timeSlotSchema],
+  },
+  { _id: false },
+);
+
 const agreementSchema = new mongoose.Schema(
   {
     job: {
@@ -48,6 +67,9 @@ const agreementSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+
+    schedule: [scheduleSchema],
+
     terminatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

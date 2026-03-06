@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchJobs, applyToJob } from '@/redux/slices/jobsSlice';
+import { fetchJobs,applyToJobThunk } from '@/redux/slices/jobsSlice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,11 +43,11 @@ export default function JobDetailPage() {
     const [coverLetter, setCoverLetter] = useState('');
 
     const jobId = params.id as string;
-    const job = jobs.find(j => j.id === jobId);
+    const job = jobs.find(j => j._id === jobId);
 
     useEffect(() => {
         if (jobs.length === 0) {
-            dispatch(fetchJobs());
+            dispatch(fetchJobs({ page: 1, limit: 10 }));
         }
     }, [dispatch, jobs.length]);
 
@@ -69,12 +69,14 @@ export default function JobDetailPage() {
     const canApply = workerProfile && workerProfile.completeness === 100;
 
     const handleApply = async () => {
-        if (!user?.id || !coverLetter.trim()) return;
+        if (!user?._id || !coverLetter.trim()) return;
 
-        await dispatch(applyToJob({
-            jobId: job.id,
-            workerId: user.id,
-            coverLetter,
+        // applyToJobThunk expects { job: string; introduction: string; skills: string; availability: any[] }
+        await dispatch(applyToJobThunk({
+            job: job._id,
+            introduction: coverLetter,
+            skills: '',
+            availability: [],
         }));
 
         setIsApplyDialogOpen(false);
@@ -90,7 +92,7 @@ export default function JobDetailPage() {
                     </Button>
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
+                    <h1 className="text-xl font-bold tracking-tight">{job.title}</h1>
                     <p className="text-muted-foreground">Posted by {job.clientName}</p>
                 </div>
                 <Badge variant={job.status === 'published' ? 'default' : 'secondary'}>
@@ -107,12 +109,10 @@ export default function JobDetailPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-muted-foreground leading-relaxed">{job.description}</p>
-
                             <Separator />
-
                             <div>
                                 <h3 className="font-semibold mb-3">Requirements</h3>
-                                <ul className="space-y-2">
+                                <ul className="space-y-6">
                                     {job.requirements.map((req, index) => (
                                         <li key={index} className="flex items-start gap-2">
                                             <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -175,10 +175,15 @@ export default function JobDetailPage() {
                                 </div>
                                 <div>
                                     <div className="text-sm text-muted-foreground">Location</div>
-                                    <div className="font-semibold">{job.location}</div>
+                                    <div className="font-semibold">{
+                                        typeof job.location === 'string'
+                                            ? job.location
+                                            : [job.location.line1, job.location.line2, job.location.state, job.location.postalCode]
+                                                .filter(Boolean)
+                                                .join(', ')
+                                    }</div>
                                 </div>
                             </div>
-
                             <Separator />
 
                             <div className="flex items-center gap-3">
@@ -248,7 +253,7 @@ export default function JobDetailPage() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="space-y-4">
-                                        <div className="space-y-2">
+                                        <div className="space-y-6">
                                             <Label htmlFor="coverLetter">Cover Letter</Label>
                                             <Textarea
                                                 id="coverLetter"

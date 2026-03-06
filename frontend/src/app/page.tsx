@@ -16,7 +16,7 @@ import {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen ">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center space-y-6 max-w-4xl mx-auto">
@@ -55,7 +55,7 @@ export default function LandingPage() {
                 Find meaningful work, manage your profile, and connect with clients
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-6">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <span>Profile builder with credentials</span>
@@ -85,7 +85,7 @@ export default function LandingPage() {
                 Post jobs, find qualified workers, and manage your support services
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-6">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <span>Create job postings</span>
@@ -115,7 +115,7 @@ export default function LandingPage() {
                 Comprehensive oversight and management tools for administrators
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-6">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <span>Invoice approval system</span>

@@ -127,7 +127,7 @@ export const getApplicationsByJobId = catchAsync(async (req, res) => {
   const jobId = req.params.jobId as string;
 
   const applications = await Application.find({ job: jobId })
-    .populate("applicant", "name email")
+    .populate("applicant", "firstName lastName email")
     .populate("job", "title")
     .sort({ createdAt: -1 })
     .lean()
@@ -176,7 +176,7 @@ export const getApplicationsByApplicantId = catchAsync(async (req, res) => {
 
   const [applications, total, statusCounts] = await Promise.all([
     Application.find(finalFilter)
-      .populate("applicant", "name email")
+      .populate("applicant", "firstName lastName email")
       .populate("job", "title")
       .sort({ createdAt: -1 })
       .lean()
@@ -245,7 +245,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
     .populate({
       path: "job",
       select: "client hourlyRate",
-      populate: { path: "client", select: "name email" },
+      populate: { path: "client", select: "firstName lastName email" },
     })
     .session(session);
 
@@ -255,7 +255,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
 
   const job = application.job as unknown as {
     _id: string;
-    client: { _id: string; name: string; email: string };
+    client: { _id: string; firstName: string; lastName: string; email: string };
     hourlyRate: number;
   };
 
@@ -293,6 +293,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
         application: application._id,
         hourlyRate: job.hourlyRate,
         startDate: new Date(),
+        schedule: application.availability,
       },
     ],
     { session },
@@ -303,8 +304,8 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
   }
 
   await createdAgreement.populate([
-    { path: "client", select: "name email" },
-    { path: "worker", select: "name email" },
+    { path: "client", select: "firstName lastName email" },
+    { path: "worker", select: "firstName lastName email" },
   ]);
 
   await session.commitTransaction();

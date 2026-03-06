@@ -1,4 +1,5 @@
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function ClientLayout({
     children,
@@ -6,8 +7,10 @@ export default function ClientLayout({
     children: React.ReactNode;
 }) {
     return (
-        <DashboardWrapper>
-            {children}
-        </DashboardWrapper>
+        <ProtectedRoute allowedRole="client">
+            <DashboardWrapper>
+                {children}
+            </DashboardWrapper>
+        </ProtectedRoute>
     );
 }

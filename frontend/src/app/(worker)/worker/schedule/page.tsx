@@ -153,7 +153,7 @@ export default function WorkerSchedulePage() {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">My Schedule</h1>
@@ -164,7 +164,7 @@ export default function WorkerSchedulePage() {
                         <CalendarIcon className="h-4 w-4 mr-2" />
                         Month View
                     </Button>
-                    <Button className="bg-indigo-600 hover:bg-indigo-700">
+                    <Button className="">
                         Find More Jobs
                     </Button>
                 </div>
@@ -172,7 +172,7 @@ export default function WorkerSchedulePage() {
 
             <div className="grid grid-cols-12 gap-6">
                 {/* Left Sidebar */}
-                <div className="col-span-12 lg:col-span-4 space-y-2">
+                <div className="col-span-12 lg:col-span-4 space-y-6">
                     <div className=" border-none shadow-sm">
                         <CalendarComponent
                             mode="single"

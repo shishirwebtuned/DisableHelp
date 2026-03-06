@@ -1,151 +1,132 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '@/lib/axios';
+
+export interface ApplicationApplicant {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+}
+
+export interface ApplicationSession {
+    day: string;
+    period: { startTime: string; endTime: string }[];
+}
 
 export interface Application {
-    id: string;
-    jobId: string;
-    jobTitle: string;
-    workerId: string;
-    workerName: string;
-    workerEmail: string;
-    workerPhone: string;
-    workerExperience: string;
-    coverLetter: string;
-    appliedAt: string;
-    status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
-    skills: string[];
-    availability: string;
+    _id: string;
+    job: { _id: string; title: string };
+    applicant: ApplicationApplicant;
+    status: 'pending' | 'accepted' | 'rejected';
+    introduction: string;
+    skills: string;
+    availability: ApplicationSession[];
+    createdAt: string;
 }
 
 interface ApplicationsState {
     items: Application[];
+    myItems: Application[];
+    myLoading: boolean;
     loading: boolean;
     error: string | null;
+    total: number;
+    limit: number;
+    myTotal: number;
+    myLimit: number;
+    myTotalPages: number;
+    myTotalPending: number;
+    myTotalAccepted: number;
+    myTotalRejected: number;
 }
 
 const initialState: ApplicationsState = {
     items: [],
+    myItems: [],
+    myLoading: false,
     loading: false,
     error: null,
+    total: 0,
+    limit: 0,
+    myTotal: 0,
+    myLimit: 0,
+    myTotalPages: 1,
+    myTotalPending: 0,
+    myTotalAccepted: 0,
+    myTotalRejected: 0,
 };
 
-// Async thunks
+// Fetch the logged-in worker's own applications
+export const fetchMyApplications = createAsyncThunk(
+    'applications/fetchMyApplications',
+    async (params?: { page?: number; limit?: number , userID?: string }, { rejectWithValue }: any = {}) => {
+        try {
+            const page = params?.page ?? 1;
+            const limit = params?.limit ?? 10;
+            const response = await api.get(`application/applicant/${params?.userID}?page=${page}&limit=${limit}`);
+            const d = response.data.data;
+            const items: Application[] = Array.isArray(d)
+                ? d
+                : (d?.applications ?? d ?? []);
+            const pg = d?.pagination ?? {};
+            return {
+                items,
+                total: pg.total ?? 0,
+                limit: pg.limit ?? limit,
+                totalPages: pg.totalPages ?? 1,
+                totalPending: pg.totalPending ?? 0,
+                totalAccepted: pg.totalAccepted ?? 0,
+                totalRejected: pg.totalRejected ?? 0,
+            };
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to fetch your applications');
+        }
+    }
+);
+
+// Fetch all applications for a specific job
 export const fetchApplications = createAsyncThunk(
     'applications/fetchApplications',
-    async (jobId?: string) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.get(`/api/applications${jobId ? `?jobId=${jobId}` : ''}`);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const mockApplications: Application[] = [
-            {
-                id: 'app-1',
-                jobId: 'j1',
-                jobTitle: 'Personal Care Support - Morning Shift',
-                workerId: 'w1',
-                workerName: 'Sarah Thompson',
-                workerEmail: 'sarah.t@email.com',
-                workerPhone: '0412 345 678',
-                workerExperience: '5 years',
-                coverLetter: 'I am very interested in this position and have extensive experience in personal care...',
-                appliedAt: new Date(2026, 0, 21).toISOString(),
-                status: 'pending',
-                skills: ['Personal Care', 'Mobility Assistance', 'Medication Management'],
-                availability: 'Monday-Friday, 7am-3pm'
-            },
-            {
-                id: 'app-2',
-                jobId: 'j1',
-                jobTitle: 'Personal Care Support - Morning Shift',
-                workerId: 'w2',
-                workerName: 'Michael Chen',
-                workerEmail: 'michael.c@email.com',
-                workerPhone: '0423 456 789',
-                workerExperience: '3 years',
-                coverLetter: 'With my background in aged care and disability support, I believe I would be a great fit...',
-                appliedAt: new Date(2026, 0, 22).toISOString(),
-                status: 'pending',
-                skills: ['Personal Care', 'First Aid', 'Dementia Care'],
-                availability: 'Flexible schedule'
-            },
-            {
-                id: 'app-3',
-                jobId: 'j1',
-                jobTitle: 'Personal Care Support - Morning Shift',
-                workerId: 'w3',
-                workerName: 'Emma Rodriguez',
-                workerEmail: 'emma.r@email.com',
-                workerPhone: '0434 567 890',
-                workerExperience: '7 years',
-                coverLetter: 'I have been working in disability support for over 7 years and am passionate about making a difference...',
-                appliedAt: new Date(2026, 0, 23).toISOString(),
-                status: 'accepted',
-                skills: ['Personal Care', 'Behavioral Support', 'Communication'],
-                availability: 'Monday-Friday, mornings'
-            },
-            {
-                id: 'app-4',
-                jobId: 'j1',
-                jobTitle: 'Personal Care Support - Morning Shift',
-                workerId: 'w4',
-                workerName: 'James Wilson',
-                workerEmail: 'james.w@email.com',
-                workerPhone: '0445 678 901',
-                workerExperience: '2 years',
-                coverLetter: 'Though I am relatively new to the field, I am eager to learn and committed to providing excellent care...',
-                appliedAt: new Date(2026, 0, 24).toISOString(),
-                status: 'pending',
-                skills: ['Basic Care', 'Companionship'],
-                availability: 'Weekdays, flexible hours'
-            },
-            {
-                id: 'app-5',
-                jobId: 'j1',
-                jobTitle: 'Personal Care Support - Morning Shift',
-                workerId: 'w5',
-                workerName: 'Lisa Anderson',
-                workerEmail: 'lisa.a@email.com',
-                workerPhone: '0456 789 012',
-                workerExperience: '4 years',
-                coverLetter: 'My experience includes working with clients with various needs and I pride myself on my compassionate approach...',
-                appliedAt: new Date(2026, 0, 25).toISOString(),
-                status: 'rejected',
-                skills: ['Personal Care', 'Meal Preparation', 'Domestic Support'],
-                availability: 'Part-time, mornings preferred'
-            }
-        ];
-
-        console.log('API Call: GET /api/applications', { jobId });
-        return jobId ? mockApplications.filter(app => app.jobId === jobId) : mockApplications;
+    async (jobId?: string, { rejectWithValue }: any = {}) => {
+        try {
+            const url = jobId ? `application/job/${jobId}` : 'application';
+            const response = await api.get(url);
+            const d = response.data.data;
+            // API returns { applications: [...], pagination: { total, limit, ... } }
+            const items: Application[] = Array.isArray(d)
+                ? d
+                : (d?.applications ?? d ?? []);
+            const total: number = d?.pagination?.total ?? d?.total ?? 0;
+            const limit: number = d?.pagination?.limit ?? d?.limit ?? 0;
+            return { items, total, limit };
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to fetch applications');
+        }
     }
 );
 
 export const acceptApplication = createAsyncThunk(
     'applications/acceptApplication',
-    async (applicationId: string) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.patch(`/api/applications/${applicationId}/accept`);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('API Call: PATCH /api/applications/' + applicationId + '/accept');
-        return applicationId;
+    async (applicationId: string, { rejectWithValue }: any = {}) => {
+        try {
+            await api.patch(`application/${applicationId}/accept`, { status: 'accepted' });
+            return applicationId;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to accept application');
+        }
     }
 );
 
 export const rejectApplication = createAsyncThunk(
     'applications/rejectApplication',
-    async (applicationId: string) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.patch(`/api/applications/${applicationId}/reject`);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('API Call: PATCH /api/applications/' + applicationId + '/reject');
-        return applicationId;
+    async (applicationId: string, { rejectWithValue }: any = {}) => {
+        try {
+            await api.patch(`application/${applicationId}`, { status: 'rejected' });
+            return applicationId;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to reject application');
+        }
     }
 );
 
@@ -155,31 +136,43 @@ const applicationsSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // Fetch applications
             .addCase(fetchApplications.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
             .addCase(fetchApplications.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload;
+                state.items = action.payload.items;
+                state.total = action.payload.total;
+                state.limit = action.payload.limit;
             })
             .addCase(fetchApplications.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message || 'Failed to fetch applications';
+                state.error = (action.payload as string) || 'Failed to fetch applications';
             })
-            // Accept application
             .addCase(acceptApplication.fulfilled, (state, action) => {
-                const application = state.items.find(app => app.id === action.payload);
-                if (application) {
-                    application.status = 'accepted';
-                }
+                const app = state.items.find(a => a._id === action.payload);
+                if (app) app.status = 'accepted';
             })
-            // Reject application
+            .addCase(fetchMyApplications.pending, (state) => {
+                state.myLoading = true;
+            })
+            .addCase(fetchMyApplications.fulfilled, (state, action) => {
+                state.myLoading = false;
+                state.myItems = action.payload.items;
+                state.myTotal = action.payload.total;
+                state.myLimit = action.payload.limit;
+                state.myTotalPages = action.payload.totalPages;
+                state.myTotalPending = action.payload.totalPending;
+                state.myTotalAccepted = action.payload.totalAccepted;
+                state.myTotalRejected = action.payload.totalRejected;
+            })
+            .addCase(fetchMyApplications.rejected, (state) => {
+                state.myLoading = false;
+            })
             .addCase(rejectApplication.fulfilled, (state, action) => {
-                const application = state.items.find(app => app.id === action.payload);
-                if (application) {
-                    application.status = 'rejected';
-                }
+                const app = state.items.find(a => a._id === action.payload);
+                if (app) app.status = 'rejected';
             });
     },
 });

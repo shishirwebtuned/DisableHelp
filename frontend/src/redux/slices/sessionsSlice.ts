@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import api from "@/lib/axios"
 
 export interface Session {
     id: string;
@@ -101,8 +102,8 @@ export const createSession = createAsyncThunk(
     'sessions/createSession',
     async (sessionData: Omit<Session, 'id' | 'status'>) => {
         // TODO: Replace with actual API call
-        // const response = await axios.post('/api/sessions', sessionData);
-        // return response.data;
+        const response = await api.post('/api/sessions', sessionData);
+        return response.data;
 
         await new Promise(resolve => setTimeout(resolve, 500));
 

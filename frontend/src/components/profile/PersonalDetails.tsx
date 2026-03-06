@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DatePicker } from '@/components/ui/date-picker';
 import {
     Select,
     SelectContent,
@@ -15,18 +14,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface PersonalDetailsProps {
-    onSave: (data: PersonalDetailsData) => void;
+    onSave: (data: PersonalDetailsData, navigate?: boolean) => void;
     currentView?: string;
+    initialData?: PersonalDetailsData;
 }
 
 export interface PersonalDetailsData {
     personalInfo: {
         firstName: string;
         lastName: string;
-        dateOfBirth: string;
         gender: string;
+        dateOfBirth: string;
+        bio: string;
     };
     contactInfo: {
         email: string;
@@ -39,41 +41,95 @@ export interface PersonalDetailsData {
     bio: string;
 }
 
-export default function PersonalDetails({ onSave, currentView = 'personal-info' }: PersonalDetailsProps) {
+export default function PersonalDetails({ onSave, currentView = 'personal-info', initialData }: PersonalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
-    
+
     const [personalInfo, setPersonalInfo] = useState({
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        dateOfBirth: '1995-03-15',
-        gender: 'female',
+        firstName: initialData?.personalInfo?.firstName || '',
+        lastName: initialData?.personalInfo?.lastName || '',
+        gender: initialData?.personalInfo?.gender || '',
+        dateOfBirth: initialData?.personalInfo?.dateOfBirth || '',
+        bio: initialData?.personalInfo?.bio || ''
     });
 
     const [contactInfo, setContactInfo] = useState({
-        email: 'sarah.johnson@example.com',
-        phone: '+61 411 222 333',
-        street: '123 Main Street',
-        suburb: 'Sydney',
-        state: 'NSW',
-        postcode: '2000',
+        email: initialData?.contactInfo?.email || '',
+        phone: initialData?.contactInfo?.phone || '',
+        street: initialData?.contactInfo?.street || '',
+        suburb: initialData?.contactInfo?.suburb || '',
+        state: initialData?.contactInfo?.state || '',
+        postcode: initialData?.contactInfo?.postcode || '',
     });
 
-    const [bio, setBio] = useState('Experienced disability support worker with 8 years of experience. Passionate about helping people live their best lives with compassion and professionalism.');
+    const [bio, setBio] = useState(initialData?.bio || '');
+
+    const isInitialized = useRef(false);
+
+    // Update state when initialData provided
+    useEffect(() => {
+        if (initialData) {
+            setPersonalInfo(prev => {
+                const updated = {
+                    firstName: initialData.personalInfo?.firstName || '',
+                    lastName: initialData.personalInfo?.lastName || '',
+                    gender: initialData.personalInfo?.gender || '',
+                    dateOfBirth: initialData.personalInfo?.dateOfBirth || '',
+                    bio: initialData.personalInfo?.bio || ''
+                };
+                return JSON.stringify(updated) === JSON.stringify(prev) ? prev : updated;
+            });
+
+            setContactInfo(prev => {
+                const updated = {
+                    email: initialData.contactInfo?.email || '',
+                    phone: initialData.contactInfo?.phone || '',
+                    street: initialData.contactInfo?.street || '',
+                    suburb: initialData.contactInfo?.suburb || '',
+                    state: initialData.contactInfo?.state || '',
+                    postcode: initialData.contactInfo?.postcode || '',
+
+                };
+                return JSON.stringify(updated) === JSON.stringify(prev) ? prev : updated;
+            });
+
+            setBio(prev => {
+                const updated = initialData.bio || '';
+                return updated === prev ? prev : updated;
+            });
+
+            isInitialized.current = true;
+        }
+    }, [initialData]);
 
     useEffect(() => {
         setCurrentSection(currentView);
     }, [currentView]);
 
-    useEffect(() => {
-        const data = { personalInfo, contactInfo, bio };
-        console.log('PersonalDetails Data:', data);
-    }, [personalInfo, contactInfo, bio]);
+    const currentData = useMemo(() => ({
+        personalInfo,
+        contactInfo,
+        bio
+    }), [personalInfo, contactInfo, bio]);
 
-    const handleSave = () => {
-        const data = { personalInfo, contactInfo, bio };
-        console.log('Saving Personal Details:', data);
-        onSave(data);
-    };
+    // Auto-sync back to parent
+    useEffect(() => {
+        if (!initialData || !isInitialized.current) return;
+
+        const initialStr = JSON.stringify(initialData);
+        const currentStr = JSON.stringify(currentData);
+
+        // Only sync if there's a real difference
+        if (currentStr !== initialStr) {
+            const timeoutId = setTimeout(() => {
+                onSave(currentData, false);
+            }, 0);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [currentData, initialData, onSave]);
+
+    const handleSave = useCallback(() => {
+        onSave(currentData, true);
+    }, [currentData, onSave]);
 
     const renderPersonalInfo = () => (
         <div className="space-y-6">
@@ -81,40 +137,33 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                 <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
                 <p className="text-muted-foreground">Update your personal details</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' border-none p-0'>
+                <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label>First Name</Label>
-                            <Input 
-                                value={personalInfo.firstName} 
-                                onChange={(e) => setPersonalInfo({...personalInfo, firstName: e.target.value})}
-                                className="mt-2" 
+                            <Input
+                                value={personalInfo.firstName}
+                                disabled
+                                onChange={(e) => setPersonalInfo({ ...personalInfo, firstName: e.target.value })}
+                                className="mt-2 cursor-not-allowed"
                             />
                         </div>
                         <div>
                             <Label>Last Name</Label>
-                            <Input 
+                            <Input
                                 value={personalInfo.lastName}
-                                onChange={(e) => setPersonalInfo({...personalInfo, lastName: e.target.value})}
-                                className="mt-2" 
+                                disabled
+                                onChange={(e) => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
+                                className="mt-2 cursor-not-allowed"
                             />
                         </div>
                         <div>
-                            <Label>Date of Birth</Label>
-                            <div className="mt-2">
-                                <DatePicker
-                                    date={personalInfo.dateOfBirth ? new Date(personalInfo.dateOfBirth) : undefined}
-                                    setDate={(date) => setPersonalInfo({ ...personalInfo, dateOfBirth: date ? format(date, 'yyyy-MM-dd') : '' })}
-                                    placeholder="Select date of birth"
-                                />
-                            </div>
-                        </div>
-                        <div>
                             <Label>Gender</Label>
-                            <Select 
+                            <Select
                                 value={personalInfo.gender}
-                                onValueChange={(value) => setPersonalInfo({...personalInfo, gender: value})}
+                                disabled
+                                onValueChange={(value) => setPersonalInfo({ ...personalInfo, gender: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -127,15 +176,18 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div>
+                            <Label> Date Of Birth </Label >
+                            <DatePicker
+                                value={personalInfo.dateOfBirth}
+                                disabled
+                                className="mt-2 cursor-not-allowed"
+                                onChange={(value) => setPersonalInfo({ ...personalInfo, dateOfBirth: value ? value.toISOString() : '' })}
+                            />
+                        </div>
                     </div>
                 </CardContent>
             </Card>
-            <div className="flex justify-end gap-2">
-                <Button variant="outline">Cancel</Button>
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
-                    Save Changes
-                </Button>
-            </div>
         </div>
     );
 
@@ -145,8 +197,8 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                 <h2 className="text-2xl font-bold mb-2">Bio & About Me</h2>
                 <p className="text-muted-foreground">Tell clients about yourself and your approach to support work</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' border-none p-0'>
+                <CardContent className="pt-6 p-0 space-y-4">
                     <div>
                         <Label>Your Bio (500 words max)</Label>
                         <Textarea
@@ -156,12 +208,12 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
                         />
-                        <p className="text-sm text-muted-foreground mt-2">{bio.split(' ').length} / 500 words</p>
+                        <p className="text-sm text-muted-foreground mt-2">{bio.trim() ? bio.trim().split(/\s+/).length : 0} / 500 words</p>
                     </div>
                 </CardContent>
             </Card>
-            <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+            <div className=" disabled flex justify-end">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -174,48 +226,48 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                 <h2 className="text-2xl font-bold mb-2">Contact Details</h2>
                 <p className="text-muted-foreground">Your contact information</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' p-0 border-none'>
+                <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label>Email Address</Label>
-                            <Input 
-                                type="email" 
+                            <Input
+                                type="email"
                                 value={contactInfo.email}
-                                onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                         <div>
                             <Label>Phone Number</Label>
-                            <Input 
-                                type="tel" 
+                            <Input
+                                type="tel"
                                 value={contactInfo.phone}
-                                onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                         <div>
                             <Label>Street Address</Label>
-                            <Input 
+                            <Input
                                 value={contactInfo.street}
-                                onChange={(e) => setContactInfo({...contactInfo, street: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setContactInfo({ ...contactInfo, street: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                         <div>
                             <Label>Suburb</Label>
-                            <Input 
+                            <Input
                                 value={contactInfo.suburb}
-                                onChange={(e) => setContactInfo({...contactInfo, suburb: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setContactInfo({ ...contactInfo, suburb: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                         <div>
                             <Label>State</Label>
-                            <Select 
+                            <Select
                                 value={contactInfo.state}
-                                onValueChange={(value) => setContactInfo({...contactInfo, state: value})}
+                                onValueChange={(value) => setContactInfo({ ...contactInfo, state: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -234,17 +286,17 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info' 
                         </div>
                         <div>
                             <Label>Postcode</Label>
-                            <Input 
+                            <Input
                                 value={contactInfo.postcode}
-                                onChange={(e) => setContactInfo({...contactInfo, postcode: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setContactInfo({ ...contactInfo, postcode: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>

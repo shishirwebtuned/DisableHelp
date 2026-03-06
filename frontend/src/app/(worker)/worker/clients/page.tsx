@@ -23,14 +23,14 @@ export default function WorkerClientsPage() {
     ];
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-xl font-bold tracking-tight">My Clients</h1>
                 <p className="text-muted-foreground">Manage your client relationships</p>
             </div>
 
             <Tabs defaultValue="active" className="space-y-4">
-                <TabsList>
+                <TabsList className=' flex gap-5'>
                     <TabsTrigger value="active" className="flex items-center gap-2">
                         <UserCheck className="h-4 w-4" />
                         Active ({activeClients.length})
@@ -56,7 +56,7 @@ export default function WorkerClientsPage() {
                                             Client since {new Date(client.since).toLocaleDateString()}
                                         </CardDescription>
                                     </div>
-                                    <Badge variant="default">Active</Badge>
+                                    <Badge variant="success">Active</Badge>
                                 </div>
                             </CardHeader>
                             <CardContent>

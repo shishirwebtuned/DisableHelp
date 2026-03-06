@@ -1,4 +1,5 @@
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function AdminLayout({
     children,
@@ -6,8 +7,10 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     return (
-        <DashboardWrapper>
-            {children}
-        </DashboardWrapper>
+        <ProtectedRoute allowedRole="admin">
+            <DashboardWrapper>
+                {children}
+            </DashboardWrapper>
+        </ProtectedRoute>
     );
 }

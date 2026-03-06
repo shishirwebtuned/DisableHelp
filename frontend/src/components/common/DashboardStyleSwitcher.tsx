@@ -19,12 +19,6 @@ export default function DashboardStyleSwitcher() {
             icon: LayoutDashboard,
         },
         {
-            value: 'modern',
-            label: 'Modern Minimal',
-            description: 'Floating sidebar with glassmorphism effects',
-            icon: Sparkles,
-        },
-        {
             value: 'enterprise',
             label: 'Enterprise Admin',
             description: 'Persistent slim sidebar with sub-navigation',
@@ -47,8 +41,8 @@ export default function DashboardStyleSwitcher() {
                         <div
                             key={style.value}
                             className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${isActive
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-border hover:border-primary/50'
+                                    ? 'bg-primary/5'
+                                    : ''
                                 }`}
                             onClick={() => dispatch(setDashboardVariant(style.value))}
                         >

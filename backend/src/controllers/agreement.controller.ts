@@ -1,9 +1,10 @@
-import { get } from "node:http";
 import { Agreement } from "../models/agreement.model.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import { buildFilter, getPagination } from "../utils/queryHelper.js";
+import { Session } from "../models/session.model.js";
+import { generateSessionsFromSchedule } from "../utils/sessionGenerator.js";
 
 export const acceptAgreementByWorker = catchAsync(async (req, res) => {
   const { agreementId } = req.params;
@@ -29,10 +30,12 @@ export const acceptAgreementByWorker = catchAsync(async (req, res) => {
 
   await agreement.save();
 
+  await generateSessionsFromSchedule(agreement);
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "Agreement accepted successfully",
+    message: "Agreement accepted and sessions generated successfully",
     data: agreement,
   });
 });
@@ -80,10 +83,26 @@ export const terminateAgreement = catchAsync(async (req, res) => {
 
   await agreement.save();
 
+  await Session.updateMany(
+    {
+      agreement: agreement._id,
+      startTime: { $gte: new Date() },
+      status: { $in: ["scheduled", "in-progress"] },
+    },
+    {
+      $set: {
+        status: "cancelled",
+        cancelledBy: userId,
+        cancelledAt: new Date(),
+        notes: `Session cancelled due to agreement termination: ${terminationReason}`,
+      },
+    },
+  );
+
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "Agreement terminated successfully",
+    message: "Agreement terminated and future sessions cancelled successfully",
     data: agreement,
   });
 });

@@ -19,10 +19,10 @@ export default function WorkerOverview() {
     ];
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold tracking-tight">Welcome back, {user?.name?.split(' ')[0] || 'Worker'}!</h1>
+                    <h1 className="text-xl font-bold tracking-tight">Welcome back, {user?.firstName?.split(' ')[0] || 'Worker'}!</h1>
                     <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your account today.</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -32,30 +32,16 @@ export default function WorkerOverview() {
             </div>
 
             {/* Profile Completion Card */}
-            <Card className="border-l-4 border-l-blue-600">
-                <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold">Profile Completeness</CardTitle>
-                        <Badge variant={completion === 100 ? "default" : "secondary"}>{completion}% Complete</Badge>
-                    </div>
-                    <CardDescription>Complete your profile to unlock job applications and invoicing.</CardDescription>
+            {/* <Card>
+                <CardHeader>
+                    <CardTitle>Profile Completion</CardTitle>
+                    <CardDescription>Your profile is {completion}% complete</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Progress value={completion} className="h-2 mb-4" />
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-green-600"><CheckCircle2 className="h-4 w-4" /> Personal Info</div>
-                        <div className="flex items-center gap-2 text-green-600"><CheckCircle2 className="h-4 w-4" /> Availability</div>
-                        <div className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="h-4 w-4" /> Bank Details</div>
-                        <div className="flex items-center gap-2 text-muted-foreground"><AlertCircle className="h-4 w-4" /> Credentials</div>
-                    </div>
-                    <div className="mt-4">
-                        <Link href="/worker/profile">
-                            <Button variant="outline" size="sm">Continue Setup</Button>
-                        </Link>
-                    </div>
+                    <Progress value={completion} className="w-full" />
                 </CardContent>
-            </Card>
-
+            </Card> */}
+        
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>

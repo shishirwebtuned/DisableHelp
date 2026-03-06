@@ -1,20 +1,4 @@
-import mongoose, { Schema } from "mongoose";
-
-const timeSlotSchema = new Schema(
-  {
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
-  },
-  { _id: false },
-);
-
-const workSchema = new Schema({
-  day: {
-    type: String,
-    required: true,
-  },
-  period: [timeSlotSchema],
-});
+import mongoose from "mongoose";
 
 const sessionSchema = new mongoose.Schema(
   {
@@ -38,23 +22,57 @@ const sessionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    date: { type: Date, required: true, index: true },
 
-    startDate: {
+    startTime: {
       type: Date,
       required: true,
     },
-    endDate: {
+
+    endTime: {
       type: Date,
       required: true,
     },
+
+    durationMinutes: {
+      type: Number,
+      required: true,
+    },
+
+    hourlyRate: {
+      type: Number,
+      required: true,
+    },
+    totalAmount: { type: Number, required: true },
+
     status: {
       type: String,
-      enum: ["scheduled", "completed", "cancelled"],
+      enum: ["scheduled", "in-progress", "completed", "cancelled"],
       default: "scheduled",
+    },
+
+    notes: {
+      type: String,
+    },
+
+    completedAt: Date,
+
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    cancelledAt: {
+      type: Date,
     },
   },
   { timestamps: true },
 );
+
+sessionSchema.index({ worker: 1, date: 1 });
+sessionSchema.index({ client: 1, date: 1 });
+sessionSchema.index({ agreement: 1 });
+sessionSchema.index({ worker: 1, startTime: 1 });
 
 export const Session = mongoose.model("Session", sessionSchema);
 export type SessionDocument = mongoose.InferSchemaType<typeof sessionSchema>;

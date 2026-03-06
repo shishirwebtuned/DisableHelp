@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,6 +45,10 @@
 }
 
 :root {
+  /* Font variables (provides fallbacks if local/next/font not used) */
+  --font-geist-sans: 'Geist', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-geist-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  --font-plus-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.13 0.028 261.692);
@@ -54,8 +56,8 @@
   --card-foreground: oklch(0.13 0.028 261.692);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.13 0.028 261.692);
-  --primary: oklch(0.21 0.034 264.665);
-  --primary-foreground: oklch(0.985 0.002 247.839);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0.13 0.028 261.692);
   --secondary: oklch(0.967 0.003 264.542);
   --secondary-foreground: oklch(0.21 0.034 264.665);
   --muted: oklch(0.967 0.003 264.542);
@@ -63,8 +65,8 @@
   --accent: oklch(0.967 0.003 264.542);
   --accent-foreground: oklch(0.21 0.034 264.665);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.928 0.006 264.531);
-  --input: oklch(0.928 0.006 264.531);
+  --border: oklch(0.88 0.006 264.531);
+  --input: oklch(0.88 0.006 264.531);
   --ring: oklch(0.707 0.022 261.325);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -81,338 +83,94 @@
   --sidebar-ring: oklch(0.707 0.022 261.325);
 }
 
-.dark {
-  --background: oklch(0.13 0.028 261.692);
-  --foreground: oklch(0.985 0.002 247.839);
-  --card: oklch(0.21 0.034 264.665);
-  --card-foreground: oklch(0.985 0.002 247.839);
-  --popover: oklch(0.21 0.034 264.665);
-  --popover-foreground: oklch(0.985 0.002 247.839);
-  --primary: oklch(0.928 0.006 264.531);
-  --primary-foreground: oklch(0.21 0.034 264.665);
-  --secondary: oklch(0.278 0.033 256.848);
-  --secondary-foreground: oklch(0.985 0.002 247.839);
-  --muted: oklch(0.278 0.033 256.848);
-  --muted-foreground: oklch(0.707 0.022 261.325);
-  --accent: oklch(0.278 0.033 256.848);
-  --accent-foreground: oklch(0.985 0.002 247.839);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.034 264.665);
-  --sidebar-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-accent: oklch(0.278 0.033 256.848);
-  --sidebar-accent-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
+
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-}
 
-/* Custom Scrollbar Styles */
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
+  /* Global Modern Scrollbar */
+  *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+  *::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0;
+    /* slate-200 */
+    border-radius: 20px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500 dark:bg-gray-500;
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #cbd5e1;
+    /* slate-300 */
   }
 
-  /* For Firefox */
-  .scrollbar-thin {
+  /* Firefox */
+  * {
     scrollbar-width: thin;
-    scrollbar-color: rgb(156 163 175) rgb(243 244 246);
+    scrollbar-color: #e2e8f0 transparent;
   }
 
-  .dark .scrollbar-thin {
-    scrollbar-color: rgb(75 85 99) rgb(31 41 55);
+}
+
+/* Custom Scrollbar Utility */
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-300;
   }
 }
 
 /* Quill editor theme adjustments for light/dark modes */
-.ql-container.ql-snow {
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--card-foreground);
+.theme {
+  @apply bg-[#8ac6dd] hover:bg-[#61c0e8] cursor-pointer;
 }
 
-.ql-snow .ql-toolbar {
-  background: transparent;
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.75rem;
-  border-top-left-radius: calc(var(--radius) - 6px);
-  border-top-right-radius: calc(var(--radius) - 6px);
+.theme:hover {
+  @apply bg-[#61c0e8] cursor-pointer;
 }
 
-.ql-snow .ql-editor {
-  min-height: 160px;
-  padding: 0.75rem;
-  background: transparent;
-  color: inherit;
-  caret-color: var(--primary);
+.theme:active {
+  @apply bg-[#61c0e8] cursor-pointer;
 }
 
-.ql-snow .ql-editor.ql-blank::before {
-  color: var(--muted-foreground);
+
+/* Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.dark .ql-container.ql-snow {
-  background: var(--card);
-  color: var(--card-foreground);
-  border-color: var(--border);
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
 
-/* Make toolbar icons more legible in dark */
-.ql-snow .ql-stroke, .ql-snow .ql-fill {
-  stroke: currentColor;
-  fill: currentColor;
-}
-
-/* Ensure images and embeds fit nicely */
-.ql-editor img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Improved toolbar and editor visuals */
-.ql-snow .ql-toolbar {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.ql-snow .ql-toolbar .ql-formats {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  padding: 4px 6px;
-  border-radius: 6px;
-}
-
-.ql-snow .ql-toolbar button,
-.ql-snow .ql-toolbar .ql-picker-label {
-  background: transparent;
-  border: none;
-  color: var(--card-foreground);
-  padding: 6px;
-  border-radius: 6px;
-}
-
-.ql-snow .ql-toolbar button:hover,
-.ql-snow .ql-toolbar .ql-picker-label:hover {
-  background: rgba(0,0,0,0.04);
-}
-
-.dark .ql-snow .ql-toolbar button:hover,
-.dark .ql-snow .ql-toolbar .ql-picker-label:hover {
-  background: rgba(255,255,255,0.04);
-}
-
-.ql-container.ql-snow:focus-within {
-  box-shadow: 0 0 0 4px rgba(0,0,0,0.04);
-  border-color: var(--primary);
-}
-
-/* Editor content improvements */
-.ql-editor p {
-  margin: 0 0 0.75rem 0;
-}
-
-.ql-editor blockquote {
-  border-left: 3px solid var(--border);
-  padding-left: 12px;
-  color: var(--muted-foreground);
-  background: rgba(0,0,0,0.02);
-  border-radius: 4px;
-}
-
-.dark .ql-editor blockquote {
-  background: rgba(255,255,255,0.02);
-}
-
-.ql-editor pre.ql-syntax {
-  background: rgba(0,0,0,0.04);
-  padding: 12px;
-  border-radius: 6px;
-  overflow: auto;
-}
-
-.dark .ql-editor pre.ql-syntax {
-  background: rgba(255,255,255,0.03);
-}
-
-/* Placeholder visibility */
-.ql-editor.ql-blank::before {
-  font-style: italic;
-  opacity: 0.7;
-}
-
-/* Sonner Toast Custom Styles */
-@layer components {
-  [data-sonner-toaster] {
-    font-family: var(--font-sans);
-  }
-
-  [data-sonner-toast] {
-    backdrop-filter: blur(12px);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 
-                0 4px 12px rgba(0, 0, 0, 0.06),
-                0 0 0 1px rgba(0, 0, 0, 0.04);
-    border-radius: var(--radius-lg);
-    padding: 16px;
-    gap: 12px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  [data-sonner-toast]:hover {
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12), 
-                0 6px 16px rgba(0, 0, 0, 0.08),
-                0 0 0 1px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  [data-sonner-toast][data-type="success"] {
-    background: linear-gradient(135deg, 
-      rgba(16, 185, 129, 0.1) 0%, 
-      rgba(5, 150, 105, 0.05) 100%);
-  }
-
-  [data-sonner-toast][data-type="error"] {
-    background: linear-gradient(135deg, 
-      rgba(239, 68, 68, 0.1) 0%, 
-      rgba(220, 38, 38, 0.05) 100%);
-  }
-
-  [data-sonner-toast][data-type="warning"] {
-    background: linear-gradient(135deg, 
-      rgba(245, 158, 11, 0.1) 0%, 
-      rgba(217, 119, 6, 0.05) 100%);
-  }
-
-  [data-sonner-toast][data-type="info"] {
-    background: linear-gradient(135deg, 
-      rgba(59, 130, 246, 0.1) 0%, 
-      rgba(37, 99, 235, 0.05) 100%);
-  }
-
-  .dark [data-sonner-toast] {
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 
-                0 4px 12px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(255, 255, 255, 0.05);
-  }
-
-  .dark [data-sonner-toast]:hover {
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4), 
-                0 6px 16px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.08);
-  }
-
-  [data-sonner-toast] [data-title] {
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 1.4;
-    letter-spacing: -0.01em;
-  }
-
-  [data-sonner-toast] [data-description] {
-    font-size: 13px;
-    line-height: 1.5;
-    opacity: 0.9;
-  }
-
-  [data-sonner-toast] [data-button] {
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    font-size: 13px;
-    padding: 8px 12px;
-    transition: all 0.15s ease;
-  }
-
-  [data-sonner-toast] [data-button]:hover {
-    transform: scale(1.05);
-  }
-
-  [data-sonner-toast] [data-close-button] {
-    border-radius: var(--radius-md);
-    transition: all 0.15s ease;
-  }
-
-  [data-sonner-toast] [data-close-button]:hover {
-    transform: scale(1.1);
-    background-color: rgba(0, 0, 0, 0.1);
-  }
-
-  .dark [data-sonner-toast] [data-close-button]:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  /* Toast icon styling */
-  [data-sonner-toast] svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  /* Loading spinner animation */
-  [data-sonner-toast][data-type="loading"] {
-    background: linear-gradient(135deg, 
-      rgba(100, 116, 139, 0.1) 0%, 
-      rgba(71, 85, 105, 0.05) 100%);
-  }
-
-  @keyframes sonner-slide-in {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes sonner-slide-out {
-    from {
-      transform: translateX(0) scale(1);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%) scale(0.95);
-      opacity: 0;
-    }
-  }
-
-  [data-sonner-toast][data-mounted="true"] {
-    animation: sonner-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  [data-sonner-toast][data-removed="true"] {
-    animation: sonner-slide-out 0.2s cubic-bezier(0.4, 0, 1, 1);
+/* Ensure "text-primary" is readable when --primary is used as a light background */
+@layer utilities {
+  .text-primary {
+    color: var(--primary-foreground) !important;
   }
 }

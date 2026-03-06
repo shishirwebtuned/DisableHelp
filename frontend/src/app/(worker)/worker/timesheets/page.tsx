@@ -135,11 +135,11 @@ export default function TimesheetsPage() {
             approved: 'outline',
             rejected: 'destructive',
         };
-        return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
+        return <Badge variant={variants[status] || 'success'}>{status}</Badge>;
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">Timesheets</h1>
@@ -159,7 +159,7 @@ export default function TimesheetsPage() {
                         </DrawerHeader>
                         <div className="p-4 grid gap-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="client">Client</Label>
                                     <Select value={formState.client} onValueChange={(v) => setFormState({...formState, client: v})}>
                                         <SelectTrigger className=' w-full'>
@@ -172,7 +172,7 @@ export default function TimesheetsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="date">Date</Label>
                                     <DatePicker
                                         date={formState.date ? new Date(formState.date) : undefined}
@@ -182,11 +182,11 @@ export default function TimesheetsPage() {
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="start">Start Time</Label>
                                     <Input type="time" id="start" value={formState.startTime} onChange={(e) => setFormState({...formState, startTime: e.target.value})} />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="end">End Time</Label>
                                     <Input type="time" id="end" value={formState.endTime} onChange={(e) => setFormState({...formState, endTime: e.target.value})} />
                                 </div>
@@ -194,14 +194,14 @@ export default function TimesheetsPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
 
-                                   <div className="space-y-2">
+                                   <div className="space-y-6">
                                     <Label htmlFor="break">Break (mins)</Label>
                                     <Input type="number" id="break" placeholder="0" value={String(formState.breakMinutes)} onChange={(e) => setFormState({...formState, breakMinutes: Number(e.target.value)})} />
                                 </div>
 
 
 
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="service">Service Type</Label>
                                 <Select value={formState.serviceType} onValueChange={(v) => setFormState({...formState, serviceType: v})}>
                                     <SelectTrigger className="w-full">
@@ -216,7 +216,7 @@ export default function TimesheetsPage() {
                                 </Select>
                             </div>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="notes">Notes</Label>
                                 <Textarea
                                     id="notes"
@@ -308,8 +308,8 @@ export default function TimesheetsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="all">
-                        <TabsList>
+                    <Tabs defaultValue="all" >
+                        <TabsList className="flex gap-4">
                             <TabsTrigger value="all">All</TabsTrigger>
                             <TabsTrigger value="draft">Draft</TabsTrigger>
                             <TabsTrigger value="submitted">Submitted</TabsTrigger>

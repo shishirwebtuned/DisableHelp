@@ -5,7 +5,6 @@ import { Upload, X, Eye, Download, Trash2, FileText, Image as ImageIcon, CheckCi
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -169,24 +168,20 @@ export default function ClientDocumentsPage() {
     };
 
     return (
-        <div className="space-y-2">
-            <div>
-                <h1 className="text-xl font-bold tracking-tight">My Documents</h1>
-                <p className="text-muted-foreground">Upload and manage your NDIS and support documents</p>
-            </div>
-
-            {/* Upload Section */}
-            <Card>
-                <CardHeader>
+        <div className="space-y-6">
+<CardHeader>
                     <CardTitle>Upload New Documents</CardTitle>
                     <CardDescription>Upload NDIS plans, medical reports, and other important documents</CardDescription>
                 </CardHeader>
+            {/* Upload Section */}
+            <Card>
+                
                 <CardContent className="space-y-6">
                     {/* Category Selection */}
-                    <div className="space-y-2">
+                    <div className="space-y-6">
                         <Label htmlFor="category">Document Category *</Label>
                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                            <SelectTrigger>
+                            <SelectTrigger className='w-full'>
                                 <SelectValue placeholder="Select document category" />
                             </SelectTrigger>
                             <SelectContent>
@@ -318,7 +313,7 @@ export default function ClientDocumentsPage() {
                     </div>
 
                     {isUploading && (
-                        <div className="space-y-2">
+                        <div className="space-y-6">
                             <Progress value={66} />
                             <p className="text-sm text-muted-foreground text-center">Uploading documents...</p>
                         </div>

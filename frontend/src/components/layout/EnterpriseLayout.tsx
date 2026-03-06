@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Menu, ChevronLeft } from 'lucide-react';
+import Image from 'next/image';
 import NotificationsCenter from '@/components/common/NotificationsCenter';
 
 export default function EnterpriseLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,18 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                 isOpen ? 'justify-between items-center' : 'justify-center'
             }`}>
                 {isOpen && (
-                    <h2 className="font-bold text-lg text-slate-900 dark:text-slate-100">Enterprise Admin</h2>
+                    <div className="flex items-center gap-2">
+                       <div className="flex  items-center justify-center  rounded  shrink-0">
+<Image
+  src="/Logo.png"
+  alt="Logo"
+  width={200}
+  height={200}
+  className="object-contain"
+/>
+                       </div>
+                        
+                    </div>
                 )}
                 <Button
                     variant="ghost"
@@ -37,9 +49,9 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                     className="h-8 w-8"
                 >
                     {isOpen ? (
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4 text" />
                     ) : (
-                        <Menu className="h-4 w-4" />
+                        <Menu className="h-4 w-4 text" />
                     )}
                 </Button>
             </div>
@@ -63,19 +75,19 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
     );
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+        <div className="flex h-screen overflow-hidden bg-slate-50">
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar - Desktop only, Expandable */}
-                <aside className={`hidden md:flex flex-col py-3 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-inner z-40 transition-all duration-300 ease-in-out ${
+                <aside className={`hidden md:flex flex-col py-3 bg-white border-r border-slate-300 shadow-inner z-40 transition-all duration-300 ease-in-out ${
                     sidebarOpen ? 'w-64' : 'w-16'
                 }`}>
                     <SidebarContent isOpen={sidebarOpen} />
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+                <main className="flex-1 flex flex-col overflow-hidden bg-slate-50">
                     {/* Top Bar */}
-                    <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-4 sm:px-6 gap-2">
+                    <div className="h-14 border-b border-slate-300 bg-white flex items-center justify-between px-4 sm:px-6 gap-2">
                         <div className="flex items-center gap-2">
                             {/* Mobile Menu */}
                             <Sheet>
@@ -92,7 +104,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                                     </ScrollArea>
                                 </SheetContent>
                             </Sheet>
-                            <span className="md:hidden font-bold text-sm">Enterprise Admin</span>
+                            <span className="md:hidden font-bold text-sm"> Disable Help</span>
                         </div>
                         <div className="flex items-center space-x-2">
                             <NotificationsCenter />
@@ -100,7 +112,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                         </div>
                     </div>
                     {/* Content Workspace */}
-                    <div className="flex-1 overflow-auto p-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                    <div className="flex-1 overflow-auto p-2 md:p-6 scrollbar-thin scrollbar-thumb-slate-300">
                         {children}
                     </div>
                 </main>
@@ -113,8 +125,8 @@ function SidebarIcon({ icon: Icon, label, active, isOpen }: { icon: any, label?:
     return (
         <div className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all w-full ${
             active 
-                ? 'bg-blue-600 text-white font-medium shadow-sm' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#8ac6dd] text-[#042a2d] font-medium hover:bg-[#8ac6dd] hover:text-[#042a2d]' 
+                : 'text-slate-600 hover:bg-transparent'
         } ${
             isOpen ? 'justify-start' : 'justify-center'
         }`}>

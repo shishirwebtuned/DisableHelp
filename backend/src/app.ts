@@ -4,13 +4,14 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import userRoutes from "./routes/user.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
-import serviceRoutes from "./routes/service.routes.js";
+// import serviceRoutes from "./routes/service.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 
 import { errorHandler } from "./middleware/error.middleware.js";
 import applicationRoutes from "./routes/application.routes.js";
 import agreementRoutes from "./routes/agreement.routes.js";
+import sessionRoutes from "./routes/session.routes.js";
 
 dotenv.config();
 
@@ -25,11 +26,12 @@ const baseApi = "/api/v1/en";
 
 app.use(`${baseApi}/users`, userRoutes);
 app.use(`${baseApi}/profile`, profileRoutes);
-app.use(`${baseApi}/service`, serviceRoutes);
+// app.use(`${baseApi}/service`, serviceRoutes);
 app.use(`${baseApi}/admin`, adminRoutes);
 app.use(`${baseApi}/job`, jobRoutes);
 app.use(`${baseApi}/application`, applicationRoutes);
 app.use(`${baseApi}/agreement`, agreementRoutes);
+app.use(`${baseApi}/session`, sessionRoutes);
 
 // Error handler
 app.use(errorHandler);

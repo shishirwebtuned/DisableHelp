@@ -140,277 +140,205 @@ export default function ClientProfilePage() {
     ];
 
     return (
-        <div className="space-y-2">
-            {/* Profile View/Edit Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="flex items-center justify-between mb-2">
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight">My Profile</h1>
-                        <p className="text-muted-foreground">View and manage your personal information</p>
+        <div className="space-y-6">
+            {/* Modern header */}
+            <div className="rounded-lg overflow-hidden shadow p-6">
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-end gap-6">
+                    <div className="relative">
+                        <div className="bg-white rounded-full p-1 shadow-lg -translate-y-6 md:-translate-y-10">
+                            <Avatar className="h-32 w-32">
+                                <AvatarImage src={profileImage} />
+                                <AvatarFallback className="text-2xl">
+                                    {profileData.firstName[0]}{profileData.lastName[0]}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     </div>
-                    <TabsList>
+
+                    <div className="flex-1 text-center md:text-left -mt-4 md:mt-0">
+                        <h1 className="text-3xl font-extrabold">{profileData.firstName} {profileData.lastName}</h1>
+                        <p className="text-sm text-muted-foreground mt-1">NDIS Participant • {profileData.suburb}, {profileData.state}</p>
+                        <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
+                            <Button variant="ghost" onClick={() => setActiveTab('edit')}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Profile
+                            </Button>
+                            <Button variant="outline">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Message
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="hidden md:flex md:items-center md:gap-4">
+                        <div className="text-center">
+                            <div className="text-2xl font-semibold">{profileStats[0].value}</div>
+                            <div className="text-xs text-muted-foreground">Workers</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-semibold">{profileStats[1].value}</div>
+                            <div className="text-xs text-muted-foreground">Sessions</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-semibold">{profileStats[2].value}</div>
+                            <div className="text-xs text-muted-foreground">Complete</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tabs and content */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                    <div></div>
+                    <TabsList className=' flex  gap-8'>
                         <TabsTrigger value="view">
                             <User className="h-4 w-4 mr-2" />
-                            View Profile
+                            Overview
                         </TabsTrigger>
                         <TabsTrigger value="edit">
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit Profile
+                            Edit
                         </TabsTrigger>
                     </TabsList>
                 </div>
 
-                {/* VIEW PROFILE TAB */}
-                <TabsContent value="view" className="space-y-6">
-                    {/* Profile Header Card */}
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col md:flex-row gap-6">
-                                <div className="flex flex-col items-center md:items-start gap-4">
-                                    <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
-                                        <AvatarImage src={profileImage} />
-                                        <AvatarFallback className="text-2xl">
-                                            {profileData.firstName[0]}{profileData.lastName[0]}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="text-center md:text-left">
-                                        <h2 className="text-2xl font-bold">
-                                            {profileData.firstName} {profileData.lastName}
-                                        </h2>
-                                        <p className="text-muted-foreground">NDIS Participant</p>
-                                        <Badge className="mt-2" variant="outline">
-                                            <Shield className="h-3 w-3 mr-1" />
-                                            ID Verified
-                                        </Badge>
+                <TabsContent value="view" className="space-y-6 max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-1 space-y-6">
+                            <Card className="sticky top-20">
+                                <CardContent className="text-center">
+                                    <h3 className="text-lg font-bold">Quick Details</h3>
+                                    <p className="text-sm text-muted-foreground mt-2">{profileData.bio}</p>
+                                    <Separator className="my-4" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="text-left">
+                                            <Label className="text-muted-foreground">Email</Label>
+                                            <p className="font-medium">{profileData.email}</p>
+                                        </div>
+                                        <div className="text-left">
+                                            <Label className="text-muted-foreground">Phone</Label>
+                                            <p className="font-medium">{profileData.phone}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div className="flex-1">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {profileStats.map((stat) => (
-                                            <div key={stat.label} className="text-center p-3 rounded-lg bg-muted/50">
-                                                <stat.icon className={`h-5 w-5 mx-auto mb-2 ${stat.color}`} />
-                                                <div className="text-2xl font-bold">{stat.value}</div>
-                                                <div className="text-xs text-muted-foreground">{stat.label}</div>
-                                            </div>
-                                        ))}
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>NDIS</CardTitle>
+                                    <CardDescription>{profileData.planType} • {profileData.planBudget}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-6">
+                                        <p className="font-mono font-medium">{profileData.ndisNumber}</p>
+                                        <p className="text-sm text-muted-foreground">Plan expires: {new Date(profileData.ndisExpiry).toLocaleDateString()}</p>
                                     </div>
-                                    <p className="mt-4 text-sm">{profileData.bio}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    {/* Personal Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <User className="h-5 w-5" />
-                                Personal Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <Label className="text-muted-foreground">Full Name</Label>
-                                <p className="font-medium">{profileData.firstName} {profileData.lastName}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Date of Birth</Label>
-                                <p className="font-medium">{new Date(profileData.dateOfBirth).toLocaleDateString()}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Gender</Label>
-                                <p className="font-medium">{profileData.gender}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Email</Label>
-                                <p className="font-medium flex items-center gap-2">
-                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                    {profileData.email}
-                                </p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Phone</Label>
-                                <p className="font-medium flex items-center gap-2">
-                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                    {profileData.phone}
-                                </p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Preferred Language</Label>
-                                <p className="font-medium flex items-center gap-2">
-                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                    {profileData.preferredLanguage}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        <div className="lg:col-span-2 space-y-6">
+                            {/* Personal Info Card */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Personal Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid gap-6 md:grid-cols-2">
+                                    <div>
+                                        <Label className="text-muted-foreground">Full Name</Label>
+                                        <p className="font-medium">{profileData.firstName} {profileData.lastName}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Date of Birth</Label>
+                                        <p className="font-medium">{new Date(profileData.dateOfBirth).toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Gender</Label>
+                                        <p className="font-medium">{profileData.gender}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Preferred Language</Label>
+                                        <p className="font-medium">{profileData.preferredLanguage}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                    {/* Address Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <MapPin className="h-5 w-5" />
-                                Address & Location
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label className="text-muted-foreground">Full Address</Label>
-                                <p className="font-medium">{profileData.address}</p>
-                            </div>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div>
-                                    <Label className="text-muted-foreground">Suburb</Label>
-                                    <p className="font-medium">{profileData.suburb}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">State</Label>
-                                    <p className="font-medium">{profileData.state}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Postcode</Label>
-                                    <p className="font-medium">{profileData.postcode}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            {/* Address, Health, Emergency and Bank (collapsed into cards) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Address</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="font-medium">{profileData.address}</p>
+                                        <p className="text-sm text-muted-foreground mt-2">{profileData.suburb}, {profileData.state} {profileData.postcode}</p>
+                                    </CardContent>
+                                </Card>
 
-                    {/* NDIS Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Shield className="h-5 w-5" />
-                                NDIS Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <Label className="text-muted-foreground">NDIS Number</Label>
-                                <p className="font-medium font-mono">{profileData.ndisNumber}</p>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Health & Support</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="font-medium">{profileData.diagnosis}</p>
+                                        <p className="text-sm text-muted-foreground mt-2">{profileData.supportNeeds}</p>
+                                    </CardContent>
+                                </Card>
                             </div>
-                            <div>
-                                <Label className="text-muted-foreground">Plan Type</Label>
-                                <Badge variant="outline">{profileData.planType}</Badge>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Plan Budget</Label>
-                                <p className="font-medium">{profileData.planBudget}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Plan Expiry</Label>
-                                <p className="font-medium flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    {new Date(profileData.ndisExpiry).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Health & Support Needs */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Heart className="h-5 w-5" />
-                                Health & Support Needs
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label className="text-muted-foreground">Diagnosis/Condition</Label>
-                                <p className="font-medium">{profileData.diagnosis}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Support Needs</Label>
-                                <p className="font-medium">{profileData.supportNeeds}</p>
-                            </div>
-                            <Separator />
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label className="text-muted-foreground">Medications</Label>
-                                    <p className="text-sm">{profileData.medications}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Allergies</Label>
-                                    <p className="text-sm">{profileData.allergies}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Emergency Contact</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="font-medium">{profileData.emergencyContact}</p>
+                                        <p className="text-sm text-muted-foreground">{profileData.emergencyPhone} • {profileData.emergencyRelation}</p>
+                                    </CardContent>
+                                </Card>
 
-                    {/* Emergency Contact */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <AlertCircle className="h-5 w-5" />
-                                Emergency Contact
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-3">
-                            <div>
-                                <Label className="text-muted-foreground">Name</Label>
-                                <p className="font-medium">{profileData.emergencyContact}</p>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Bank Details</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="font-medium">{bankData.accountName}</p>
+                                        <p className="text-sm text-muted-foreground">{bankData.bankName} • {bankData.bsb} • {bankData.accountNumber}</p>
+                                    </CardContent>
+                                </Card>
                             </div>
-                            <div>
-                                <Label className="text-muted-foreground">Phone</Label>
-                                <p className="font-medium">{profileData.emergencyPhone}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Relationship</Label>
-                                <p className="font-medium">{profileData.emergencyRelation}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Bank Details */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5" />
-                                Bank Details
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <Label className="text-muted-foreground">Account Name</Label>
-                                <p className="font-medium">{bankData.accountName}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Bank Name</Label>
-                                <p className="font-medium">{bankData.bankName}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">BSB</Label>
-                                <p className="font-medium font-mono">{bankData.bsb}</p>
-                            </div>
-                            <div>
-                                <Label className="text-muted-foreground">Account Number</Label>
-                                <p className="font-medium font-mono">{bankData.accountNumber}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </TabsContent>
 
-                {/* EDIT PROFILE TAB */}
-                <TabsContent value="edit" className="space-y-6">
+                <TabsContent value="edit" className="space-y-6 max-w-6xl mx-auto">
                     {/* Profile Photo Upload with Editor */}
-                    <ProfileImageEditor onSave={handleProfileImageSave} />
+                    <Card>
+                        <CardContent>
+                            <ProfileImageEditor onSave={handleProfileImageSave} />
+                            <div className="mt-4 text-right">
+                                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    {/* Personal Information */}
+                    {/* keep edit form cards as before (unchanged below) */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Personal Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>First Name *</Label>
                                     <Input
                                         value={profileData.firstName}
                                         onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Last Name *</Label>
                                     <Input
                                         value={profileData.lastName}
@@ -419,7 +347,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </div>
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Email *</Label>
                                     <Input
                                         type="email"
@@ -427,7 +355,7 @@ export default function ClientProfilePage() {
                                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Phone *</Label>
                                     <Input
                                         value={profileData.phone}
@@ -436,7 +364,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </div>
                             <div className="grid gap-4 md:grid-cols-3">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Date of Birth</Label>
                                     <DatePicker
                                         date={profileData.dateOfBirth ? new Date(profileData.dateOfBirth) : undefined}
@@ -444,14 +372,14 @@ export default function ClientProfilePage() {
                                         placeholder="Select date of birth"
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Gender</Label>
                                     <Input
                                         value={profileData.gender}
                                         onChange={(e) => setProfileData({ ...profileData, gender: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Language</Label>
                                     <Input
                                         value={profileData.preferredLanguage}
@@ -459,7 +387,7 @@ export default function ClientProfilePage() {
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Bio</Label>
                                 <Textarea
                                     value={profileData.bio}
@@ -476,7 +404,7 @@ export default function ClientProfilePage() {
                             <CardTitle>Address</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Full Address *</Label>
                                 <Input
                                     value={profileData.address}
@@ -484,21 +412,21 @@ export default function ClientProfilePage() {
                                 />
                             </div>
                             <div className="grid gap-4 md:grid-cols-3">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Suburb</Label>
                                     <Input
                                         value={profileData.suburb}
                                         onChange={(e) => setProfileData({ ...profileData, suburb: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>State</Label>
                                     <Input
                                         value={profileData.state}
                                         onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Postcode</Label>
                                     <Input
                                         value={profileData.postcode}
@@ -516,14 +444,14 @@ export default function ClientProfilePage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>NDIS Number *</Label>
                                     <Input
                                         value={profileData.ndisNumber}
                                         onChange={(e) => setProfileData({ ...profileData, ndisNumber: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Plan Type *</Label>
                                     <Input
                                         value={profileData.planType}
@@ -532,14 +460,14 @@ export default function ClientProfilePage() {
                                 </div>
                             </div>
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Plan Budget</Label>
                                     <Input
                                         value={profileData.planBudget}
                                         onChange={(e) => setProfileData({ ...profileData, planBudget: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Plan Expiry Date</Label>
                                     <DatePicker
                                         date={profileData.ndisExpiry ? new Date(profileData.ndisExpiry) : undefined}
@@ -557,14 +485,14 @@ export default function ClientProfilePage() {
                             <CardTitle>Health & Support Needs</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Diagnosis/Condition</Label>
                                 <Input
                                     value={profileData.diagnosis}
                                     onChange={(e) => setProfileData({ ...profileData, diagnosis: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Support Needs</Label>
                                 <Textarea
                                     value={profileData.supportNeeds}
@@ -573,7 +501,7 @@ export default function ClientProfilePage() {
                                 />
                             </div>
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Medications</Label>
                                     <Textarea
                                         value={profileData.medications}
@@ -581,7 +509,7 @@ export default function ClientProfilePage() {
                                         rows={2}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Allergies</Label>
                                     <Textarea
                                         value={profileData.allergies}
@@ -599,21 +527,21 @@ export default function ClientProfilePage() {
                             <CardTitle>Emergency Contact</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Contact Name *</Label>
                                 <Input
                                     value={profileData.emergencyContact}
                                     onChange={(e) => setProfileData({ ...profileData, emergencyContact: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Contact Phone *</Label>
                                 <Input
                                     value={profileData.emergencyPhone}
                                     onChange={(e) => setProfileData({ ...profileData, emergencyPhone: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Relationship</Label>
                                 <Input
                                     value={profileData.emergencyRelation}
@@ -630,14 +558,14 @@ export default function ClientProfilePage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Account Name</Label>
                                     <Input
                                         value={bankData.accountName}
                                         onChange={(e) => setBankData({ ...bankData, accountName: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Bank Name</Label>
                                     <Input
                                         value={bankData.bankName}
@@ -646,14 +574,14 @@ export default function ClientProfilePage() {
                                 </div>
                             </div>
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>BSB</Label>
                                     <Input
                                         value={bankData.bsb}
                                         onChange={(e) => setBankData({ ...bankData, bsb: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Account Number</Label>
                                     <Input
                                         value={bankData.accountNumber}

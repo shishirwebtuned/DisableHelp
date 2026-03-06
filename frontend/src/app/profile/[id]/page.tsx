@@ -1,473 +1,387 @@
 'use client';
-
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
-    Star,
-    MapPin,
     Clock,
-    Shield,
     CheckCircle,
-    Heart,
-    Briefcase,
-    Award,
-    Languages,
-    Globe,
-    Book,
-    Camera,
-    Music,
-    Utensils,
-    Film,
-    PawPrint,
-    Trophy,
-    Plane,
-    GraduationCap,
     ArrowLeft,
+    Car,
+    Users,
+    Check,
+    ShieldCheck,
+    Activity
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+import Link from 'next/link';
+import { getuserbyid, approveUser, fetchUsers } from '@/redux/slices/usersSlice';
+import { useAppDispatch } from '@/hooks/redux';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-// Public Profile View Page - Can be viewed by clients, admin, or public
+const getUserId = (user: any): string => user?.id || user?._id || '';
+
 export default function PublicProfilePage() {
     const params = useParams();
     const router = useRouter();
-    const userId = params.id;
+    const id = params?.id as string;
 
-    // Mock data - would come from API based on userId
-    const workerProfile = {
-        id: userId,
-        role: 'worker', // or 'client'
-        firstName: 'Sarah',
-        lastName: 'Worker',
-        profileImage: 'https://ui.shadcn.com/avatars/01.png',
-        rating: 4.9,
-        reviewsCount: 156,
-        verified: true,
-        bio: 'Experienced disability support worker with 8 years of experience. Passionate about helping people live their best lives with compassion and professionalism.',
-        location: 'Sydney, NSW 2000',
-        hourlyRate: 45,
-        responseTime: '2 hours',
-        availability: 'Weekdays & Weekends',
-        
-        // Contact (only shown to connected users)
-        phone: '+61 411 222 333',
-        email: 'sarah.worker@example.com',
-        
-        // Experience
-        experience: '8 years',
-        totalHours: 5200,
-        activeClients: 12,
-        
-        // Credentials
-        credentials: [
-            { name: 'NDIS Worker Screening', verified: true, expiry: '2027-06-15' },
-            { name: 'Working with Children Check', verified: true, expiry: '2029-03-20' },
-            { name: 'First Aid Certificate', verified: true, expiry: '2027-01-10' },
-            { name: 'CPR Certification', verified: true, expiry: '2026-12-15' },
-        ],
-        
-        // Education
-        education: [
-            { title: 'Certificate IV in Disability', institution: 'TAFE NSW', year: '2018' },
-            { title: 'Certificate III in Individual Support', institution: 'TAFE NSW', year: '2016' },
-        ],
-        
-        // Work History
-        workHistory: [
-            {
-                position: 'Support Worker',
-                organization: 'Independent Contractor',
-                duration: '2018 - Present',
-                description: 'Providing personalized support services to NDIS participants',
-            },
-            {
-                position: 'Care Assistant',
-                organization: 'Care Connect NSW',
-                duration: '2016 - 2018',
-                description: 'Assisted elderly and disabled clients with daily living activities',
-            },
-        ],
-        
-        // Languages
-        languages: ['English (Native)', 'Spanish (Conversational)', 'Auslan (Basic)'],
-        
-        // Interests & Hobbies
-        interests: [
-            { name: 'Cooking', icon: Utensils, selected: true },
-            { name: 'Movies', icon: Film, selected: true },
-            { name: 'Pets', icon: PawPrint, selected: true },
-            { name: 'Sports', icon: Trophy, selected: true },
-            { name: 'Gardening', icon: Heart, selected: true },
-            { name: 'Music', icon: Music, selected: true },
-            { name: 'Photography/Art', icon: Camera, selected: true },
-            { name: 'Travel', icon: Plane, selected: true },
-            { name: 'Reading', icon: Book, selected: true },
-        ],
-        
-        // Services Offered
-        services: [
-            'Personal Care',
-            'Community Access',
-            'Transport',
-            'Household Tasks',
-            'Social Support',
-            'Meal Preparation',
-        ],
-        
-        // Cultural Background
-        culturalBackground: 'Australian',
-        religion: 'No preference',
-        
-        // Preferences
-        preferences: {
-            preferredGender: 'No preference',
-            smokingPolicy: 'Non-smoker',
-            petFriendly: true,
-            mobilityAccess: true,
-        },
-        
-        // Reviews
-        recentReviews: [
-            {
-                id: 1,
-                clientName: 'John C.',
-                rating: 5,
-                date: '2026-01-20',
-                comment: 'Sarah is exceptional! Professional, caring, and always goes above and beyond.',
-            },
-            {
-                id: 2,
-                clientName: 'Emily A.',
-                rating: 5,
-                date: '2026-01-15',
-                comment: 'Highly recommend Sarah. Great communication and very reliable.',
-            },
-            {
-                id: 3,
-                clientName: 'Michael B.',
-                rating: 4,
-                date: '2026-01-10',
-                comment: 'Very good support worker. Always on time and helpful.',
-            },
-        ],
+    const { selectedUser, loading: isUserLoading, error, items: allUsers } = useSelector((state: RootState) => state.users);
+    const dispatch = useAppDispatch();
+    useEffect(() => {
+        if (id) {
+            dispatch(getuserbyid(id));
+        }
+    }, [dispatch, id]);
+
+    // Ensure users list is loaded for prev/next navigation
+    useEffect(() => {
+        if (allUsers.length === 0) {
+            dispatch(fetchUsers(undefined));
+        }
+    }, [dispatch, allUsers.length]);
+
+    // Find current user index and navigation (handle both id and _id from MongoDB)
+    const currentUserIndex = allUsers.findIndex(u => getUserId(u) === id);
+
+
+    if (isUserLoading) return (
+        <div className="p-8 text-center bg-background min-h-screen flex flex-col items-center justify-center">
+            <p className="text-muted-foreground mb-4">Loading profile...</p>
+        </div>
+    );
+
+    if (error) return (
+        <div className="p-8 text-center bg-background min-h-screen flex flex-col items-center justify-center">
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => router.back()}>Back </Button>
+        </div>
+    );
+
+    if (!selectedUser) return (
+        <div className="p-8 text-center bg-background min-h-screen flex flex-col items-center justify-center">
+            <p className="text-muted-foreground mb-4">Profile not found</p>
+            <Button onClick={() => router.push('/admin/users')}>Back to Users</Button>
+        </div>
+    );
+
+    const user = selectedUser.user || selectedUser;
+    const profile = (selectedUser as any).profile || null;
+
+    const formatTime = (time: string) => {
+        if (!time) return '';
+        const [h, m] = time.split(':').map(Number);
+        const ampm = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 || 12;
+        return `${h12}${ampm}`;
     };
 
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-            {/* Hero Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                <div className="container mx-auto px-6 md:px-8 lg:px-12 py-12">
-                    {/* Back Button */}
-                    <Button
-                        variant="ghost"
-                        className="text-white hover:bg-white/20 mb-6"
-                        onClick={() => router.back()}
-                    >
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back
-                    </Button>
-                    
-                    <div className="flex flex-col md:flex-row items-start gap-6">
-                        <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
-                            <AvatarImage src={workerProfile.profileImage} />
-                            <AvatarFallback className="text-3xl bg-white text-blue-600">
-                                {workerProfile.firstName[0]}{workerProfile.lastName[0]}
+        <div className="min-h-screen bg-background">
+            {/* Top Navigation Bar */}
+            <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+                <p onClick={() => router.back()} className="flex items-center text-sm font-medium text-foreground hover:text-muted-foreground transition-colors">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back 
+                </p>
+
+            </div>
+
+            {/* Clean Header */}
+            <div className="border-b border-border pt-8 pb-8 px-6 sm:px-12">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-8">
+                    <div className="relative">
+                        <Avatar className="h-32 w-32 border-2 border-border">
+                            <AvatarImage src={profile?.personalDetails?.avatar?.url || user?.avatar || ''} />
+                            <AvatarFallback className="text-3xl font-semibold bg-muted text-muted-foreground">
+                                {user?.firstName?.[0] || (user?.name?.[0] ?? '?')}{user?.lastName?.[0] ?? ''}
                             </AvatarFallback>
                         </Avatar>
-                        
-                        <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h1 className="text-4xl font-bold mb-2">
-                                        {workerProfile.firstName} {workerProfile.lastName}
-                                    </h1>
-                                    <p className="text-blue-100 mb-3">{workerProfile.bio}</p>
-                                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                                        <div className="flex items-center gap-1">
-                                            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                                            <span className="font-semibold">{workerProfile.rating}</span>
-                                            <span className="text-blue-100">({workerProfile.reviewsCount} reviews)</span>
-                                        </div>
-                                        {workerProfile.verified && (
-                                            <Badge className="bg-green-500 hover:bg-green-600">
-                                                <Shield className="h-3 w-3 mr-1" />
-                                                Verified
-                                            </Badge>
-                                        )}
-                                        <Badge variant="secondary" className="bg-white/20 hover:bg-white/30">
-                                            <Briefcase className="h-3 w-3 mr-1" />
-                                            {workerProfile.experience} Experience
-                                        </Badge>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-blue-100">
-                                        <span className="flex items-center gap-1">
-                                            <MapPin className="h-4 w-4" />
-                                            {workerProfile.location}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="h-4 w-4" />
-                                            Responds in {workerProfile.responseTime}
-                                        </span>
-                                    </div>
-                                </div>
+                    </div>
+
+                    <div className="flex-1 text-center md:text-left space-y-3">
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                            <h1 className="text-3xl font-bold text-foreground">{user?.firstName} {user?.lastName ?? ''}</h1>
+                            <div className="flex gap-2">
+                                {user?.approved && (
+                                    <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Verified
+                                    </Badge>
+                                )}
                             </div>
                         </div>
-                        
-                        {/* <div className="flex flex-col gap-2">
-                            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
-                                <MessageSquare className="h-5 w-5 mr-2" />
-                                Send Message
-                            </Button>
-                            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20">
-                                <Calendar className="h-5 w-5 mr-2" />
-                                Book Session
-                            </Button>
-                        </div> */}
+                        {profile?.experienceSummary?.disability?.description ? (
+                            <p className="text-lg text-muted-foreground">
+                                {profile.experienceSummary.disability.description}
+                            </p>
+                        ) : null}
                     </div>
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="container mx-auto px-6 md:px-8 lg:px-12 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Sidebar - Quick Info */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* Rate & Availability */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Rate & Availability</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Hourly Rate</span>
-                                    <span className="text-2xl font-bold text-green-600">
-                                        ${workerProfile.hourlyRate}
-                                    </span>
-                                </div>
-                                <Separator />
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Availability</span>
-                                    <Badge variant="outline">{workerProfile.availability}</Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
+            {/* Page Body */}
+            <div className="max-w-7xl mx-auto">
+                <div className="">
 
-                        {/* Stats */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Statistics</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Total Hours</span>
-                                    <span className="font-semibold">{workerProfile.totalHours.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Active Clients</span>
-                                    <span className="font-semibold">{workerProfile.activeClients}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Response Time</span>
-                                    <span className="font-semibold">{workerProfile.responseTime}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Credentials */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Award className="h-5 w-5" />
-                                    Credentials
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {workerProfile.credentials.map((cred, index) => (
-                                    <div key={index} className="flex items-start gap-2">
-                                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                                        <div className="flex-1">
-                                            <p className="font-medium text-sm">{cred.name}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Valid until {new Date(cred.expiry).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
-                        {/* Languages */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Languages className="h-5 w-5" />
-                                    Languages
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-2">
-                                    {workerProfile.languages.map((lang, index) => (
-                                        <Badge key={index} variant="secondary">{lang}</Badge>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* About Section */}
+                    <div className="p-6 md:p-8 border-b border-border">
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold text-foreground">About {user?.firstName || user?.name || 'the worker'}</h2>
+                            {profile?.personalDetails?.bio ? (
+                                <p className="text-sm text-muted-foreground leading-relaxed max-w-4xl">
+                                    {profile.personalDetails.bio}
+                                </p>
+                            ) : null}
+                        </div>
                     </div>
 
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Services Offered */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Services Offered</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-2">
-                                    {workerProfile.services.map((service, index) => (
-                                        <Badge key={index} variant="outline" className="text-sm py-1 px-3">
-                                            {service}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
+                        {/* Left Column */}
+                        <div className="p-6 md:p-8 border-r border-border">
 
-                        {/* Interests & Hobbies */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Interests & Hobbies</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Shared interests help build meaningful connections with clients
+                            {/* Preferred Hours */}
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-foreground">Preferred hours</h3>
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                                    Support sessions don't need to fill each time slot completely.
                                 </p>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {workerProfile.interests.map((interest, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex flex-col items-center p-4 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
-                                        >
-                                            <interest.icon className="h-8 w-8 mb-2 text-blue-600" />
-                                            <span className="text-xs font-medium text-center">{interest.name}</span>
+                                {(profile?.updatedAt || user?.updatedAt) && (
+                                    <Badge variant="outline" className="mb-6 text-xs">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        {new Date(profile?.updatedAt || user?.updatedAt).toLocaleDateString()}
+                                    </Badge>
+                                )}
+
+                                <div className="space-y-4">
+                                    {days.map((day) => {
+                                        const dayData = profile?.availability?.[day.toLowerCase()];
+                                        return (
+                                            <div key={day} className="flex flex-col gap-2">
+                                                <span className="text-sm font-medium text-foreground">{day}</span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {dayData?.available && dayData.times?.length > 0 ? (
+                                                        dayData.times.map((t: any, i: number) => (
+                                                            <Badge key={i} variant="secondary" className="text-xs font-normal">
+                                                                <Check className="h-3 w-3 mr-1" />
+                                                                {formatTime(t.startTime)}-{formatTime(t.endTime)}
+                                                            </Badge>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">No availability set</span>
+                                                    )}
+                                                </div>
+                                                <Separator className="my-1" />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+                            {/* Indicative Rates */}
+                            <section className="space-y-4 mt-8">
+                                <h3 className="text-lg font-semibold text-foreground">Indicative rates</h3>
+                                <div className="space-y-4">
+                                    {profile?.freeMeetAndGreet ? (
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-sm font-medium text-foreground">Meet & greet</span>
+                                            <span className="text-lg font-semibold text-green-600 dark:text-green-400">Free</span>
+                                        </div>
+                                    ) : null}
+                                    <div className="space-y-2">
+                                        {profile?.rates && profile.rates.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {profile.rates.map((r: any) => (
+                                                    <div key={r._id} className="flex items-center justify-between rounded-md p-3 border border-border bg-muted">
+                                                        <div className="text-sm font-medium text-foreground">{r.name}</div>
+                                                        <div className="text-base font-semibold text-foreground">${r.rate}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground">No rates provided</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Verification List */}
+                            <section className="mt-8">
+                                <h3 className="text-lg font-semibold text-foreground mb-3">Verification and safeguards</h3>
+                                <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                                    We ensure every support worker is checked and verified to provide a trusted and safe experience.
+                                </p>
+                                <div className="space-y-4">
+                                    {[
+                                        { label: 'Working with Children Check (WA)', icon: Users, status: profile?.personalDetails?.wwcc?.file?.url ? 'check' : 'pending', sub: profile?.personalDetails?.wwcc?.expiryDate ? `Expires on ${new Date(profile.personalDetails.wwcc?.expiryDate).toLocaleDateString()}` : undefined, fileUrl: profile?.personalDetails?.wwcc?.file?.url },
+                                        { label: 'First aid certificate', icon: Activity, status: profile?.personalDetails?.additionalTraining?.firstAid?.file?.url ? 'check' : 'pending', fileUrl: profile?.personalDetails?.additionalTraining?.firstAid?.file?.url },
+                                        { label: 'Driver\'s license (Australia)', icon: Car, status: profile?.personalDetails?.additionalTraining?.driverLicense?.file?.url ? 'check' : 'pending', fileUrl: profile?.personalDetails?.additionalTraining?.driverLicense?.file?.url },
+                                   
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex items-start gap-3 p-3 rounded-md border border-border">
+                                            <div className="mt-1">
+                                                {item.status === 'check' ? (
+                                                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                ) : item.status === 'info' ? (
+                                                    <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                ) : (
+                                                    <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                                                )}
+                                            </div>
+                                            <div className="space-y-1 w-full">
+                                                <div className="flex items-center gap-3">
+                                                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm font-medium text-foreground">{item.label}</span>
+                                                    {item.fileUrl && (
+                                                        <div className="ml-auto flex items-center gap-2">
+                                                            {item.fileUrl.endsWith('.pdf') ? (
+                                                                <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View PDF</a>
+                                                            ) : (
+                                                                <img src={item.fileUrl} alt={item.label} className="h-12 w-12 rounded object-cover border" />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {item.sub && <p className="text-xs text-muted-foreground ml-7">{item.sub}</p>}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </section>
+                        </div>
 
-                        {/* Education & Training */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <GraduationCap className="h-5 w-5" />
-                                    Education & Training
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {workerProfile.education.map((edu, index) => (
-                                    <div key={index}>
-                                        <h4 className="font-semibold">{edu.title}</h4>
-                                        <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                                        <p className="text-xs text-muted-foreground">{edu.year}</p>
+                        {/* Right Column */}
+                        <div className="p-6 md:p-8 space-y-8">
+
+                            {/* Services Offered */}
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-foreground">Services offered</h3>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {profile?.services && profile.services.length > 0 ? (
+                                        profile.services.map((service: string, i: number) => (
+                                            <div key={i} className="flex items-center gap-2 p-3 border border-border rounded-md bg-muted">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                                                <span className="text-sm font-medium text-foreground">{service}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground">No services listed</div>
+                                    )}
+                                </div>
+                            </section>
+
+                            {/* Immunisation Section */}
+                            <section>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-lg font-semibold text-foreground">Immunisation</h3>
+                                </div>
+                                <div className="space-y-1 p-3 border border-border rounded-md bg-muted">
+                                    <p className="text-sm font-medium text-foreground">COVID-19 vaccine – Self-declared</p>
+                                    {profile?.immunisation?.statusConfirmed ? (
+                                        <p className="text-xs text-muted-foreground">{profile.immunisation.covidVaccineStatus || 'Declared'}</p>
+                                    ) : null}
+                                </div>
+                            </section>
+
+                            {/* Experience Section */}
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-foreground">Experience</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Self-declared</p>
+{(profile?.experienceSummary?.disability?.experience?.length || profile?.experienceSummary?.disability?.description) && (
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                {user?.firstName || user?.name}
+                                                {profile.experienceSummary.disability.experience?.length ? ` has experience: ${profile.experienceSummary.disability.experience.join(', ')}` : ''}
+                                                {profile.experienceSummary.disability.description ? (profile.experienceSummary.disability.experience?.length ? ' — ' : ' ') + profile.experienceSummary.disability.description : ''}
+                                            </p>
+                                        )}
                                     </div>
-                                ))}
-                            </CardContent>
-                        </Card>
 
-                        {/* Work History */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5" />
-                                    Work History
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {workerProfile.workHistory.map((work, index) => (
-                                    <div key={index}>
-                                        <h4 className="font-semibold">{work.position}</h4>
-                                        <p className="text-sm text-muted-foreground">{work.organization}</p>
-                                        <p className="text-xs text-muted-foreground mb-2">{work.duration}</p>
-                                        <p className="text-sm">{work.description}</p>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
-                        {/* Cultural & Personal */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Globe className="h-5 w-5" />
-                                    Cultural Background & Preferences
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label className="text-muted-foreground">Cultural Background</Label>
-                                    <p className="font-medium">{workerProfile.culturalBackground}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Religion</Label>
-                                    <p className="font-medium">{workerProfile.religion}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Smoking Policy</Label>
-                                    <p className="font-medium">{workerProfile.preferences.smokingPolicy}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Pet Friendly</Label>
-                                    <p className="font-medium">{workerProfile.preferences.petFriendly ? 'Yes' : 'No'}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Reviews */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                    <span>Client Reviews</span>
-                                    <Badge variant="secondary">{workerProfile.reviewsCount} reviews</Badge>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {workerProfile.recentReviews.map((review) => (
-                                    <div key={review.id} className="border-b pb-4 last:border-0">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <p className="font-semibold">{review.clientName}</p>
-                                                <div className="flex gap-0.5 my-1">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <Star
-                                                            key={star}
-                                                            className={`h-4 w-4 ${
-                                                                star <= review.rating
-                                                                    ? 'fill-yellow-400 text-yellow-400'
-                                                                    : 'text-gray-300'
-                                                            }`}
-                                                        />
+                                    <div className="space-y-3 p-4 border border-border rounded-md">
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-semibold text-foreground">Disability</span>
+                                        </div>
+                                        <div className="pl-6 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-muted-foreground uppercase tracking-wide">Personal experience</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Main experience:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {profile?.experienceSummary?.disability?.knowledge?.map((item: string, i: number) => (
+                                                        <Badge key={i} variant="secondary" className="text-xs font-normal">{item}</Badge>
                                                     ))}
                                                 </div>
                                             </div>
-                                            <span className="text-sm text-muted-foreground">
-                                                {new Date(review.date).toLocaleDateString()}
-                                            </span>
                                         </div>
-                                        <p className="text-sm">{review.comment}</p>
                                     </div>
-                                ))}
-                                <Button variant="outline" className="w-full">View All Reviews</Button>
-                            </CardContent>
-                        </Card>
+                                </div>
+                            </section>
+
+                            {/* Work and Education History Section */}
+                            <section>
+                                <h3 className="text-lg font-semibold text-foreground mb-4">Work and education history</h3>
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-foreground mb-3">Work History</h4>
+                                        {profile?.workHistory && profile.workHistory.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {profile.workHistory.map((w: any) => (
+                                                    <div key={w._id} className="p-3 border border-border rounded-md bg-muted">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div>
+                                                                <div className="font-medium text-foreground">{w.jobTitle}</div>
+                                                                <div className="text-sm text-muted-foreground">{w.organisation}</div>
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground text-right">
+                                                                {w.startDate ? new Date(w.startDate).toLocaleDateString() : ''} {w.currentlyWorkingHere ? '– Present' : (w.endDate ? `– ${new Date(w.endDate).toLocaleDateString()}` : '')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground">No work history provided</div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-foreground mb-3">Education & Training</h4>
+                                        {profile?.educationAndTraining && profile.educationAndTraining.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {profile.educationAndTraining.map((e: any) => (
+                                                    <div key={e._id} className="p-3 border border-border rounded-md bg-muted">
+                                                        <div className="font-medium text-foreground">{e.institution}</div>
+                                                        <div className="text-sm text-muted-foreground">{e.course}</div>
+                                                        <div className="text-xs text-muted-foreground mt-1">{e.startDate ? new Date(e.startDate).toLocaleDateString() : ''} {e.currentlyStudyingHere ? '– Present' : (e.endDate ? `– ${new Date(e.endDate).toLocaleDateString()}` : '')}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground">No education/training records</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             </div>
+
+
         </div>
     );
-}
-
-function Label({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-    return <label className={`text-sm font-medium ${className}`}>{children}</label>;
 }

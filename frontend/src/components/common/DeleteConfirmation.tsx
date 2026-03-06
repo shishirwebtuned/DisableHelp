@@ -48,14 +48,14 @@ export function DeleteConfirmation({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
+                    <button
                         onClick={handleConfirm}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className="  bg-destructive p-1  cursor-pointer rounded text-destructive-foreground hover:bg-destructive/90"
                     >
                         Delete
-                    </AlertDialogAction>
+                    </button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-    );
+    ); 
 }

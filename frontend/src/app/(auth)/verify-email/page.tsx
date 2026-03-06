@@ -2,18 +2,25 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { checkotp, forgotPassword } from '@/redux/slices/authSlice';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const email = searchParams.get('email') || '';
+    const type = searchParams.get('type') || '';
     const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+    const dispatch = useDispatch<AppDispatch>();
+    const { isLoading: globalLoading, error: globalError, forgotMessage } = useSelector((state: RootState) => state.auth);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
@@ -66,23 +73,22 @@ function VerifyEmailContent() {
             setError('Please enter the complete verification code');
             return;
         }
-
         setIsVerifying(true);
         setError(null);
-
         try {
-            // Mock API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Simulate verification
-            if (code === '123456') {
+            const resultAction = await dispatch(checkotp({ email, otp: code }));
+            if (checkotp.fulfilled.match(resultAction)) {
                 setIsVerified(true);
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                    router.push('/login');
-                }, 2000);
+                // Redirect based on type
+                if (type === 'reset') {
+                    setTimeout(() => router.push(`/reset-password?email=${encodeURIComponent(email)}`), 2000);
+                } else {
+                    setTimeout(() => router.push('/login'), 2000);
+                }
             } else {
-                setError('Invalid verification code. Please try again.');
+                // Extract message from rejected action
+                const msg = (resultAction.payload as string) ?? resultAction.error?.message ?? 'Invalid verification code. Please try again.';
+                setError(msg);
             }
         } catch (err) {
             setError('Verification failed. Please try again.');
@@ -94,13 +100,16 @@ function VerifyEmailContent() {
     const handleResend = async () => {
         setIsResending(true);
         setError(null);
-
         try {
-            // Mock API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setCountdown(60);
-            setCanResend(false);
-            setVerificationCode(['', '', '', '', '', '']);
+            const resultAction = await dispatch(forgotPassword(email));
+            if (forgotPassword.fulfilled.match(resultAction)) {
+                setCountdown(60);
+                setCanResend(false);
+                setVerificationCode(['', '', '', '', '', '']);
+            } else {
+                const msg = (resultAction.payload as string) ?? resultAction.error?.message ?? 'Failed to resend code. Please try again.';
+                setError(msg);
+            }
         } catch (err) {
             setError('Failed to resend code. Please try again.');
         } finally {
@@ -151,8 +160,19 @@ function VerifyEmailContent() {
                             {error}
                         </div>
                     )}
+                    {!error && globalError && (
+                        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md font-medium flex items-center">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            {globalError}
+                        </div>
+                    )}
+                    {!error && !globalError && forgotMessage && (
+                        <div className="bg-primary/10 text-primary text-sm p-3 rounded-md font-medium">
+                            {forgotMessage}
+                        </div>
+                    )}
 
-                    <div className="space-y-2">
+                    <div className="space-y-6">
                         <Label>Verification Code</Label>
                         <div className="flex gap-2 justify-center">
                             {verificationCode.map((digit, index) => (
@@ -186,7 +206,7 @@ function VerifyEmailContent() {
                         )}
                     </Button>
 
-                    <div className="text-center space-y-2">
+                    <div className="text-center space-y-6">
                         <p className="text-sm text-muted-foreground">
                             Didn't receive the code?
                         </p>
@@ -208,8 +228,9 @@ function VerifyEmailContent() {
                             )}
                         </Button>
                     </div>
-
-                    <div className="text-center pt-4 border-t">
+                    <span className=' text-sm text-muted-foreground '> Check the spam folder if you don't see the email in your inbox.</span>
+                    <Separator className=' mt-2' />
+                    <div className="text-center pt-4 ">
                         <Link href="/login">
                             <Button variant="ghost" size="sm">
                                 Back to Login

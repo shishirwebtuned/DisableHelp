@@ -10,7 +10,6 @@ export interface PersonalDetailsData {
   personalInfo: {
     firstName: string;
     lastName: string;
-    dateOfBirth: string;
     gender: string;
   };
   contactInfo: {
@@ -25,6 +24,7 @@ export interface PersonalDetailsData {
 }
 
 // ==================== PROFESSIONAL DETAILS ====================
+// ==================== PROFESSIONAL DETAILS ====================
 export interface ProfessionalDetailsData {
   experience: {
     years: string;
@@ -33,23 +33,37 @@ export interface ProfessionalDetailsData {
   };
   workHistory: Array<{
     id: number;
-    position: string;
-    org: string;
-    duration: string;
-    desc: string;
+    jobTitle: string;
+    organisation: string;
+    startDate: string;
+    endDate?: string;
+    currentlyWorkingHere: boolean;
+    desc?: string; // Optional since component doesn't seem to have a field for it yet in the state shown
   }>;
   education: Array<{
     id: number;
-    title: string;
+    course: string;
     institution: string;
-    year: string;
+    startDate: string;
+    endDate?: string;
+    currentlyStudyingHere: boolean;
   }>;
-  credentials: Array<{
-    id: number;
-    name: string;
-    number: string;
-    expiry: string;
-  }>;
+  ndisWorkerScreening: {
+    screening_number: string;
+    expiry_date: string;
+    legal_first_name: string;
+    legal_last_name: string;
+    date_of_birth: string;
+  };
+  wwcc: {
+    wwccNumber: string;
+    expiryDate: string;
+  };
+  additionalTraining: {
+    cpr: { expiryDate: string; };
+    firstAid: { expiryDate: string; };
+    driverLicense: { expiryDate: string; };
+  };
 }
 
 // ==================== JOB DETAILS ====================
@@ -67,15 +81,19 @@ export interface JobDetailsData {
     overnight: number;
   };
   selectedServices: string[];
+  freeMeetAndGreet: boolean;
 }
 
 // ==================== ADDITIONAL DETAILS ====================
 export interface AdditionalDetailsData {
-  languages: string[];
+  languages: {
+    firstLanguages: string[];
+    secondLanguages: string[];
+  };
   selectedInterests: string[];
   culturalInfo: {
-    background: string;
-    religion: string;
+    background: string[]; // Changed to array
+    religion: string[]; // Changed to array
     smokingPolicy: string;
     petFriendly: string;
   };
@@ -90,6 +108,13 @@ export interface AdditionalDetailsData {
     bsb: string;
     accountNumber: string;
   };
+  immunisation: {
+    hasSeasonalFluShot: boolean;
+    covidVaccineStatus: string;
+    statusConfirmed: boolean;
+  };
+  lgbtqiaPlusFriendly: boolean;
+  personality: string;
 }
 
 // ==================== PROFILE IMAGE ====================
@@ -113,7 +138,6 @@ export const exampleCompleteProfile: CompleteProfileData = {
     personalInfo: {
       firstName: "Sarah",
       lastName: "Johnson",
-      dateOfBirth: "1995-03-15",
       gender: "female"
     },
     contactInfo: {
@@ -135,28 +159,39 @@ export const exampleCompleteProfile: CompleteProfileData = {
     workHistory: [
       {
         id: 1,
-        position: "Support Worker",
-        org: "Independent Contractor",
-        duration: "2018 - Present",
+        jobTitle: "Support Worker",
+        organisation: "Independent Contractor",
+        startDate: "2018-01-01",
+        currentlyWorkingHere: true,
         desc: "Providing personalized support services to NDIS participants"
       }
     ],
     education: [
       {
         id: 1,
-        title: "Certificate IV in Disability",
+        course: "Certificate IV in Disability",
         institution: "TAFE NSW",
-        year: "2018"
+        startDate: "2018-01-01",
+        endDate: "2018-12-31",
+        currentlyStudyingHere: false
       }
     ],
-    credentials: [
-      {
-        id: 1,
-        name: "NDIS Worker Screening",
-        number: "NSW12345",
-        expiry: "2027-06-15"
-      }
-    ]
+    ndisWorkerScreening: {
+      screening_number: "NSW12345",
+      expiry_date: "2027-06-15",
+      legal_first_name: "Sarah",
+      legal_last_name: "Johnson",
+      date_of_birth: "1980-01-01"
+    },
+    wwcc: {
+      wwccNumber: "WWC123456",
+      expiryDate: "2025-01-01"
+    },
+    additionalTraining: {
+      cpr: { expiryDate: "2024-01-01" },
+      firstAid: { expiryDate: "2024-01-01" },
+      driverLicense: { expiryDate: "2026-01-01" }
+    }
   },
   jobDetails: {
     preferredHours: {
@@ -175,14 +210,18 @@ export const exampleCompleteProfile: CompleteProfileData = {
       "Community Access",
       "Transport",
       "Household Tasks"
-    ]
+    ],
+    freeMeetAndGreet: true
   },
   additionalDetails: {
-    languages: ["English (Native)", "Spanish (Conversational)"],
+    languages: {
+      firstLanguages: ["English"],
+      secondLanguages: ["Spanish"]
+    },
     selectedInterests: ["cooking", "movies", "pets"],
     culturalInfo: {
-      background: "Australian",
-      religion: "No preference",
+      background: ["Australian"],
+      religion: ["No preference"],
       smokingPolicy: "non-smoker",
       petFriendly: "yes"
     },
@@ -196,7 +235,14 @@ export const exampleCompleteProfile: CompleteProfileData = {
       accountName: "Sarah Johnson",
       bsb: "123-456",
       accountNumber: "12345678"
-    }
+    },
+    immunisation: {
+      hasSeasonalFluShot: true,
+      covidVaccineStatus: "fullyVaccinated",
+      statusConfirmed: true
+    },
+    lgbtqiaPlusFriendly: true,
+    personality: "outgoing"
   },
   profileImage: {
     base64: "data:image/png;base64,iVBORw0KGgo...",

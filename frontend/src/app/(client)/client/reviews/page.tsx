@@ -153,7 +153,7 @@ export default function ClientReviewsPage() {
     };
 
     return (
-        <div className=" space-y-2">
+        <div className=" space-y-6">
             {/* Header */}
             <div>
                 <h1 className="text-xl font-bold mb-2">Reviews & Ratings</h1>
@@ -443,7 +443,7 @@ export default function ClientReviewsPage() {
                                 rows={5}
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-6">
                             <Label>Tags (Optional)</Label>
                             <p className="text-xs text-muted-foreground mb-2">
                                 Select tags that describe your experience

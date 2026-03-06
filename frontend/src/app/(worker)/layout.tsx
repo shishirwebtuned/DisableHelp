@@ -1,4 +1,5 @@
 import DashboardWrapper from "@/components/layout/DashboardWrapper";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function WorkerLayout({
     children,
@@ -6,8 +7,10 @@ export default function WorkerLayout({
     children: React.ReactNode;
 }) {
     return (
-        <DashboardWrapper>
-            {children}
-        </DashboardWrapper>
+        <ProtectedRoute allowedRole="worker">
+            <DashboardWrapper>
+                {children}
+            </DashboardWrapper>
+        </ProtectedRoute>
     );
 }

@@ -39,7 +39,7 @@ export default function AdminDashboard() {
     ];
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">Platform Overview</h1>
@@ -116,46 +116,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Credential Status */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Shield className="h-5 w-5" />
-                        Credential Status Overview
-                    </CardTitle>
-                    <CardDescription>Worker certification and screening status</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                            <div>
-                                <div className="text-2xl font-bold text-green-700 dark:text-green-400">
-                                    {credentialStatus.valid}
-                                </div>
-                                <div className="text-sm text-green-600 dark:text-green-500">Valid Credentials</div>
-                            </div>
-                            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
-                        </div>
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
-                            <div>
-                                <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-                                    {credentialStatus.expiringSoon}
-                                </div>
-                                <div className="text-sm text-amber-600 dark:text-amber-500">Expiring Soon</div>
-                            </div>
-                            <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
-                        </div>
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
-                            <div>
-                                <div className="text-2xl font-bold text-red-700 dark:text-red-400">
-                                    {credentialStatus.expired}
-                                </div>
-                                <div className="text-sm text-red-600 dark:text-red-500">Expired</div>
-                            </div>
-                            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-500" />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+   
 
             {/* Recent Activity */}
             <Card>

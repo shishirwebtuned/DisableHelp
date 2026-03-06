@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/redux/store';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { logout } from '@/redux/slices/authSlice';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -15,7 +14,10 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { User as UserIcon, Settings, CreditCard, LogOut } from 'lucide-react';
+import { User as UserIcon, Settings, CreditCard, LogOut, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { getmee } from '@/redux/slices/authSlice';
+import { useEffect } from 'react';
 
 interface UserButtonProps {
     variant?: 'default' | 'sidebar' | 'minimal';
@@ -23,14 +25,27 @@ interface UserButtonProps {
 }
 
 export function UserButton({ variant = 'default', showName = false }: UserButtonProps) {
-    const dispatch = useDispatch<AppDispatch>();
+    const dispatch = useAppDispatch();
+
+
     const router = useRouter();
-    const { user } = useSelector((state: RootState) => state.auth);
+    const { user, mee, isLoading, isAuthenticated, error } = useAppSelector((state) => state.auth);
+
+    useEffect(() => {
+        if (!user && !isLoading && !isAuthenticated && !error) {
+            dispatch(getmee());
+        }
+    }, [dispatch, user, isLoading, isAuthenticated, error]);
+
+
 
     const handleLogout = async () => {
         await dispatch(logout());
         router.push('/login');
     };
+
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     // If no user, show a placeholder
     if (!user) {
@@ -58,15 +73,15 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div className="flex items-center gap-2 cursor-pointer group">
-                    <Avatar className={`${avatarSize} border shadow-sm ring-offset-2 ring-transparent transition-all group-hover:ring-2 group-hover:ring-blue-500/20`}>
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback className="bg-blue-600 text-white font-bold text-sm">
-                            {user.name?.[0]?.toUpperCase()}
+                    <Avatar className={`${avatarSize} border shadow-sm ring-offset-2 ring-transparent transition-all group-hover:ring-2 group-hover:ring-[#8ac6dd]/20`}>
+                        <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                        <AvatarFallback className="bg-[#8ac6dd] text-[#042a2d] font-bold text-sm">
+                            {(user.firstName?.[0] || user.email?.[0] || 'U')?.toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
                     {showName && (
                         <div className="hidden lg:block overflow-hidden">
-                            <p className="text-sm font-medium truncate">{user.name}</p>
+                            <p className="text-sm capitalize font-medium truncate">{user.firstName} {user.lastName}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         </div>
                     )}
@@ -75,7 +90,7 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
             <DropdownMenuContent className="w-56 mt-2 z-[100]" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal p-2">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-semibold leading-none">{user.name}</p>
+                        <p className="text-sm  capitalize font-semibold leading-none">{user.firstName} {user.lastName}</p>
                         <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                         <div className="flex items-center gap-2 mt-2">
                             <Badge variant="secondary" className="text-[10px] px-2 py-0 h-4 uppercase tracking-tighter">

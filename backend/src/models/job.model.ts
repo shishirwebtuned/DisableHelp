@@ -8,17 +8,20 @@ const timeSlotSchema = new Schema(
   { _id: false },
 );
 
-const sessionSchema = new Schema({
-  day: {
-    type: String,
+const sessionSchema = new Schema(
+  {
+    day: {
+      type: String,
+    },
+    period: [timeSlotSchema],
   },
-  period: [timeSlotSchema],
-});
+  { _id: false },
+);
 
 const supportDetailSchema = new Schema(
   {
     name: { type: String, required: true },
-    details: { type: [String], required: true },
+    description: { type: String, required: true },
   },
   { _id: false },
 );

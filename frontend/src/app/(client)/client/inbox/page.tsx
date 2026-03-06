@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 // Mock messages data
-const mockMessages = [
+const mockMessages = [ 
     {
         id: '1',
         sender: 'Sarah Worker',

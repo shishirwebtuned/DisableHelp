@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
     const maxEarnings = Math.max(...earningsTrend.map((e) => e.amount));
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-xl font-bold tracking-tight">Analytics Dashboard</h1>
                 <p className="text-muted-foreground">Track your performance and earnings insights</p>
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
                 <CardContent>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                         {performanceMetrics.map((metric) => (
-                            <div key={metric.label} className="space-y-2">
+                            <div key={metric.label} className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">{metric.label}</span>
                                     <span className="text-2xl font-bold">{metric.value}%</span>

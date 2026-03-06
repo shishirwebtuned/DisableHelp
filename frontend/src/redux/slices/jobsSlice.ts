@@ -1,169 +1,138 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Job, Application } from '@/types';
+import api from '@/lib/axios';
 
 interface JobsState {
+    _id: string | null;
     jobs: Job[];
     applications: Application[];
     selectedJob: Job | null;
     loading: boolean;
+    applying: boolean;
     error: string | null;
     viewMode: 'card' | 'table';
+    myApplication: Application | null;
+    total: number;
+    totalPages: number;
+    limit: number;
 }
 
 const initialState: JobsState = {
+    _id: null,
     jobs: [],
     applications: [],
     selectedJob: null,
     loading: false,
+    applying: false,
     error: null,
     viewMode: 'card',
+    myApplication: null,
+    total: 0,
+    totalPages: 1,
+    limit: 10
 };
 
-// Mock async thunk for fetching jobs
+// Fetch client's own jobs
 export const fetchJobs = createAsyncThunk(
     'jobs/fetchJobs',
-    async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const mockJobs: Job[] = [
-            {
-                id: 'j1',
-                title: 'Personal Care Support - Morning Shift',
-                clientId: 'c1',
-                clientName: 'Alice Freeman',
-                description: 'Looking for a reliable support worker to assist with morning routines, personal care, and light household tasks.',
-                location: 'Sydney, NSW 2000',
-                rate: 45,
-                tags: ['Personal Care', 'Morning', 'Elderly Care'],
-                status: 'published',
-                requirements: ['NDIS Worker Screening', 'First Aid Certificate', 'Experience with elderly care'],
-                startDate: '2026-02-01',
-                hoursPerWeek: 15,
-                createdAt: '2026-01-20T10:00:00Z',
-                updatedAt: '2026-01-20T10:00:00Z',
-            },
-            {
-                id: 'j2',
-                title: 'Disability Support Worker - Weekends',
-                clientId: 'c2',
-                clientName: 'Bob Smith',
-                description: 'Weekend support needed for community access and social activities. Must be patient and energetic.',
-                location: 'Melbourne, VIC 3000',
-                rate: 50,
-                tags: ['Disability Support', 'Weekend', 'Community Access'],
-                status: 'published',
-                requirements: ['NDIS Registration', 'WWCC', 'Driver License'],
-                startDate: '2026-02-15',
-                hoursPerWeek: 10,
-                createdAt: '2026-01-22T14:00:00Z',
-                updatedAt: '2026-01-22T14:00:00Z',
-            },
-            {
-                id: 'j3',
-                title: 'Respite Care Support',
-                clientId: 'c3',
-                clientName: 'Carol Johnson',
-                description: 'Flexible respite care needed for family caregiver breaks. Experience with dementia care preferred.',
-                location: 'Brisbane, QLD 4000',
-                rate: 48,
-                tags: ['Respite Care', 'Flexible', 'Dementia Care'],
-                status: 'published',
-                requirements: ['Dementia training', 'NDIS Screening', 'References'],
-                startDate: '2026-02-10',
-                hoursPerWeek: 12,
-                createdAt: '2026-01-25T09:00:00Z',
-                updatedAt: '2026-01-25T09:00:00Z',
-            },
-        ];
-
-        return mockJobs;
-    }
-);
-
-// Mock async thunk for applying to a job
-export const applyToJob = createAsyncThunk(
-    'jobs/applyToJob',
-    async ({ jobId, workerId, coverLetter }: { jobId: string; workerId: string; coverLetter: string }) => {
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        const application: Application = {
-            id: `app-${Date.now()}`,
-            jobId,
-            workerId,
-            workerName: 'Sarah Worker',
-            status: 'pending',
-            coverLetter,
-            appliedAt: new Date().toISOString(),
+    async (params?: any) => {
+        const { append, ...rest } = params ?? {};
+        const response = await api.get('job', { params: rest });
+        const data = response.data.data;
+        return {
+            jobs: data?.jobsData ?? [],
+            total: data?.pagination?.total ?? data?.total ?? 0,
+            totalPages: data?.pagination?.totalPages ?? 1,
+            append: !!append,
         };
-
-        return application;
     }
 );
 
-// Async thunk for creating a job (client)
+// Fetch a single job by id (for edit pre-fill)
+export const fetchJobById = createAsyncThunk(
+    'jobs/fetchJobById',
+    async (id: string) => {
+        const response = await api.get(`job/${id}`);
+        return response.data.data ?? response.data.data;
+    }
+);
+
+// Apply to a job (real API)
+export const applyToJobThunk = createAsyncThunk(
+    'jobs/applyToJob',
+    async (payload: { job: string; introduction: string; skills: string; availability: any[] }, { rejectWithValue }) => {
+        try {
+            const response = await api.post('application', payload);
+            return response.data.data ?? response.data;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to apply to job');
+        }
+    }
+);
+
+// Create a new job
 export const createJob = createAsyncThunk(
     'jobs/createJob',
-    async (jobData: Partial<Job>) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.post('/api/jobs', jobData);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const newJob: Job = {
-            id: `j-${Date.now()}`,
-            title: jobData.title || '',
-            clientId: jobData.clientId || 'c1',
-            clientName: jobData.clientName || 'Current Client',
-            description: jobData.description || '',
-            location: jobData.location || '',
-            rate: jobData.rate || 0,
-            tags: jobData.tags || [],
-            status: jobData.status || 'draft',
-            requirements: jobData.requirements || [],
-            startDate: jobData.startDate || '',
-            hoursPerWeek: jobData.hoursPerWeek || 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log('API Call: POST /api/jobs', newJob);
-        return newJob;
+    async (jobData: any, { rejectWithValue }) => {
+        try {
+            const response = await api.post('job', jobData);
+            return response.data.data?.job ?? response.data.data;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to create job');
+        }
     }
 );
 
-// Async thunk for updating a job (client)
+// Update an existing job
 export const updateJobThunk = createAsyncThunk(
     'jobs/updateJobThunk',
-    async ({ id, jobData }: { id: string; jobData: Partial<Job> }) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.put(`/api/jobs/${id}`, jobData);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const updatedJob = {
-            ...jobData,
-            id,
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log('API Call: PUT /api/jobs/' + id, updatedJob);
-        return updatedJob as Job;
+    async ({ id, jobData }: { id: string; jobData: any }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`job/${id}`, jobData);
+            return response.data.data?.job ?? response.data.data;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to update job');
+        }
     }
 );
 
-// Async thunk for deleting a job (client)
+// Delete a job
 export const deleteJobThunk = createAsyncThunk(
     'jobs/deleteJobThunk',
-    async (jobId: string) => {
-        // TODO: Replace with actual API call
-        // await axios.delete(`/api/jobs/${jobId}`);
+    async (jobId: string, { rejectWithValue }) => {
+        try {
+            await api.delete(`job/${jobId}`);
+            return jobId;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to delete job');
+        }
+    }
+);
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+export const getmyapplication = createAsyncThunk(
+    'jobs/getmyapplication',
+    async (jobId: string, { rejectWithValue }) => {
+        try {
+            const response = await api.get(`application/applicant/${jobId}`);
+            return response.data.data.applications ?? response.data;
+        } catch (error: any) {
+            return rejectWithValue(error?.response?.data?.message || 'Failed to get my application');
+        }
+    }
+);
 
-        console.log('API Call: DELETE /api/jobs/' + jobId);
-        return jobId;
+export const getJobByClient = createAsyncThunk(
+    'jobs/getJobByClient',
+    async (params?: any) => {
+        const { append, ...rest } = params ?? {};
+        const response = await api.get('job/client', { params: rest });
+        const data = response.data.data;
+        return {
+            jobs: data?.jobsData ?? [],
+            total: data?.pagination?.total ?? data?.total ?? 0,
+            totalPages: data?.pagination?.totalPages ?? 1,
+            append: !!append,
+        };
     }
 );
 
@@ -177,6 +146,15 @@ const jobsSlice = createSlice({
         setSelectedJob(state, action: PayloadAction<Job | null>) {
             state.selectedJob = action.payload;
         },
+        setTotal(state, action: PayloadAction<number>) {
+            state.total = action.payload;
+        },
+        setLimit(state, action: PayloadAction<number>) {
+            state.limit = action.payload;
+        },
+        setMyApplication(state, action: PayloadAction<Application | null>) {
+            state.myApplication = action.payload;
+        },
         setViewMode(state, action: PayloadAction<'card' | 'table'>) {
             state.viewMode = action.payload;
         },
@@ -184,13 +162,13 @@ const jobsSlice = createSlice({
             state.jobs.push(action.payload);
         },
         updateJob(state, action: PayloadAction<Job>) {
-            const index = state.jobs.findIndex(job => job.id === action.payload.id);
+            const index = state.jobs.findIndex(job => job._id === action.payload._id);
             if (index !== -1) {
                 state.jobs[index] = action.payload;
             }
         },
         deleteJob(state, action: PayloadAction<string>) {
-            state.jobs = state.jobs.filter(job => job.id !== action.payload);
+            state.jobs = state.jobs.filter(job => job._id !== action.payload);
         },
     },
     extraReducers: (builder) => {
@@ -201,22 +179,43 @@ const jobsSlice = createSlice({
             })
             .addCase(fetchJobs.fulfilled, (state, action) => {
                 state.loading = false;
-                state.jobs = action.payload;
+                if (action.payload.append) {
+                    // Append deduplicated jobs for infinite scroll
+                    const existingIds = new Set(state.jobs.map((j) => j._id));
+                    const newJobs = action.payload.jobs.filter((j: Job) => !existingIds.has(j._id));
+                    state.jobs = [...state.jobs, ...newJobs];
+                } else {
+                    state.jobs = action.payload.jobs;
+                }
+                state.total = action.payload.total;
+                state.totalPages = action.payload.totalPages;
             })
             .addCase(fetchJobs.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message || 'Failed to fetch jobs';
             })
-            .addCase(applyToJob.pending, (state) => {
+            .addCase(fetchJobById.pending, (state) => {
                 state.loading = true;
+                state.selectedJob = null;
             })
-            .addCase(applyToJob.fulfilled, (state, action) => {
+            .addCase(fetchJobById.fulfilled, (state, action) => {
                 state.loading = false;
-                state.applications.push(action.payload);
+                state.selectedJob = action.payload;
             })
-            .addCase(applyToJob.rejected, (state, action) => {
+            .addCase(fetchJobById.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message || 'Failed to apply to job';
+                state.error = action.error.message || 'Failed to fetch job';
+            })
+            .addCase(applyToJobThunk.pending, (state) => {
+                state.applying = true;
+                state.error = null;
+            })
+            .addCase(applyToJobThunk.fulfilled, (state, action) => {
+                state.applying = false;
+            })
+            .addCase(applyToJobThunk.rejected, (state, action) => {
+                state.applying = false;
+                state.error = (action.payload as string) || 'Failed to apply to job';
             })
             // Create job
             .addCase(createJob.pending, (state) => {
@@ -232,15 +231,29 @@ const jobsSlice = createSlice({
             })
             // Update job
             .addCase(updateJobThunk.fulfilled, (state, action) => {
-                const index = state.jobs.findIndex(job => job.id === action.payload.id);
+                const index = state.jobs.findIndex(job => job._id === action.payload._id);
                 if (index !== -1) {
                     state.jobs[index] = { ...state.jobs[index], ...action.payload };
                 }
             })
             // Delete job
             .addCase(deleteJobThunk.fulfilled, (state, action) => {
-                state.jobs = state.jobs.filter(job => job.id !== action.payload);
-            });
+                state.jobs = state.jobs.filter(job => job._id !== action.payload);
+            })
+            .addCase(getmyapplication.fulfilled, (state, action) => {
+                state.myApplication = action.payload;
+            })
+            .addCase(getmyapplication.rejected, (state, action) => {
+                state.error = (action.payload as string) || 'Failed to get my application';
+            })
+            .addCase(getJobByClient.fulfilled, (state, action) => {
+                state.jobs = action.payload.jobs;
+                state.total = action.payload.total;
+                state.totalPages = action.payload.totalPages;
+            })
+            .addCase(getJobByClient.rejected, (state, action) => {
+                state.error = (action.payload as string) || 'Failed to get jobs by client';
+            })
     },
 });
 

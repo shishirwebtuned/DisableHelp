@@ -1,10 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import api from "@/lib/axios"
 
 export interface Service {
-    id: string;
+    _id: string;
     name: string;
-    description: string;
+    code: string;
+    categories: Array<string>;
     status: boolean;
+    filter: string;
+    total: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -13,53 +17,53 @@ interface ServicesState {
     items: Service[];
     loading: boolean;
     error: string | null;
+    filter: string;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
 }
 
 const initialState: ServicesState = {
     items: [],
     loading: false,
     error: null,
+    filter: 'all',
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
 };
+
+
 
 // Async thunks
 export const fetchServices = createAsyncThunk(
     'services/fetchServices',
-    async () => {
-        // TODO: Replace with actual API call
-        // const response = await axios.get('/api/admin/services');
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const mockServices: Service[] = [
-            {
-                id: 'srv-1',
-                name: 'Personal Care',
-                description: 'Assistance with daily living activities, bathing, grooming, and dressing',
-                status: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            },
-            {
-                id: 'srv-2',
-                name: 'Domestic Assistance',
-                description: 'Help with household tasks like cleaning, laundry, and meal preparation',
-                status: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            },
-            {
-                id: 'srv-3',
-                name: 'Community Access',
-                description: 'Support for community participation and social activities',
-                status: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            },
-        ];
-
-        console.log('API Call: GET /api/admin/services');
-        return mockServices;
+    async (
+        payload: { page?: number; limit?: number } = {},
+        { getState }
+    ) => {
+        const state = getState() as { services: ServicesState };
+        const filter = state.services.filter;
+        const params: any = { page: payload.page ?? state.services.page, limit: payload.limit ?? state.services.limit };
+        if (filter && filter !== 'all') {
+            // API expects a boolean for status. Accept 'active'|'inactive' from UI and convert.
+            if (filter === 'active') params.status = true;
+            else if (filter === 'inactive') params.status = false;
+            else if (filter === 'true' || filter === 'false') params.status = filter === 'true';
+            else params.status = filter;
+        }
+        const response = await api.get('service', { params });
+        const services = response.data.data.services;
+        const pagination = response.data.data.pagination || {};
+        return {
+            data: services,
+            total: pagination.total ?? services.length,
+            totalPages: pagination.totalPages ?? 1,
+            page: pagination.page ?? params.page,
+            limit: pagination.limit ?? params.limit,
+        };
     }
 );
 
@@ -67,39 +71,18 @@ export const createService = createAsyncThunk(
     'services/createService',
     async (serviceData: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>) => {
         // TODO: Replace with actual API call
-        // const response = await axios.post('/api/admin/services', serviceData);
-        // return response.data;
+        const response = await api.post('service', serviceData);
+        return response.data.data;
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const newService: Service = {
-            ...serviceData,
-            id: `srv-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log('API Call: POST /api/admin/services', serviceData);
-        return newService;
     }
 );
 
 export const updateService = createAsyncThunk(
     'services/updateService',
-    async (service: Service) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.put(`/api/admin/services/${service.id}`, service);
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const updatedService = {
-            ...service,
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log('API Call: PUT /api/admin/services/' + service.id, service);
-        return updatedService;
+    async ({ id, data }: { id: string; data: Partial<Service> }) => {
+        // Send minimal payload expected by backend
+        const response = await api.put(`service/${id}`, data);
+        return response.data.data;
     }
 );
 
@@ -107,9 +90,9 @@ export const deleteService = createAsyncThunk(
     'services/deleteService',
     async (id: string) => {
         // TODO: Replace with actual API call
-        // await axios.delete(`/api/admin/services/${id}`);
+        await api.delete(`service/${id}`);
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // await new Promise(resolve => setTimeout(resolve, 500));
 
         console.log('API Call: DELETE /api/admin/services/' + id);
         return id;
@@ -118,22 +101,21 @@ export const deleteService = createAsyncThunk(
 
 export const toggleServiceStatus = createAsyncThunk(
     'services/toggleServiceStatus',
-    async ({ id, status }: { id: string; status: boolean }) => {
-        // TODO: Replace with actual API call
-        // const response = await axios.patch(`/api/admin/services/${id}/status`, { status });
-        // return response.data;
-
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        console.log('API Call: PATCH /api/admin/services/' + id + '/status', { status });
-        return { id, status };
+    async (service: Service) => {
+        // Send full service object with updated status so backend gets all fields
+        const response = await api.put(`service/${service._id}`, service as any);
+        return response.data.data;
     }
 );
 
 const servicesSlice = createSlice({
     name: 'services',
     initialState,
-    reducers: {},
+    reducers: {
+        setFilter(state, action: PayloadAction<string>) {
+            state.filter = action.payload;
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Fetch services
@@ -142,7 +124,11 @@ const servicesSlice = createSlice({
             })
             .addCase(fetchServices.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload;
+                state.items = action.payload.data;
+                state.total = action.payload.total;
+                state.page = action.payload.page ?? state.page;
+                state.limit = action.payload.limit ?? state.limit;
+                state.totalPages = action.payload.totalPages ?? state.totalPages;
             })
             .addCase(fetchServices.rejected, (state, action) => {
                 state.loading = false;
@@ -166,9 +152,10 @@ const servicesSlice = createSlice({
             })
             .addCase(updateService.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.items.findIndex(srv => srv.id === action.payload.id);
+                const payloadAny: any = action.payload;
+                const index = state.items.findIndex(srv => srv._id === payloadAny._id || srv._id === payloadAny.id);
                 if (index !== -1) {
-                    state.items[index] = action.payload;
+                    state.items[index] = payloadAny;
                 }
             })
             .addCase(updateService.rejected, (state, action) => {
@@ -181,7 +168,9 @@ const servicesSlice = createSlice({
             })
             .addCase(deleteService.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = state.items.filter(srv => srv.id !== action.payload);
+                const payloadAny: any = action.payload;
+                const removedId = typeof payloadAny === 'string' ? payloadAny : (payloadAny._id || payloadAny.id);
+                state.items = state.items.filter(srv => srv._id !== removedId);
             })
             .addCase(deleteService.rejected, (state, action) => {
                 state.loading = false;
@@ -189,7 +178,7 @@ const servicesSlice = createSlice({
             })
             // Toggle status
             .addCase(toggleServiceStatus.fulfilled, (state, action) => {
-                const service = state.items.find(srv => srv.id === action.payload.id);
+                const service = state.items.find(srv => srv._id === action.payload._id || srv._id === action.payload.id);
                 if (service) {
                     service.status = action.payload.status;
                     service.updatedAt = new Date().toISOString();
@@ -197,5 +186,7 @@ const servicesSlice = createSlice({
             });
     },
 });
+
+export const { setFilter } = servicesSlice.actions;
 
 export default servicesSlice.reducer;

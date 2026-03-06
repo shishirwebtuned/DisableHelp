@@ -3,11 +3,8 @@ import { toast } from 'sonner';
 
 // Create an Axios instance
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api', // Mock URL
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1/en/',
     timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 // Request interceptor to add auth token
@@ -21,7 +18,7 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
-        return Promise.reject(error);
+        return Promise.reject(error);   
     }
 );
 
@@ -42,22 +39,33 @@ api.interceptors.response.use(
             // that falls out of the range of 2xx
             const status = error.response.status;
             const errorMessage = error.response.data?.message || error.response.data?.error || 'An error occurred';
-            
-            console.error('API Error:', error.response.data);
-            
+
+          
+
             switch (status) {
                 case 400:
                     toast.error(errorMessage || 'Bad request');
                     break;
-                case 401:
-                    toast.error('Unauthorized. Please log in again.');
-                    // Handle unauthorized access (e.g., redirect to login)
-                    if (typeof window !== 'undefined') {
-                        setTimeout(() => {
-                            window.location.href = '/login';
-                        }, 1500);
-                    }
+                case 401: {
+                    //show the dynamic message 
+                    toast.error(errorMessage);
+                    // Avoid forcing a full-page redirect if we're already on the login page
+                    // or if the failing request is the login endpoint itself. In those cases,
+                    // let the UI handle the error without refreshing the page.
+                    // if (typeof window !== 'undefined') {
+                    //     const currentPath = window.location.pathname || '';
+                    //     const requestUrl = String(error.config?.url || '').toLowerCase();
+                    //     const isLoginRequest = requestUrl.includes('/login');
+                    //     const onLoginPage = currentPath === '/login' || currentPath === '/auth/login';
+
+                    //     if (!isLoginRequest && !onLoginPage) {
+                    //         setTimeout(() => {
+                    //             window.location.href = '/login';
+                    //         }, 1500);
+                    //     }
+                    // }
                     break;
+                }
                 case 403:
                     toast.error('Access forbidden. You don\'t have permission.');
                     break;

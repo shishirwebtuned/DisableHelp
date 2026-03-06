@@ -1,0 +1,8 @@
+﻿src/components/ui/date-picker.tsx(4,24): error TS2792: Cannot find module 'date-fns'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(5,42): error TS2792: Cannot find module 'lucide-react'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(7,20): error TS2792: Cannot find module '@/lib/utils'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(8,24): error TS2792: Cannot find module '@/components/ui/button'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(9,26): error TS2792: Cannot find module '@/components/ui/calendar'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(14,8): error TS2792: Cannot find module '@/components/ui/popover'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/components/ui/date-picker.tsx(65,101): error TS2339: Property 'span' does not exist on type 'JSX.IntrinsicElements'.
+src/components/ui/date-picker.tsx(65,120): error TS2339: Property 'span' does not exist on type 'JSX.IntrinsicElements'.

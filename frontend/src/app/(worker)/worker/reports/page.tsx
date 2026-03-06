@@ -69,7 +69,7 @@ export default function ServiceReportsPage() {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">Service Reports</h1>
@@ -88,7 +88,7 @@ export default function ServiceReportsPage() {
                             <DialogDescription>Download your service reports for records</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Date Range</Label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <DatePicker
@@ -103,7 +103,7 @@ export default function ServiceReportsPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Format</Label>
                                 <select className="w-full border rounded px-3 py-2 text-sm">
                                     <option>PDF Document</option>

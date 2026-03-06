@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,16 +37,20 @@ import {
 } from 'lucide-react';
 
 interface AdditionalDetailsProps {
-    onSave: (data: AdditionalDetailsData) => void;
+    onSave: (data: AdditionalDetailsData, navigate?: boolean) => void;
     currentView?: string;
+    initialData?: AdditionalDetailsData;
 }
 
 export interface AdditionalDetailsData {
-    languages: string[];
+    languages: {
+        firstLanguages: string[];
+        secondLanguages: string[];
+    };
     selectedInterests: string[];
     culturalInfo: {
-        background: string;
-        religion: string;
+        background: string[];
+        religion: string[];
         smokingPolicy: string;
         petFriendly: string;
     };
@@ -61,23 +65,50 @@ export interface AdditionalDetailsData {
         bsb: string;
         accountNumber: string;
     };
+    immunisation: {
+        hasSeasonalFluShot: boolean;
+        covidVaccineStatus: string;
+        statusConfirmed: boolean;
+    };
+    lgbtqiaPlusFriendly: boolean;
+    personality: string;
 }
 
-export default function AdditionalDetails({ onSave, currentView = 'languages' }: AdditionalDetailsProps) {
+export default function AdditionalDetails({ onSave, currentView = 'languages', initialData }: AdditionalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
-    const [languages, setLanguages] = useState(['English (Native)', 'Spanish (Conversational)', 'Auslan (Basic)']);
-    const [newLanguage, setNewLanguage] = useState('');
 
-    const [selectedInterests, setSelectedInterests] = useState<string[]>(['cooking', 'movies', 'pets']);
+    // Use a ref to track if we've already initialized from initialData
+    const isInitialized = useRef(false);
 
-    const [culturalInfo, setCulturalInfo] = useState({
-        background: 'Australian',
-        religion: 'No preference',
+    const [languages, setLanguages] = useState<AdditionalDetailsData['languages']>({
+        firstLanguages: [],
+        secondLanguages: []
+    });
+    const [newFirstLanguage, setNewFirstLanguage] = useState('');
+    const [newSecondLanguage, setNewSecondLanguage] = useState('');
+
+    const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+
+    const [culturalInfo, setCulturalInfo] = useState<{
+        background: string[];
+        religion: string[];
+        smokingPolicy: string;
+        petFriendly: string;
+    }>({
+        background: [],
+        religion: [],
         smokingPolicy: 'non-smoker',
         petFriendly: 'yes',
     });
+    const [newBackground, setNewBackground] = useState('');
+    const [newReligion, setNewReligion] = useState('');
 
-    const [preferences, setPreferences] = useState({
+    const [preferences, setPreferences] = useState<{
+        preferredClientAge: string;
+        preferredGender: string;
+        willingToTravel: string;
+        maxTravelDistance: string;
+    }>({
         preferredClientAge: 'No preference',
         preferredGender: 'No preference',
         willingToTravel: 'yes',
@@ -91,20 +122,67 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
         accountNumber: '',
     });
 
+    const [immunisation, setImmunisation] = useState({
+        hasSeasonalFluShot: false,
+        covidVaccineStatus: 'notVaccinated',
+        statusConfirmed: false,
+    });
+
+    const [lgbtqiaPlusFriendly, setLgbtqiaPlusFriendly] = useState(false);
+    const [personality, setPersonality] = useState('outgoing');
+
     useEffect(() => {
         setCurrentSection(currentView);
     }, [currentView]);
 
     useEffect(() => {
-        const data = { languages, selectedInterests, culturalInfo, preferences, bankDetails };
-        console.log('AdditionalDetails Data:', data);
-    }, [languages, selectedInterests, culturalInfo, preferences, bankDetails]);
+        if (initialData) {
+            setLanguages(prev => JSON.stringify(initialData.languages) === JSON.stringify(prev) ? prev : initialData.languages || prev);
+            setSelectedInterests(prev => JSON.stringify(initialData.selectedInterests) === JSON.stringify(prev) ? prev : initialData.selectedInterests || prev);
+            setCulturalInfo(prev => JSON.stringify(initialData.culturalInfo) === JSON.stringify(prev) ? prev : initialData.culturalInfo || prev);
+            setPreferences(prev => JSON.stringify(initialData.preferences) === JSON.stringify(prev) ? prev : initialData.preferences || prev);
+            setBankDetails(prev => JSON.stringify(initialData.bankDetails) === JSON.stringify(prev) ? prev : initialData.bankDetails || prev);
+            setImmunisation(prev => JSON.stringify(initialData.immunisation) === JSON.stringify(prev) ? prev : initialData.immunisation || prev);
+            setLgbtqiaPlusFriendly(prev => !!initialData.lgbtqiaPlusFriendly === prev ? prev : !!initialData.lgbtqiaPlusFriendly);
+            setPersonality(prev => initialData.personality === prev ? prev : initialData.personality || prev);
 
-    const handleSave = () => {
-        const data = { languages, selectedInterests, culturalInfo, preferences, bankDetails };
-        console.log('Saving Additional Details:', data);
-        onSave(data);
-    };
+            isInitialized.current = true;
+        }
+    }, [initialData]);
+
+    const currentData = useMemo(() => ({
+        languages,
+        selectedInterests,
+        culturalInfo,
+        preferences,
+        bankDetails,
+        immunisation,
+        lgbtqiaPlusFriendly,
+        personality
+    }), [languages, selectedInterests, culturalInfo, preferences, bankDetails, immunisation, lgbtqiaPlusFriendly, personality]);
+
+    useEffect(() => {
+        // Sync data to parent only if we have initialData and it's different
+        if (initialData && isInitialized.current) {
+            const initialStr = JSON.stringify(initialData);
+            const currentStr = JSON.stringify(currentData);
+            if (currentStr !== initialStr) {
+                const timeoutId = setTimeout(() => {
+                    onSave(currentData, false);
+                }, 0);
+                return () => clearTimeout(timeoutId);
+            }
+        }
+    }, [currentData, initialData, onSave]);
+
+    const handleSave = useCallback(() => {
+        onSave(currentData, true);
+    }, [currentData, onSave]);
+
+    const handleSavePreferences = useCallback(() => {
+        setIsPreferencesModalOpen(false);
+        onSave(currentData, true);
+    }, [currentData, onSave]);
 
     const interests = [
         { id: 'cooking', label: 'Cooking', icon: Utensils },
@@ -127,51 +205,105 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
         );
     };
 
-    const addLanguage = () => {
-        if (newLanguage.trim()) {
-            setLanguages([...languages, newLanguage.trim()]);
-            setNewLanguage('');
+    const addFirstLanguage = () => {
+        if (newFirstLanguage.trim()) {
+            setLanguages(prev => ({ ...prev, firstLanguages: [...prev.firstLanguages, newFirstLanguage.trim()] }));
+            setNewFirstLanguage('');
         }
     };
 
-    const removeLanguage = (lang: string) => {
-        setLanguages(languages.filter(l => l !== lang));
+    const removeFirstLanguage = (lang: string) => {
+        setLanguages(prev => ({ ...prev, firstLanguages: prev.firstLanguages.filter(l => l !== lang) }));
+    };
+
+    const addSecondLanguage = () => {
+        if (newSecondLanguage.trim()) {
+            setLanguages(prev => ({ ...prev, secondLanguages: [...prev.secondLanguages, newSecondLanguage.trim()] }));
+            setNewSecondLanguage('');
+        }
+    };
+
+    const removeSecondLanguage = (lang: string) => {
+        setLanguages(prev => ({ ...prev, secondLanguages: prev.secondLanguages.filter(l => l !== lang) }));
+    };
+
+    const addBackground = () => {
+        if (newBackground.trim()) {
+            setCulturalInfo(prev => ({ ...prev, background: [...prev.background, newBackground.trim()] }));
+            setNewBackground('');
+        }
+    };
+
+    const removeBackground = (bg: string) => {
+        setCulturalInfo(prev => ({ ...prev, background: prev.background.filter(b => b !== bg) }));
+    };
+
+    const addReligion = () => {
+        if (newReligion.trim()) {
+            setCulturalInfo(prev => ({ ...prev, religion: [...prev.religion, newReligion.trim()] }));
+            setNewReligion('');
+        }
+    };
+
+    const removeReligion = (rel: string) => {
+        setCulturalInfo(prev => ({ ...prev, religion: prev.religion.filter(r => r !== rel) }));
     };
 
     const renderLanguages = () => (
-        <div className="space-y-6">
+        <div className="space-y-2">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Languages</h2>
+                <h2 className="text-2xl font-bold ">Languages</h2>
                 <p className="text-muted-foreground">Languages you speak</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                        {languages.map((lang) => (
-                            <Badge key={lang} variant="secondary" className="text-sm px-3 py-1">
-                                {lang}
-                                <button 
-                                    onClick={() => removeLanguage(lang)}
-                                    className="ml-2 hover:text-red-600"
-                                >
-                                    ×
-                                </button>
-                            </Badge>
-                        ))}
+            <Card className=' border-none '>
+                <CardContent className=" space-y-2 p-0 ">
+                    {/* First Languages */}
+                    <div>
+                        <Label className="mb-2 block">First Languages</Label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {languages.firstLanguages.map((lang) => (
+                                <Badge key={lang} variant="secondary" className="text-sm px-3 py-1">
+                                    {lang}
+                                    <button onClick={() => removeFirstLanguage(lang)} className="ml-2 hover:text-red-600">×</button>
+                                </Badge>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Add first language..."
+                                value={newFirstLanguage}
+                                onChange={(e) => setNewFirstLanguage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addFirstLanguage()}
+                            />
+                            <Button onClick={addFirstLanguage}>Add</Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Input 
-                            placeholder="Add language..." 
-                            value={newLanguage}
-                            onChange={(e) => setNewLanguage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addLanguage()}
-                        />
-                        <Button onClick={addLanguage}>Add</Button>
+
+                    {/* Second Languages */}
+                    <div>
+                        <Label className="mb-2 block">Second Languages</Label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {languages.secondLanguages.map((lang) => (
+                                <Badge key={lang} variant="secondary" className="text-sm px-3 py-1">
+                                    {lang}
+                                    <button onClick={() => removeSecondLanguage(lang)} className="ml-2 hover:text-red-600">×</button>
+                                </Badge>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Add second language..."
+                                value={newSecondLanguage}
+                                onChange={(e) => setNewSecondLanguage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addSecondLanguage()}
+                            />
+                            <Button onClick={addSecondLanguage}>Add</Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -190,7 +322,7 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                 {interests.map((interest) => {
                     const Icon = interest.icon;
                     const isSelected = selectedInterests.includes(interest.id);
-                    
+
                     return (
                         <button
                             key={interest.id}
@@ -198,19 +330,19 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                             className={`
                                 flex flex-col items-center p-6 rounded-lg border-2 transition-all
                                 ${isSelected
-                                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/30'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-border dark:border-border hover:border-muted-foreground/30'
                                 }
                             `}
                         >
-                            <Icon className={`h-10 w-10 mb-3 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
-                            <span className="text-sm font-medium text-center">{interest.label}</span>
+                            <Icon className={`h-10 w-10 mb-3 ${isSelected ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                            <span className="text-sm font-medium text-center text-foreground">{interest.label}</span>
                         </button>
                     );
                 })}
             </div>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -218,35 +350,59 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
     );
 
     const renderCulturalBackground = () => (
-        <div className="space-y-6">
+        <div className="space-y-2">
             <div>
                 <h2 className="text-2xl font-bold mb-2">Cultural Background & Preferences</h2>
                 <p className="text-muted-foreground">Your cultural background and preferences</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' border-none '>
+                <CardContent className="pt-4 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label>Cultural Background</Label>
-                            <Input 
-                                value={culturalInfo.background}
-                                onChange={(e) => setCulturalInfo({...culturalInfo, background: e.target.value})}
-                                className="mt-2" 
-                            />
+                            <Label className="mb-2 block">Cultural Backgrounds</Label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {culturalInfo.background.map((bg) => (
+                                    <Badge key={bg} variant="secondary" className="text-sm px-3 py-1">
+                                        {bg}
+                                        <button onClick={() => removeBackground(bg)} className="ml-2 hover:text-red-600">×</button>
+                                    </Badge>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Add background..."
+                                    value={newBackground}
+                                    onChange={(e) => setNewBackground(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addBackground()}
+                                />
+                                <Button onClick={addBackground} size="sm">Add</Button>
+                            </div>
                         </div>
                         <div>
-                            <Label>Religion</Label>
-                            <Input 
-                                value={culturalInfo.religion}
-                                onChange={(e) => setCulturalInfo({...culturalInfo, religion: e.target.value})}
-                                className="mt-2" 
-                            />
+                            <Label className="mb-2 block">Religions</Label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {culturalInfo.religion.map((rel) => (
+                                    <Badge key={rel} variant="secondary" className="text-sm px-3 py-1">
+                                        {rel}
+                                        <button onClick={() => removeReligion(rel)} className="ml-2 hover:text-red-600">×</button>
+                                    </Badge>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Add religion..."
+                                    value={newReligion}
+                                    onChange={(e) => setNewReligion(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addReligion()}
+                                />
+                                <Button onClick={addReligion} size="sm">Add</Button>
+                            </div>
                         </div>
                         <div>
                             <Label>Smoking Policy</Label>
-                            <Select 
+                            <Select
                                 value={culturalInfo.smokingPolicy}
-                                onValueChange={(value) => setCulturalInfo({...culturalInfo, smokingPolicy: value})}
+                                onValueChange={(value) => setCulturalInfo({ ...culturalInfo, smokingPolicy: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -260,9 +416,9 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                         </div>
                         <div>
                             <Label>Pet Friendly</Label>
-                            <Select 
+                            <Select
                                 value={culturalInfo.petFriendly}
-                                onValueChange={(value) => setCulturalInfo({...culturalInfo, petFriendly: value})}
+                                onValueChange={(value) => setCulturalInfo({ ...culturalInfo, petFriendly: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full ">
                                     <SelectValue />
@@ -273,11 +429,36 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div>
+                            <Label>Personality Type</Label>
+                            <Select
+                                value={personality}
+                                onValueChange={(value) => setPersonality(value)}
+                            >
+                                <SelectTrigger className="mt-2 w-full">
+                                    <SelectValue placeholder="Select personality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="outgoing">Outgoing</SelectItem>
+                                    <SelectItem value="relaxed">Relaxed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2 mt-4">
+                        <input
+                            type="checkbox"
+                            id="lgbtqia"
+                            checked={lgbtqiaPlusFriendly}
+                            onChange={(e) => setLgbtqiaPlusFriendly(e.target.checked)}
+                            className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
+                        />
+                        <Label htmlFor="lgbtqia">I am LGBTQIA+ Friendly</Label>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -296,30 +477,30 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                     Edit Preferences
                 </Button>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' p-0 border-none'>
+                <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
-                        <div className="p-4 border rounded-lg">
+                        <div className="p-4 border border-border rounded-lg bg-card">
                             <p className="text-sm text-muted-foreground mb-1">Preferred Client Age</p>
-                            <p className="font-medium">{preferences.preferredClientAge}</p>
+                            <p className="font-medium text-foreground">{preferences.preferredClientAge}</p>
                         </div>
-                        <div className="p-4 border rounded-lg">
+                        <div className="p-4 border border-border rounded-lg bg-card">
                             <p className="text-sm text-muted-foreground mb-1">Preferred Gender</p>
-                            <p className="font-medium">{preferences.preferredGender}</p>
+                            <p className="font-medium text-foreground">{preferences.preferredGender}</p>
                         </div>
-                        <div className="p-4 border rounded-lg">
+                        <div className="p-4 border border-border rounded-lg bg-card">
                             <p className="text-sm text-muted-foreground mb-1">Willing to Travel</p>
-                            <p className="font-medium">{preferences.willingToTravel === 'yes' ? 'Yes' : 'No'}</p>
+                            <p className="font-medium text-foreground">{preferences.willingToTravel === 'yes' ? 'Yes' : 'No'}</p>
                         </div>
-                        <div className="p-4 border rounded-lg">
+                        <div className="p-4 border border-border rounded-lg bg-card">
                             <p className="text-sm text-muted-foreground mb-1">Max Travel Distance</p>
-                            <p className="font-medium">{preferences.maxTravelDistance} km</p>
+                            <p className="font-medium text-foreground">{preferences.maxTravelDistance} km</p>
                         </div>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -332,35 +513,35 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                 <h2 className="text-2xl font-bold mb-2">Bank Account Details</h2>
                 <p className="text-muted-foreground">For receiving payments</p>
             </div>
-            <Card>
-                <CardContent className="pt-6 space-y-4">
+            <Card className=' border-none p-0'>
+                <CardContent className="pt-2 p-0 space-y-4">
                     <div className="grid gap-4">
                         <div>
                             <Label>Account Name</Label>
-                            <Input 
-                                placeholder="Account holder name" 
+                            <Input
+                                placeholder="Account holder name"
                                 value={bankDetails.accountName}
-                                onChange={(e) => setBankDetails({...bankDetails, accountName: e.target.value})}
-                                className="mt-2" 
+                                onChange={(e) => setBankDetails({ ...bankDetails, accountName: e.target.value })}
+                                className="mt-2"
                             />
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
                             <div>
                                 <Label>BSB</Label>
-                                <Input 
-                                    placeholder="XXX-XXX" 
+                                <Input
+                                    placeholder="XXX-XXX"
                                     value={bankDetails.bsb}
-                                    onChange={(e) => setBankDetails({...bankDetails, bsb: e.target.value})}
-                                    className="mt-2" 
+                                    onChange={(e) => setBankDetails({ ...bankDetails, bsb: e.target.value })}
+                                    className="mt-2"
                                 />
                             </div>
                             <div>
                                 <Label>Account Number</Label>
-                                <Input 
-                                    placeholder="XXXXXXXX" 
+                                <Input
+                                    placeholder="XXXXXXXX"
                                     value={bankDetails.accountNumber}
-                                    onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})}
-                                    className="mt-2" 
+                                    onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
+                                    className="mt-2"
                                 />
                             </div>
                         </div>
@@ -368,8 +549,62 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSave} className="">
                     Save All Additional Details
+                </Button>
+            </div>
+        </div>
+    );
+
+    const renderImmunisation = () => (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold mb-2">Immunisation Status</h2>
+                <p className="text-muted-foreground">Your vaccination status</p>
+            </div>
+            <Card className=' border-none p-0'>
+                <CardContent className="pt-6 p-0 space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="fluShot"
+                            checked={immunisation.hasSeasonalFluShot}
+                            onChange={(e) => setImmunisation({ ...immunisation, hasSeasonalFluShot: e.target.checked })}
+                            className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
+                        />
+                        <Label htmlFor="fluShot">I have a current seasonal flu shot</Label>
+                    </div>
+                    <div>
+                        <Label>COVID-19 Vaccine Status</Label>
+                        <Select
+                            value={immunisation.covidVaccineStatus}
+                            onValueChange={(value) => setImmunisation({ ...immunisation, covidVaccineStatus: value })}
+                        >
+                            <SelectTrigger className="mt-2 w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="fullyVaccinated">Fully Vaccinated</SelectItem>
+                                <SelectItem value="medicalCondition">Medical Condition</SelectItem>
+                                <SelectItem value="remoteWorker">Remote Worker</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="statusConfirmed"
+                            checked={immunisation.statusConfirmed}
+                            onChange={(e) => setImmunisation({ ...immunisation, statusConfirmed: e.target.checked })}
+                            className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
+                        />
+                        <Label htmlFor="statusConfirmed">I confirm this status is accurate</Label>
+                    </div>
+                </CardContent>
+            </Card>
+            <div className="flex justify-end">
+                <Button onClick={handleSave} className="">
+                    Save and Continue
                 </Button>
             </div>
         </div>
@@ -382,6 +617,7 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
             {currentSection === 'cultural-background' && renderCulturalBackground()}
             {currentSection === 'preferences' && renderPreferences()}
             {currentSection === 'bank-account' && renderBankAccount()}
+            {currentSection === 'immunisation' && renderImmunisation()}
 
             {/* Preferences Modal */}
             <Dialog open={isPreferencesModalOpen} onOpenChange={setIsPreferencesModalOpen}>
@@ -393,9 +629,9 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                     <div className="space-y-4 py-4">
                         <div>
                             <Label>Preferred Client Age</Label>
-                            <Select 
+                            <Select
                                 value={preferences.preferredClientAge}
-                                onValueChange={(value) => setPreferences({...preferences, preferredClientAge: value})}
+                                onValueChange={(value) => setPreferences({ ...preferences, preferredClientAge: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -410,9 +646,9 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                         </div>
                         <div>
                             <Label>Preferred Gender</Label>
-                            <Select 
+                            <Select
                                 value={preferences.preferredGender}
-                                onValueChange={(value) => setPreferences({...preferences, preferredGender: value})}
+                                onValueChange={(value) => setPreferences({ ...preferences, preferredGender: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -426,9 +662,9 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                         </div>
                         <div>
                             <Label>Willing to Travel</Label>
-                            <Select 
+                            <Select
                                 value={preferences.willingToTravel}
-                                onValueChange={(value) => setPreferences({...preferences, willingToTravel: value})}
+                                onValueChange={(value) => setPreferences({ ...preferences, willingToTravel: value })}
                             >
                                 <SelectTrigger className="mt-2 w-full">
                                     <SelectValue />
@@ -444,14 +680,14 @@ export default function AdditionalDetails({ onSave, currentView = 'languages' }:
                             <Input
                                 type="number"
                                 value={preferences.maxTravelDistance}
-                                onChange={(e) => setPreferences({...preferences, maxTravelDistance: e.target.value})}
+                                onChange={(e) => setPreferences({ ...preferences, maxTravelDistance: e.target.value })}
                                 className="mt-2 w-full"
                             />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsPreferencesModalOpen(false)}>Cancel</Button>
-                        <Button onClick={() => setIsPreferencesModalOpen(false)}>Save Changes</Button>
+                        <Button onClick={handleSavePreferences}>Save Changes</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

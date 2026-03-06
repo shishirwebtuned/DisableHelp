@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import api from '@/lib/axios';
+import { useAppDispatch } from '@/hooks/redux';
+import { getmee } from '@/redux/slices/authSlice';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,29 +13,40 @@ import { Slider } from '@/components/ui/slider';
 
 interface ProfileImageEditorProps {
     onSave: (imageData: { base64: string; binary: Blob | null }) => void;
+    initialData?: { base64: string; binary: Blob | null };
+    /** fileType sent to delete API (defaults to 'avatar') */
+    fileType?: string;
 }
 
-export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) {
-    const [profileImage, setProfileImage] = useState('https://ui.shadcn.com/avatars/01.png');
-    const [originalImage, setOriginalImage] = useState<string | null>(null);
+export default function ProfileImageEditor({ onSave, initialData, fileType = 'avatar' }: ProfileImageEditorProps) {
+    const dispatch = useAppDispatch();
+    const [profileImage, setProfileImage] = useState(initialData?.base64 || 'https://ui.shadcn.com/avatars/10.png');
+    const [originalImage, setOriginalImage] = useState<string | null>(initialData?.base64 || null);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [imageBinary, setImageBinary] = useState<Blob | null>(null);
-    
+    const [imageBinary, setImageBinary] = useState<Blob | null>(initialData?.binary || null);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
-    
+
     useEffect(() => {
-        console.log('ProfileImage Data:', {
-            base64: profileImage,
-            hasImageBinary: !!imageBinary,
-            binarySize: imageBinary?.size,
-            binaryType: imageBinary?.type
+        if (initialData) {
+            setProfileImage(initialData.base64);
+            setImageBinary(initialData.binary);
+        }
+    }, [initialData]);
+
+    useEffect(() => {
+        console.log('ProfileImage Editor State:', {
+            hasBase64: !!profileImage,
+            base64Length: profileImage?.length,
+            hasBinary: !!imageBinary,
+            binarySize: imageBinary?.size
         });
     }, [profileImage, imageBinary]);
 
@@ -152,7 +166,7 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
                     size: blob.size,
                     type: blob.type
                 });
-                
+
                 // Call the onSave callback with both base64 and binary
                 onSave({
                     base64: croppedBase64,
@@ -164,32 +178,48 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
         setIsEditorOpen(false);
     };
 
-    const handleRemovePhoto = () => {
+    const handleRemovePhoto = async () => {
+        // Local removal first
         setProfileImage('https://ui.shadcn.com/avatars/01.png');
         setImageBinary(null);
         onSave({
             base64: 'https://ui.shadcn.com/avatars/01.png',
             binary: null
         });
-        console.log('Profile image removed');
+
+        // Call server to remove the avatar file. Backend expects fileType in body.
+        try {
+            const payload = { fileType };
+            // axios.delete with body requires `data` option
+            await api.delete('profile/worker/file', { data: payload });
+            dispatch(getmee());
+            console.log('Profile image removed on server');
+        } catch (err) {
+            console.error('Failed to delete profile image on server', err);
+        }
     };
 
     const handleSaveAndContinue = () => {
-        if (imageBinary) {
+        // Allow continuing if we have either a new binary OR an existing profile image URL
+        if (imageBinary || (profileImage && !profileImage.startsWith('data:'))) {
             onSave({
                 base64: profileImage,
                 binary: imageBinary
             });
-            console.log('=== Profile Image Saved ===');
-            console.log('Binary Blob:', {
-                size: imageBinary.size,
-                type: imageBinary.type,
-                hasBinary: true
+            console.log('=== Profile Image Section Saved ===', {
+                hasBinary: !!imageBinary,
+                imageSource: profileImage.startsWith('data:') ? 'base64/new' : 'existing-url'
             });
-            alert('Profile photo saved successfully with binary data!');
+        } else if (profileImage && profileImage.startsWith('data:')) {
+            // Case where they cropped but didn't trigger onSave yet? 
+            // handleSaveCrop already calls onSave, so this might be redundant but safe
+            onSave({
+                base64: profileImage,
+                binary: imageBinary
+            });
         } else {
-            console.log('No image binary available');
-            alert('Please upload and crop an image first');
+            console.log('No image binary or existing image available');
+            alert('Please upload and crop an image first or keep your existing photo.');
         }
     };
 
@@ -235,9 +265,9 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
                     </div>
                 </CardContent>
             </Card>
-            
+
             <div className="flex justify-end">
-                <Button onClick={handleSaveAndContinue} className="bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSaveAndContinue} className="">
                     Save and Continue
                 </Button>
             </div>
@@ -272,7 +302,7 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
                         {/* Controls */}
                         <div className="space-y-4">
                             {/* Zoom Control */}
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium flex items-center gap-2">
                                         <ZoomIn className="h-4 w-4" />
@@ -290,7 +320,7 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
                             </div>
 
                             {/* Rotation Control */}
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium flex items-center gap-2">
                                         <RotateCw className="h-4 w-4" />
@@ -348,7 +378,7 @@ export default function ProfileImageEditor({ onSave }: ProfileImageEditorProps) 
                         <Button variant="outline" onClick={() => setIsEditorOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSaveCrop} className="bg-orange-500 hover:bg-orange-600">
+                        <Button onClick={handleSaveCrop} className="">
                             Save Photo
                         </Button>
                     </DialogFooter>

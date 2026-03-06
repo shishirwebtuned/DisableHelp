@@ -113,7 +113,7 @@ export default function AdminInvoicesPage() {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">Invoice Management</h1>
@@ -292,7 +292,7 @@ export default function AdminInvoicesPage() {
                                                         </div>
                                                     )}
 
-                                                    <div className="space-y-2">
+                                                    <div className="space-y-6">
                                                         <Label htmlFor="adminNotes">Admin Notes</Label>
                                                         <Textarea
                                                             id="adminNotes"

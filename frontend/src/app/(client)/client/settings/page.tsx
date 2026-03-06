@@ -11,11 +11,56 @@ import DashboardStyleSwitcher from '@/components/common/DashboardStyleSwitcher';
 import { Lock, Bell, UserCircle, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
+import { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { changePassword } from '@/redux/slices/authSlice';
+import { toast } from 'sonner';
+
 export default function ClientSettingsPage() {
+    const dispatch = useAppDispatch();
+    const { user, isLoading } = useAppSelector((state) => state.auth);
     const { theme, setTheme } = useTheme();
 
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    const [accountData, setAccountData] = useState({
+        email: '',
+        phone: ''
+    });
+
+    useEffect(() => {
+        if (user) {
+            setAccountData({
+                email: user.email || '',
+                phone: '' // Assume phone isn't in user object yet
+            });
+        }
+    }, [user]);
+
+    const handleUpdatePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        try {
+            await dispatch(changePassword({
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            })).unwrap();
+            toast.success('Password updated successfully');
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error: any) {
+            toast.error(error || 'Failed to update password');
+        }
+    };
+
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-xl font-bold tracking-tight">Settings</h1>
                 <p className="text-muted-foreground">Manage your account preferences and security</p>
@@ -40,16 +85,28 @@ export default function ClientSettingsPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="email">Email Address</Label>
-                                    <Input id="email" type="email" defaultValue="client@example.com" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={accountData.email}
+                                        onChange={(e) => setAccountData({ ...accountData, email: e.target.value })}
+                                        disabled
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Email cannot be changed directly</p>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label htmlFor="phone">Phone Number</Label>
-                                    <Input id="phone" type="tel" defaultValue="+61 411 111 111" />
+                                    <Input
+                                        id="phone"
+                                        type="tel"
+                                        value={accountData.phone}
+                                        onChange={(e) => setAccountData({ ...accountData, phone: e.target.value })}
+                                    />
                                 </div>
                             </div>
-                            <Button>Save Changes</Button>
+                            <Button disabled={isLoading}>Save Changes</Button>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -64,15 +121,36 @@ export default function ClientSettingsPage() {
                             <CardDescription>Manage your security settings</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="current">Current Password</Label>
-                                <Input id="current" type="password" />
+                                <Input
+                                    id="current"
+                                    type="password"
+                                    value={passwordData.currentPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="new">New Password</Label>
-                                <Input id="new" type="password" />
+                                <Input
+                                    id="new"
+                                    type="password"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                />
                             </div>
-                            <Button>Update Password</Button>
+                            <div className="space-y-6">
+                                <Label htmlFor="confirm">Confirm New Password</Label>
+                                <Input
+                                    id="confirm"
+                                    type="password"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                />
+                            </div>
+                            <Button onClick={handleUpdatePassword} disabled={isLoading}>
+                                {isLoading ? 'Updating...' : 'Update Password'}
+                            </Button>
                         </CardContent>
                     </Card>
                 </TabsContent>

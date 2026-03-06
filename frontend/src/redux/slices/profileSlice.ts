@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { WorkerProfile, ClientProfile } from '@/types';
+import api from '@/lib/axios';
+import { WorkerProfileSchema } from '@/types/workerProfileSchema';
 
 interface ProfileState {
     workerProfile: WorkerProfile | null;
@@ -88,11 +90,36 @@ export const fetchWorkerProfile = createAsyncThunk(
 );
 
 // Mock async thunk for updating worker profile
+// Update worker profile
 export const updateWorkerProfile = createAsyncThunk(
     'profile/updateWorkerProfile',
-    async (profile: Partial<WorkerProfile>) => {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        return profile;
+    async (profileData: Partial<WorkerProfile> | FormData, { rejectWithValue }) => {
+        try {
+            // If profileData is FormData, axios will automatically set the Content-Type to multipart/form-data
+            const response = await api.patch('/profile/worker', profileData);
+            return response.data;
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return rejectWithValue(error.response.data);
+            }
+            return rejectWithValue({ message: 'Failed to update profile' });
+        }
+    }
+);
+
+// Submit worker profile to API
+export const submitWorkerProfile = createAsyncThunk(
+    'profile/submitWorkerProfile',
+    async (profileData: WorkerProfileSchema, { rejectWithValue }) => {
+        try {
+            const response = await api.put('/profile/worker', profileData);
+            return response.data;
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return rejectWithValue(error.response.data);
+            }
+            return rejectWithValue({ message: 'Failed to submit profile' });
+        }
     }
 );
 
@@ -134,6 +161,22 @@ const profileSlice = createSlice({
                 if (state.workerProfile) {
                     state.workerProfile = { ...state.workerProfile, ...action.payload };
                 }
+            })
+            .addCase(submitWorkerProfile.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(submitWorkerProfile.fulfilled, (state, action) => {
+                state.loading = false;
+                state.error = null;
+                // Optionally update the worker profile with response data
+                if (action.payload && action.payload.data) {
+                    state.workerProfile = action.payload.data;
+                }
+            })
+            .addCase(submitWorkerProfile.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string || 'Failed to submit profile';
             });
     },
 });

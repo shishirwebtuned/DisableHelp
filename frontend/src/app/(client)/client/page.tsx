@@ -127,8 +127,8 @@ export default function ClientDashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            {/* <div className="grid gap-4 md:grid-cols-3">
+                <div className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Users className="h-5 w-5" />
@@ -141,7 +141,7 @@ export default function ClientDashboard() {
                             <Button variant="outline" className="w-full">Go to Workers</Button>
                         </Link>
                     </CardContent>
-                </Card>
+                </div>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function ClientDashboard() {
                         </Link>
                     </CardContent>
                 </Card>
-            </div>
+            </div> */}
         </div>
     );
 }

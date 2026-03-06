@@ -1,14 +1,13 @@
 'use client';
-
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -30,15 +29,20 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
         <div className="flex flex-col h-full py-3">
             {/* BRANDING */}
             <div className={cn("px-3 mb-3 flex items-center gap-2 transition-all", collapsed && "justify-center px-0")}> 
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 font-bold text-white shadow-sm">
-                    D
-                </div>
-                {!collapsed && (
+<div className="flex  items-center justify-center rounded bg-white  shrink-0">
+  <Image
+    src="/Logo.png"
+    alt="Logo"
+    width={200}
+    height={200}
+    className="object-contain"
+  />
+</div>
+                {/* {!collapsed && (
                     <div className="flex flex-col">
                         <span className="font-bold tracking-tight text-foreground">Disable Help</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Classic Dashboard</span>
                     </div>
-                )}
+                )} */}
             </div>
 
             <div className="px-2 space-y-0.5">
@@ -52,22 +56,22 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                                     "w-full justify-start gap-3 transition-all duration-150 group relative",
                                     collapsed ? "justify-center px-0 h-11" : "px-3 h-10",
                                     isActive 
-                                        ? 'bg-blue-600 text-white font-medium shadow-sm' 
-                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        ? 'bg-[#8ac6dd] text-[#042a2d] font-medium hover:bg-[#8ac6dd] hover:text-[#042a2d]' 
+                                        : 'text-gray-600 '
                                 )}
                             >
-                                <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-white")} />
+                                <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-[#042a2d]")} />
                                 {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
                                 
                                 {!collapsed && item.badge && (
-                                    <Badge className="bg-blue-600 hover:bg-blue-600 text-[10px] h-5 px-1.5 shadow-none text-white">
+                                    <Badge className="  text-[10px] h-5 px-1.5  text-[#042a2d]">
                                         {item.badge}
                                     </Badge>
                                 )}
 
                                 {/* Active Indicator Bar */}
                                 {isActive && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-blue-600" />
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 " />
                                 )}
                             </Button>
                         </Link>
@@ -79,13 +83,13 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
 
     return (
         // 1. Fixed height container to prevent page-level scrollbars
-        <div className="flex h-screen overflow-hidden bg-[#fbfaff] dark:bg-slate-950">
+        <div className="flex h-screen overflow-hidden bg-[#fbfaff]">
             
             {/* SIDEBAR */}
             <aside 
                 className={cn(
-                    "hidden md:flex flex-col border-r bg-white dark:bg-slate-900 transition-all duration-300 relative z-40 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
-                    sidebarOpen ? 'w-64' : 'w-20'
+                    "hidden md:flex flex-col border-r border-slate-300 bg-white transition-all duration-300 relative z-40 ",
+                    sidebarOpen ? 'w-60' : 'w-20'
                 )}
             >
                 <ScrollArea className="flex-1">
@@ -97,7 +101,7 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                     variant="secondary"
                     size="icon"
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="absolute -right-3 top-20 h-6 w-6 rounded-full border shadow-sm z-50 hover:bg-purple-600 hover:text-white transition-colors"
+                    className="absolute cursor-pointer -right-3 top-20 h-6 w-6 rounded-full border shadow-sm z-50  hover:text-white transition-colors"
                 >
                     {sidebarOpen ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                 </Button>
@@ -107,7 +111,7 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 
                 {/* TOP HEADER */}
-                <header className="h-16 shrink-0 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 md:px-8 flex items-center justify-between z-30">
+                <header className="h-16 shrink-0 border-b border-slate-300 bg-white/80 backdrop-blur-md px-4 md:px-8 flex items-center justify-between z-30">
                     <div className="flex items-center gap-4">
                         <Sheet>
                             <SheetTrigger asChild>
@@ -119,6 +123,11 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                                 <NavContent />
                             </SheetContent>
                         </Sheet>
+
+                        {/* Desktop toggle to collapse/expand sidebar */}
+                        <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                            <Menu className="h-5 w-5" />
+                        </Button>
                         <h1 className="text-sm font-semibold text-muted-foreground md:text-base flex items-center gap-2">
                             <LayoutDashboard className="h-4 w-4" />
                             Dashboard
@@ -133,9 +142,9 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                 </header>
 
                 {/* SCROLLABLE CONTENT AREA */}
-                <main className="flex-1 overflow-y-auto p-2 md:p-2 ">
+                <main className="flex-1 overflow-y-auto p-2 md:p-2">
                     {/* The Card now fills the space or grows with content */}
-                    <div className="min-h-full   p-6">
+                    <div className="min-h-full   md:p-6 p-2">
                         {children}
                     </div>
                 </main>

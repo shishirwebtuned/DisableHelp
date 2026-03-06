@@ -35,7 +35,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, FileText, DollarSign, Clock, CheckCircle2, XCircle, AlertCircle, Edit, Trash2 } from 'lucide-react';import { DeleteConfirmation } from '@/components/common/DeleteConfirmation';
+import { Plus, FileText, DollarSign, Clock, CheckCircle2, XCircle,  Edit, Trash2 } from 'lucide-react';import { DeleteConfirmation } from '@/components/common/DeleteConfirmation';
 export default function WorkerInvoicesPage() {
     const dispatch = useAppDispatch();
     const { items: invoices, loading } = useAppSelector((state) => state.invoices);
@@ -45,9 +45,7 @@ export default function WorkerInvoicesPage() {
     const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; id: string | null; name: string }>({ isOpen: false, id: null, name: '' });
 
-    useEffect(() => {
-        dispatch(fetchInvoices(user?.id));
-    }, [dispatch, user?.id]);
+
 
     const canSubmitInvoice = workerProfile && workerProfile.completeness === 100;
 
@@ -105,7 +103,7 @@ export default function WorkerInvoicesPage() {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight">Invoices</h1>
@@ -133,19 +131,7 @@ export default function WorkerInvoicesPage() {
                 </Dialog>
             </div>
 
-            {!canSubmitInvoice && (
-                <Card className="border-l-4 border-l-amber-600 bg-amber-50 dark:bg-amber-950/20">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
-                            <AlertCircle className="h-5 w-5" />
-                            Profile Incomplete
-                        </CardTitle>
-                        <CardDescription className="text-amber-800 dark:text-amber-200">
-                            Complete your profile to 100% before submitting invoices. This includes adding bank details.
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
-            )}
+
 
             {/* Stats */}
             <div className="grid gap-4 md:grid-cols-3">
@@ -308,7 +294,7 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="client">Client</Label>
                     <Select
                         value={formData.clientId}
@@ -325,7 +311,7 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="frequency">Frequency</Label>
                     <Select
                         value={formData.frequency}
@@ -344,14 +330,14 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="periodStart">Period Start</Label>
                     <DatePicker
                         date={formData.periodStart ? parseISO(formData.periodStart) : undefined}
                         setDate={(date) => setFormData({ ...formData, periodStart: date ? format(date, 'yyyy-MM-dd') : '' })}
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="periodEnd">Period End</Label>
                     <DatePicker
                         date={formData.periodEnd ? parseISO(formData.periodEnd) : undefined}
@@ -361,7 +347,7 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="hours">Total Hours</Label>
                     <Input
                         id="hours"
@@ -372,7 +358,7 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
                         required
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-6">
                     <Label htmlFor="rate">Hourly Rate ($)</Label>
                     <Input
                         id="rate"
@@ -396,7 +382,7 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
                 </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-6">
                 <Label htmlFor="notes">Notes (Optional)</Label>
                 <Textarea
                     id="notes"
@@ -406,7 +392,6 @@ function InvoiceForm({ invoice, onClose }: { invoice?: any; onClose: () => void 
                     rows={3}
                 />
             </div>
-
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose}>
                     Cancel

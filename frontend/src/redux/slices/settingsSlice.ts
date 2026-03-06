@@ -31,13 +31,6 @@ const initialState: SettingsState = {
 };
 
 // Async thunks
-export const fetchAdminSettings = createAsyncThunk(
-    'settings/fetchAdminSettings',
-    async () => {
-        const response = await api.get('/admin/settings');
-        return response.data;
-    }
-);
 
 export const updateAdminAccount = createAsyncThunk(
     'settings/updateAdminAccount',
@@ -49,8 +42,8 @@ export const updateAdminAccount = createAsyncThunk(
 
 export const updateAdminPassword = createAsyncThunk(
     'settings/updateAdminPassword',
-    async (passwordData: { currentPassword: string; newPassword: string }) => {
-        const response = await api.put('/admin/settings/password', passwordData);
+    async (passwordData: { email: string; currentPassword: string; newPassword: string }) => {
+        const response = await api.post('/users/change-password', passwordData);
         return response.data;
     }
 );
@@ -85,20 +78,6 @@ const settingsSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Fetch settings
-            .addCase(fetchAdminSettings.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchAdminSettings.fulfilled, (state, action) => {
-                state.loading = false;
-                state.admin = action.payload.admin;
-                state.platform = action.payload.platform;
-            })
-            .addCase(fetchAdminSettings.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.error.message || 'Failed to fetch settings';
-            })
             // Update admin account
             .addCase(updateAdminAccount.fulfilled, (state, action) => {
                 if (state.admin) {

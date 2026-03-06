@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import ClassicLayout from './ClassicLayout';
-import ModernLayout from './ModernLayout';
 import EnterpriseLayout from './EnterpriseLayout';
 import { useAppDispatch } from '@/hooks/redux';
 import { setDashboardVariant, setSidebarOpen, setTheme } from '@/redux/slices/uiSlice';
@@ -30,8 +29,6 @@ export default function DashboardWrapper({ children }: { children: React.ReactNo
     }, [dispatch]);
 
     switch (dashboardVariant) {
-        case 'modern':
-            return <ModernLayout>{children}</ModernLayout>;
         case 'enterprise':
             return <EnterpriseLayout>{children}</EnterpriseLayout>;
         case 'classic':

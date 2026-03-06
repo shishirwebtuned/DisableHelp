@@ -93,16 +93,25 @@ export interface ClientProfile {
 }
 
 // Job Types
+export interface JobLocation {
+    line1: string;
+    line2: string;
+    state: string;
+    postalCode: string;
+}
+
 export interface Job {
-    id: string;
+    _id: string;
     title: string;
     clientId: string;
     clientName: string;
     description: string;
-    location: string;
+    location: string | JobLocation;
     rate: number;
+    // some forms and API use `hourlyRate`; keep optional for compatibility
+    hourlyRate?: number;
     tags: string[];
-    status: 'draft' | 'published' | 'closed';
+    status: 'draft' | 'published' | 'closed' | 'pending';
     requirements: string[];
     startDate: string;
     endDate?: string;
@@ -112,7 +121,7 @@ export interface Job {
 }
 
 export interface Application {
-    id: string;
+    _id: string;
     jobId: string;
     workerId: string;
     workerName: string;
