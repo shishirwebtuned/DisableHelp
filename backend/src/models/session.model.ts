@@ -62,8 +62,17 @@ const sessionSchema = new mongoose.Schema(
       ref: "User",
     },
 
+    cancelledByRole: {
+      type: String,
+      enum: ["client", "worker", "admin"],
+    },
+
     cancelledAt: {
       type: Date,
+    },
+
+    cancelledReason: {
+      type: String,
     },
   },
   { timestamps: true },

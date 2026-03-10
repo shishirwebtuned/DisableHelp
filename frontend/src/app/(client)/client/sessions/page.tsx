@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect, use } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import {
-    fetchSessions,
-    createSession,
-    updateSession,
+    fetchSessionsByUser,
     rescheduleSession,
     cancelSession,
 } from '@/redux/slices/sessionsSlice';
@@ -18,9 +16,7 @@ import {
     Calendar as CalendarIcon,
     Clock,
     User,
-    MapPin,
     CheckCircle2,
-    Video,
     MoreVertical,
     Plus,
     Filter,
@@ -47,8 +43,36 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from '@/components/ui/date-picker';
 import { format, parseISO } from 'date-fns';
-import { fetchServices } from "@/redux/slices/servicesSlice"
 import Loading from '@/components/ui/loading';
+import { cn } from '@/lib/utils';
+
+type Status = "scheduled" | "in-progress" | "completed" | "cancelled";
+
+interface StatusBadgeProps {
+    status: Status | string;
+    className?: string;
+}
+
+export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
+    const base =
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize";
+
+    const variants: Record<string, string> = {
+        scheduled: "bg-blue-100 text-blue-700 border border-blue-200",
+        "in-progress": "bg-yellow-100 text-yellow-700 border border-yellow-200",
+        completed: "bg-green-100 text-green-700 border border-green-200",
+        cancelled: "bg-red-100 text-red-700 border border-red-200",
+    };
+
+    const style = variants[status] || "bg-gray-100 text-gray-600 border";
+
+    return (
+        <span className={cn(base, style, className)}>
+            {status?.replace("-", " ")}
+        </span>
+    );
+};
+
 export default function ClientSessionsPage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
@@ -60,6 +84,8 @@ export default function ClientSessionsPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'reschedule'>('create');
     const [editingSession, setEditingSession] = useState<any>(null);
+
+    const [statusFilter, setStatusFilter] = useState<string>("all");
 
     // Form state for new/edit session
     const [formData, setFormData] = useState({
@@ -74,54 +100,37 @@ export default function ClientSessionsPage() {
     });
 
     useEffect(() => {
-        dispatch(fetchSessions());
+        dispatch(fetchSessionsByUser());
     }, [dispatch]);
 
-
-
-    useEffect(() => {
-        if (services.length === 0) {
-            dispatch(fetchServices({}));
-        }
-    }, [dispatch, services.length]);
-
-    // If services load and current form type isn't one of them, default to first service
-    useEffect(() => {
-        if (services && services.length > 0) {
-            const found = services.find((s: any) => s.id === formData.serviceId);
-            if (!found) {
-                setFormData(fd => ({ ...fd, serviceId: services[0]._id }));
-            }
-        }
-    }, [services]);
-
-    const getServiceName = (session: any) => {
-        const idOrName = session.serviceId ?? session.type;
-        if (!idOrName) return '';
-        // Try find by id first
-        const byId = services.find((s: any) => s._id === idOrName);
-        if (byId) return byId.name;
-        // Then find by name
-        const byName = services.find((s: any) => s.name === idOrName);
-        if (byName) return byName.name;
-        return typeof idOrName === 'string' ? idOrName : '';
-    }
-
     const filteredSessions = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+
         return sessions.filter(session => {
             const sessionDate = new Date(session.date);
-            const serviceName = getServiceName(session).toLowerCase();
-            const matchesSearch = session.workerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                serviceName.includes(searchTerm.toLowerCase());
 
-            const isSameDay = selectedDate &&
+            const firstName = session.worker?.firstName?.toLowerCase() || "";
+            const lastName = session.worker?.lastName?.toLowerCase() || "";
+            const jobTitle = session.job?.title?.toLowerCase() || "";
+
+            const matchesSearch =
+                firstName.includes(term) ||
+                lastName.includes(term) ||
+                `${firstName} ${lastName}`.includes(term) ||
+                jobTitle.includes(term);
+
+            const isSameDay = !selectedDate || (
                 sessionDate.getDate() === selectedDate.getDate() &&
                 sessionDate.getMonth() === selectedDate.getMonth() &&
-                sessionDate.getFullYear() === selectedDate.getFullYear();
+                sessionDate.getFullYear() === selectedDate.getFullYear()
+            );
 
-            return matchesSearch && isSameDay;
+            const matchesStatus =
+                statusFilter === "all" || session.status === statusFilter;
+
+            return matchesSearch && isSameDay && matchesStatus;
         });
-    }, [sessions, selectedDate, searchTerm, services]);
+    }, [sessions, selectedDate, searchTerm, statusFilter]);
 
     const openForCreate = () => {
         setDrawerMode('create');
@@ -192,25 +201,9 @@ export default function ClientSessionsPage() {
         const sessionDateTime = new Date(year, month - 1, day, hour, minute).toISOString();
 
         if (drawerMode === 'create') {
-            await dispatch(createSession({
-                workerId: formData.workerId || 'w1',
-                workerName: formData.workerName,
-                type: formData.serviceId,
-                date: sessionDateTime,
-                duration: formData.duration,
-                location: formData.location || 'Home Address',
-                mode: formData.mode
-            }));
+
         } else if (drawerMode === 'edit' && editingSession) {
-            await dispatch(updateSession({
-                ...editingSession,
-                workerName: formData.workerName,
-                type: formData.serviceId,
-                date: sessionDateTime,
-                duration: formData.duration,
-                location: formData.location,
-                mode: formData.mode
-            }));
+
         } else if (drawerMode === 'reschedule' && editingSession) {
             await dispatch(rescheduleSession({
                 id: editingSession.id,
@@ -225,26 +218,17 @@ export default function ClientSessionsPage() {
         await dispatch(cancelSession(id));
     };
 
-    const getStatusVariant = (status: string) => {
-        switch (status) {
-            case 'confirmed': return 'default';
-            case 'pending': return 'secondary';
-            case 'cancelled': return 'destructive';
-            default: return 'outline';
-        }
-    };
-
     const nextSession = useMemo(() => {
         const now = new Date();
         return [...sessions]
-            .filter(s => new Date(s.date) >= now && s.status !== 'cancelled')
+            .filter(s => new Date(s.date) >= now && s.status !== 'cancelled' && s.status !== "completed")
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     }, [sessions]);
 
     return (
         <>
             {
-                loading || servicesLoading && <Loading />
+                (loading || servicesLoading) && <Loading />
             }
 
             <div className="space-y-6">
@@ -252,14 +236,13 @@ export default function ClientSessionsPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight">Support Sessions</h1>
-                        <p className="text-muted-foreground">Manage your bookings and track worker visits</p>
                     </div>
 
                     <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} direction="right">
-                        <Button onClick={openForCreate} className="">
+                        {/* <Button onClick={openForCreate} className="">
                             <Plus className="h-4 w-4 mr-2" />
                             Book New Session
-                        </Button>
+                        </Button> */}
                         <DrawerContent>
                             <DrawerHeader>
                                 <DrawerTitle className="text-2xl font-bold">
@@ -399,8 +382,8 @@ export default function ClientSessionsPage() {
                         </div>
 
                         {nextSession && (
-                            <Card className="p-5 border-none shadow-sm bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-                                <h4 className="font-bold mb-4 flex items-center gap-2">
+                            <Card className="p-3 md:p-4 border-none shadow-sm bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+                                <h4 className="font-bold mb-1 flex items-center gap-2">
                                     <CheckCircle2 className="h-5 w-5" />
                                     Your Next Session
                                 </h4>
@@ -412,18 +395,20 @@ export default function ClientSessionsPage() {
                                     </div>
                                     <div className="pt-2 border-t border-white/20">
                                         <p className="text-blue-100 text-xs uppercase tracking-wider font-bold">Supporting Worker</p>
-                                        <p className="font-medium flex items-center gap-2 mt-1">
+                                        <div className="font-medium flex items-center gap-2 mt-1">
                                             <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
-                                                {nextSession.workerName.charAt(0)}
+                                                {`${nextSession.worker?.firstName?.[0] ?? ""} ${nextSession.worker?.lastName?.[0] ?? ""}`}
                                             </div>
-                                            {nextSession.workerName}
-                                        </p>
+                                            <p>
+                                                {`${nextSession.worker.firstName}  ${nextSession.worker.lastName}`}
+                                            </p>
+                                        </div>
                                     </div>
                                     <Button
                                         variant="secondary"
                                         size="sm"
-                                        className="w-full mt-2 bg-white text-blue-700 hover:bg-white/90 border-none font-bold"
-                                        onClick={() => router.push(`/profile/${nextSession.workerId}`)}
+                                        className="w-full mt-1 bg-white text-blue-700 hover:bg-white/90 border-none font-bold"
+                                        onClick={() => router.push(`/profile/${nextSession.worker._id}`)}
                                     >
                                         View Worker Profile
                                     </Button>
@@ -439,16 +424,26 @@ export default function ClientSessionsPage() {
                                 <div className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                                     <Input
-                                        placeholder="Search by worker or service type..."
-                                        className="pl-10 h-10 bg-white dark:bg-slate-950"
+                                        placeholder="Search by worker or job title..."
+                                        className="pl-10 h-10 bg-slate-800 text-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
-                                <Button variant="outline" className="h-10">
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    Filters
-                                </Button>
+                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                    <SelectTrigger className="h-10 w-[160px]">
+                                        <Filter className="h-4 w-4 mr-2" />
+                                        <SelectValue placeholder="Filter status" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                                        <SelectItem value="in-progress">In Progress</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 
@@ -468,7 +463,7 @@ export default function ClientSessionsPage() {
                                 filteredSessions.map((session) => {
                                     const sessionDate = new Date(session.date);
                                     return (
-                                        <div key={session.id} className="group  transition-all overflow-hidden">
+                                        <div key={session._id} className="group  transition-all overflow-hidden">
                                             <div className={`h-1 w-full ${session.status === 'cancelled' ? 'bg-destructive' : 'bg-blue-600'}`} />
                                             <div className="p-5">
                                                 <div className="flex justify-between items-start">
@@ -479,36 +474,34 @@ export default function ClientSessionsPage() {
                                                         </div>
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-3">
-                                                                <h4 className="font-bold text-base">{getServiceName(session)}</h4>
-                                                                <Badge variant={getStatusVariant(session.status)} className="text-[10px] py-0 h-4 font-bold uppercase tracking-wider">
-                                                                    {session.status}
-                                                                </Badge>
+                                                                <h4 className="font-bold text-base">{session.job.title}</h4>
+                                                                <StatusBadge status={session.status} className="text-[10px] py-0 h-4 font-bold uppercase tracking-wider" />
                                                             </div>
                                                             <div className="flex flex-wrap gap-y-1 gap-x-4 text-sm text-muted-foreground mt-2">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <User className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{session.workerName}</span>
+                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{session.worker.firstName} {session.worker.lastName}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1.5">
                                                                     <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span>{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({session.duration})</span>
+                                                                    <span>{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({session.durationMinutes})</span>
                                                                 </div>
-                                                                <div className="flex items-center gap-1.5">
+                                                                {/* <div className="flex items-center gap-1.5">
                                                                     {session.mode === 'remote' ? <Video className="h-3.5 w-3.5 text-blue-500" /> : <MapPin className="h-3.5 w-3.5 text-blue-500" />}
                                                                     <span className="truncate max-w-[200px]">{session.location}</span>
-                                                                </div>
+                                                                </div> */}
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <Button
+                                                        {/* <Button
                                                             variant="outline"
                                                             size="sm"
                                                             className="hidden sm:flex hover:bg-blue-50 hover:text-blue-600 font-bold border-blue-100"
                                                             onClick={() => openForReschedule(session)}
                                                         >
                                                             Reschedule
-                                                        </Button>
+                                                        </Button> */}
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -518,26 +511,26 @@ export default function ClientSessionsPage() {
                                                             <DropdownMenuContent align="end" className="w-48 p-1">
                                                                 <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
-                                                                    onClick={() => router.push(`/profile/${session.workerId}`)}
+                                                                    onClick={() => router.push(`/profile/${session.worker._id}`)}
                                                                 >
                                                                     View Worker Profile
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem
+                                                                {/* <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
-                                                                    onClick={() => router.push(`/client/inbox/${session.workerId}`)}
+                                                                    onClick={() => router.push(`/client/inbox/${session.worker_.mnde}`)}
                                                                 >
                                                                     Message Worker
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
+                                                                </DropdownMenuItem> */}
+                                                                {/* <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
                                                                     onClick={() => openForEdit(session)}
                                                                 >
                                                                     Edit Booking
-                                                                </DropdownMenuItem>
+                                                                </DropdownMenuItem> */}
                                                                 {session.status !== 'cancelled' && (
                                                                     <DropdownMenuItem
                                                                         className="text-destructive cursor-pointer py-2 font-bold"
-                                                                        onClick={() => handleCancelSession(session.id)}
+                                                                        onClick={() => handleCancelSession(session._id)}
                                                                     >
                                                                         Cancel Session
                                                                     </DropdownMenuItem>

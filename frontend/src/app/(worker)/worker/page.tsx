@@ -26,8 +26,8 @@ export default function WorkerOverview() {
                     <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your account today.</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                     <Link href="/worker/jobs"><Button>Find Jobs</Button></Link>
-                    <Link href="/worker/schedule"><Button  variant="outline">View Calendar</Button></Link>
+                    <Link href="/worker/jobs"><Button>Find Jobs</Button></Link>
+                    <Link href="/worker/sessions"><Button variant="outline">View Calendar</Button></Link>
                 </div>
             </div>
 
@@ -41,7 +41,7 @@ export default function WorkerOverview() {
                     <Progress value={completion} className="w-full" />
                 </CardContent>
             </Card> */}
-        
+
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>

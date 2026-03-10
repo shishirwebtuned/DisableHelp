@@ -26,7 +26,7 @@ export const NAV_ITEMS = {
     { label: "Dashboard", href: "/worker", icon: LayoutDashboard },
     { label: "Edit Profile", href: "/worker/profile", icon: Pencil },
     { label: "View My Profile", href: "/worker/view-profile", icon: Eye },
-    { label: "My Schedule", href: "/worker/schedule", icon: Calendar },
+    { label: "Sessions", href: "/worker/sessions", icon: Calendar },
     { label: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
     { label: "My Clients", href: "/worker/clients", icon: Users },
     { label: "Invoices", href: "/worker/invoices", icon: FileText },
