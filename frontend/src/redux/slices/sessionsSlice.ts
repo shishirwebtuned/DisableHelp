@@ -31,6 +31,8 @@ export interface Session {
   completedAt?: string;
   cancelledBy?: string;
   cancelledAt?: string;
+  cancelledReason?: string;
+  cancelledByRole?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,7 +58,7 @@ export const fetchSessionsByUser = createAsyncThunk(
 );
 
 export const createSession = createAsyncThunk(
-  "sessions/createSession",
+  "session/createSession",
   async (sessionData: {
     agreementId: string;
     startDate: string;
@@ -86,10 +88,26 @@ export const rescheduleSession = createAsyncThunk(
 );
 
 export const cancelSession = createAsyncThunk(
-  "sessions/cancelSession",
-  async (id: string) => {
-    const response = await api.patch(`/api/sessions/${id}/cancel`);
+  "session/terminate",
+  async ({
+    sessionId,
+    cancelledReason,
+  }: {
+    sessionId: string;
+    cancelledReason: string;
+  }) => {
+    const response = await api.patch(`/api/session/${sessionId}/terminate`, {
+      cancelledReason: cancelledReason,
+    });
     return response.data.data;
+  },
+);
+
+export const fetchSessionById = createAsyncThunk(
+  "session/fetchSessionById",
+  async (sessionId: string) => {
+    const response = await api.get(`/session/${sessionId}`);
+    return response.data.data.sessions;
   },
 );
 
@@ -111,6 +129,29 @@ const sessionsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch sessions";
       })
+
+      // fetch session by id
+      .addCase(fetchSessionById.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchSessionById.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const index = state.items.findIndex(
+          (s) => s._id === action.payload._id,
+        );
+
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        } else {
+          state.items.push(action.payload);
+        }
+      })
+      .addCase(fetchSessionById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed";
+      })
+
       // Create session
       .addCase(createSession.pending, (state) => {
         state.loading = true;

@@ -25,21 +25,20 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
 
     const SidebarContent = ({ isOpen }: { isOpen: boolean }) => (
         <>
-            <div className={`px-3 mb-3 flex ${
-                isOpen ? 'justify-between items-center' : 'justify-center'
-            }`}>
+            <div className={`px-3 mb-3 flex ${isOpen ? 'justify-between items-center' : 'justify-center'
+                }`}>
                 {isOpen && (
                     <div className="flex items-center gap-2">
-                       <div className="flex  items-center justify-center  rounded  shrink-0">
-<Image
-  src="/Logo.png"
-  alt="Logo"
-  width={200}
-  height={200}
-  className="object-contain"
-/>
-                       </div>
-                        
+                        <div className="flex  items-center justify-center  rounded  shrink-0">
+                            <Image
+                                src="/disablehelplogo.png"
+                                alt="Logo"
+                                width={200}
+                                height={200}
+                                className="object-contain"
+                            />
+                        </div>
+
                     </div>
                 )}
                 <Button
@@ -57,13 +56,12 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
             </div>
 
             {/* Navigation Items */}
-            <div className={`flex flex-col space-y-1 flex-1 ${
-                isOpen ? 'px-2' : 'items-center'
-            }`}>
+            <div className={`flex flex-col space-y-1 flex-1 ${isOpen ? 'px-2' : 'items-center'
+                }`}>
                 {navItems.map((item: any) => (
                     <Link href={item.href} key={item.href}>
-                        <SidebarIcon 
-                            icon={item.icon} 
+                        <SidebarIcon
+                            icon={item.icon}
                             label={item.label}
                             active={pathname === item.href}
                             isOpen={isOpen}
@@ -78,9 +76,8 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
         <div className="flex h-screen overflow-hidden bg-slate-50">
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar - Desktop only, Expandable */}
-                <aside className={`hidden md:flex flex-col py-3 bg-white border-r border-slate-300 shadow-inner z-40 transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? 'w-64' : 'w-16'
-                }`}>
+                <aside className={`hidden md:flex flex-col py-3 bg-white border-r border-slate-300 shadow-inner z-40 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'
+                    }`}>
                     <SidebarContent isOpen={sidebarOpen} />
                 </aside>
 
@@ -123,13 +120,11 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
 
 function SidebarIcon({ icon: Icon, label, active, isOpen }: { icon: any, label?: string, active?: boolean, isOpen?: boolean }) {
     return (
-        <div className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all w-full ${
-            active 
-                ? 'bg-[#8ac6dd] text-[#042a2d] font-medium hover:bg-[#8ac6dd] hover:text-[#042a2d]' 
-                : 'text-slate-600 hover:bg-transparent'
-        } ${
-            isOpen ? 'justify-start' : 'justify-center'
-        }`}>
+        <div className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all w-full ${active
+            ? 'bg-[#8ac6dd] text-[#042a2d] font-medium hover:bg-[#8ac6dd] hover:text-[#042a2d]'
+            : 'text-slate-600 hover:bg-transparent'
+            } ${isOpen ? 'justify-start' : 'justify-center'
+            }`}>
             <Icon className="h-5 w-5 flex-shrink-0" />
             {isOpen && label && (
                 <span className="text-sm font-medium">{label}</span>

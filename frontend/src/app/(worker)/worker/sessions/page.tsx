@@ -1,16 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { RootState } from '@/redux/store';
 import {
-    fetchScheduleByDate,
-    fetchTodaySchedule,
-    fetchUpcomingShifts,
-    setSelectedDate,
     cancelScheduleItem,
-    rescheduleShift,
     confirmScheduleItem,
 } from '@/redux/slices/scheduleSlice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,22 +69,13 @@ export default function WorkerSchedulePage() {
     const { items: sessions, loading } = useAppSelector((state) => state.sessions);
 
 
-    const [selectedDate, setSelectedDateLocal] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>("all");
 
     useEffect(() => {
         dispatch(fetchSessionsByUser());
     }, [dispatch]);
-
-    // Fetch schedule when date changes
-    useEffect(() => {
-        if (selectedDate) {
-            const dateString = selectedDate.toISOString().split('T')[0];
-            dispatch(setSelectedDate(dateString));
-            dispatch(fetchScheduleByDate(dateString));
-        }
-    }, [selectedDate, dispatch]);
 
     const filteredSessions = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
@@ -109,16 +93,21 @@ export default function WorkerSchedulePage() {
                 `${firstName} ${lastName}`.includes(term) ||
                 jobTitle.includes(term);
 
-            const isSameDay = !selectedDate || (
-                sessionDate.getDate() === selectedDate.getDate() &&
-                sessionDate.getMonth() === selectedDate.getMonth() &&
-                sessionDate.getFullYear() === selectedDate.getFullYear()
-            );
+            let dateFilter = true;
+            if (selectedDate) {
+                dateFilter = sessionDate.getDate() === selectedDate.getDate() &&
+                    sessionDate.getMonth() === selectedDate.getMonth() &&
+                    sessionDate.getFullYear() === selectedDate.getFullYear();
+            } else {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                dateFilter = sessionDate >= today;
+            }
 
             const matchesStatus =
                 statusFilter === "all" || session.status === statusFilter;
 
-            return matchesSearch && isSameDay && matchesStatus;
+            return matchesSearch && dateFilter && matchesStatus;
         });
     }, [sessions, selectedDate, searchTerm, statusFilter]);
 
@@ -130,7 +119,7 @@ export default function WorkerSchedulePage() {
     }, [sessions]);
 
     const handleDateSelect = (date: Date | undefined) => {
-        setSelectedDateLocal(date);
+        setSelectedDate(date);
     };
 
     const handleCancelShift = async (id: string) => {
@@ -174,10 +163,10 @@ export default function WorkerSchedulePage() {
                     </div>
 
                     {nextShift && (
-                        <div className="p-5 border-none shadow-sm bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
-                            <h4 className="font-bold mb-4 flex items-center gap-2">
+                        <Card className="p-3 md:p-4 border-none shadow-sm bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+                            <h4 className="font-bold mb-3 flex items-center gap-2">
                                 <CheckCircle2 className="h-5 w-5" />
-                                Your Next Job
+                                Your Next Session
                             </h4>
                             <div className="space-y-3">
                                 <div>
@@ -195,7 +184,7 @@ export default function WorkerSchedulePage() {
                                     Shift Details
                                 </Button>
                             </div>
-                        </div>
+                        </Card>
                     )}
                 </div>
 
@@ -218,9 +207,15 @@ export default function WorkerSchedulePage() {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
                             <h3 className="font-bold text-lg">
-                                {selectedDate?.toDateString() === new Date().toDateString() ? "Today's Jobs" : `Schedule for ${selectedDate?.toLocaleDateString()}`}
+                                {!selectedDate
+                                    ? "Upcoming Schedule"
+                                    : selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) === new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
+                                        ? "Upcoming Schedule"
+                                        : `Schedule for ${selectedDate?.toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
                             </h3>
-                            <Badge variant="outline">{filteredSessions.length} sessions</Badge>
+                            <Badge variant="outline" className="text-xs font-normal">
+                                {filteredSessions.length} {filteredSessions.length === 1 ? 'Session' : 'Sessions'} found
+                            </Badge>
                         </div>
 
                         {filteredSessions.length > 0 ? (
@@ -289,7 +284,7 @@ export default function WorkerSchedulePage() {
                                 <Inbox className="h-12 w-12 mb-4 opacity-20" />
                                 <h3 className="text-lg font-medium">No jobs scheduled</h3>
                                 <p className="max-w-xs text-sm">You have no shifts booked for this date.</p>
-                                <Button variant="outline" className="mt-4" onClick={() => setSelectedDateLocal(new Date())}>Back to Today</Button>
+                                <Button variant="outline" className="mt-4" onClick={() => setSelectedDate(new Date())}>Back to Today</Button>
                             </Card>
                         )}
                     </div>

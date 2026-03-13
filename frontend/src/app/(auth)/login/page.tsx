@@ -9,15 +9,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import getMee from "@/redux/slices/authSlice"
-import { 
-  Eye, 
-  EyeOff, 
-  HeartHandshake, 
-  Settings, 
-  Menu, 
-  X, 
-  Loader2, 
-  AlertCircle 
+import {
+    Eye,
+    EyeOff,
+    HeartHandshake,
+    Settings,
+    Menu,
+    X,
+    Loader2,
+    AlertCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export default function DisabilityLoginPortal() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    
+
     const { isLoading, error, loginmessage } = useAppSelector((state) => state.auth);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -69,7 +69,7 @@ export default function DisabilityLoginPortal() {
             if (role === 'worker') router.push('/worker');
             else if (role === 'client') router.push('/client');
             else if (role === 'admin') router.push('/admin');
-            else router.push('/'); 
+            else router.push('/');
         }
     }
 
@@ -80,16 +80,16 @@ export default function DisabilityLoginPortal() {
                 <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center">
                         <div>
-                         <Image
-                         src='/Logo.png'
-                         width={200}
-                         height={200}
-                         alt="Disable Help Logo"
-                         className='hover:scale-105 duration-150 '
-                         />
+                            <Image
+                                src='/disablehelplogo.png'
+                                width={200}
+                                height={200}
+                                alt="Disable Help Logo"
+                                className='hover:scale-105 duration-150 '
+                            />
                         </div>
                     </div>
-                    
+
                     <div className="md:hidden">
                         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-600">
                             {mobileMenuOpen ? <X /> : <Menu />}
@@ -112,11 +112,11 @@ export default function DisabilityLoginPortal() {
                             aria-hidden
 
                         >
-                            </div>
+                        </div>
 
                         <div className="fixed top-0 left-0 right-0 z-50 md:hidden bg-white border-t border-slate-100">
                             <nav className="flex flex-col px-4 pb-4 pt-3 space-y-2">
-                             <X className=' h-7 w-7 absolute top-4 right-4  text-red-600 ' onClick={() => setMobileMenuOpen(false)} />
+                                <X className=' h-7 w-7 absolute top-4 right-4  text-red-600 ' onClick={() => setMobileMenuOpen(false)} />
                                 <Link href="#" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 hover:text-[#8ac6dd] py-2">Resources</Link>
                                 <Link href="#" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 hover:text-[#8ac6dd] py-2">Accessibility</Link>
                                 <Link href="#" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 hover:text-[#8ac6dd] py-2">Contact</Link>
@@ -186,11 +186,11 @@ export default function DisabilityLoginPortal() {
                                         <FormItem>
                                             <FormLabel className="text-slate-700 font-semibold">Email Address</FormLabel>
                                             <FormControl>
-                                                <Input 
-                                                    placeholder="name@example.org" 
-                                                    className="h-12  text-black border-slate-200 focus:ring-[#8ac6dd]" 
-                                                    {...field} 
-                                                    disabled={isLoading} 
+                                                <Input
+                                                    placeholder="name@example.org"
+                                                    className="h-12  text-black border-slate-200 focus:ring-[#8ac6dd]"
+                                                    {...field}
+                                                    disabled={isLoading}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -231,14 +231,14 @@ export default function DisabilityLoginPortal() {
                                         <Checkbox id="remember" className="border-slate-300 data-[state=checked]:bg-[#8ac6dd] data-[state=checked]:border-[#8ac6dd]" />
                                         <label htmlFor="remember" className="text-sm font-medium text-slate-600 cursor-pointer">Remember me</label>
                                     </div>
-                                    <Link href="/forgot-password"  className="text-sm font-semibold text-[#8ac6dd] hover:underline">
+                                    <Link href="/forgot-password" className="text-sm font-semibold text-[#8ac6dd] hover:underline">
                                         Forgot password?
                                     </Link>
                                 </div>
 
-                                <Button 
-                                    type="submit" 
-                                    className="w-full h-12 bg-[#8ac6dd] hover:bg-[#79b4cc] cursor-pointer text-white font-bold rounded transition-all active:scale-[0.98]" 
+                                <Button
+                                    type="submit"
+                                    className="w-full h-12 bg-[#8ac6dd] hover:bg-[#79b4cc] cursor-pointer text-white font-bold rounded transition-all active:scale-[0.98]"
                                     disabled={isLoading}
                                 >
                                     {isLoading ? (

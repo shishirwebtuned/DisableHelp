@@ -79,7 +79,7 @@ export default function ClientSessionsPage() {
     const { items: sessions, loading } = useAppSelector((state) => state.sessions);
     const { items: services, loading: servicesLoading } = useAppSelector((state) => state.services);
 
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | 'reschedule'>('create');
@@ -119,16 +119,21 @@ export default function ClientSessionsPage() {
                 `${firstName} ${lastName}`.includes(term) ||
                 jobTitle.includes(term);
 
-            const isSameDay = !selectedDate || (
-                sessionDate.getDate() === selectedDate.getDate() &&
-                sessionDate.getMonth() === selectedDate.getMonth() &&
-                sessionDate.getFullYear() === selectedDate.getFullYear()
-            );
+            let dateFilter = true;
+            if (selectedDate) {
+                dateFilter = sessionDate.getDate() === selectedDate.getDate() &&
+                    sessionDate.getMonth() === selectedDate.getMonth() &&
+                    sessionDate.getFullYear() === selectedDate.getFullYear();
+            } else {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                dateFilter = sessionDate >= today;
+            }
 
             const matchesStatus =
                 statusFilter === "all" || session.status === statusFilter;
 
-            return matchesSearch && isSameDay && matchesStatus;
+            return matchesSearch && dateFilter && matchesStatus;
         });
     }, [sessions, selectedDate, searchTerm, statusFilter]);
 
@@ -214,9 +219,9 @@ export default function ClientSessionsPage() {
         setIsDrawerOpen(false);
     };
 
-    const handleCancelSession = async (id: string) => {
-        await dispatch(cancelSession(id));
-    };
+    // const handleCancelSession = async (id: string) => {
+    //     await dispatch(cancelSession(id));
+    // };
 
     const nextSession = useMemo(() => {
         const now = new Date();
@@ -450,9 +455,11 @@ export default function ClientSessionsPage() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
                                 <h3 className="font-bold text-lg">
-                                    {selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) === new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
-                                        ? "Today's Schedule"
-                                        : `Schedule for ${selectedDate?.toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
+                                    {!selectedDate
+                                        ? "Upcoming Schedule"
+                                        : selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) === new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
+                                            ? "Upcoming Schedule"
+                                            : `Schedule for ${selectedDate?.toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
                                 </h3>
                                 <Badge variant="outline" className="text-xs font-normal">
                                     {filteredSessions.length} {filteredSessions.length === 1 ? 'Session' : 'Sessions'} found
@@ -530,7 +537,7 @@ export default function ClientSessionsPage() {
                                                                 {session.status !== 'cancelled' && (
                                                                     <DropdownMenuItem
                                                                         className="text-destructive cursor-pointer py-2 font-bold"
-                                                                        onClick={() => handleCancelSession(session._id)}
+                                                                    // onClick={() => handleCancelSession(session._id)}
                                                                     >
                                                                         Cancel Session
                                                                     </DropdownMenuItem>

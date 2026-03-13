@@ -66,7 +66,7 @@ export const getSessionsByUserId = catchAsync(async (req, res) => {
     .populate("client", "firstName lastName email")
     .populate("worker", "firstName lastName email")
     .populate("job", "title")
-    .sort({ date: -1 })
+    .sort({ date: 1 })
     .lean()
     .limit(limit)
     .skip(skip);
@@ -156,6 +156,34 @@ export const getSessionsByAgreementId = catchAsync(async (req, res) => {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+    },
+  });
+});
+
+export const getSessionById = catchAsync(async (req, res) => {
+  const { sessionId } = req.params;
+
+  if (!sessionId) {
+    throw new AppError("Session Id is required", 400);
+  }
+
+  const session = await Session.findById(sessionId)
+    .populate("client", "firstName lastName email")
+    .populate("worker", "firstName lastName email")
+    .populate("job", "title")
+    .populate("agreement")
+    .lean();
+
+  if (!session) {
+    throw new AppError("Session not found", 400);
+  }
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Session data retrieved successfully",
+    data: {
+      session,
     },
   });
 });
