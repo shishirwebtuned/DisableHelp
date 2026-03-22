@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { connectSocket } from '@/lib/socket';
 
 const formSchema = z.object({
     email: z.string().email({
@@ -65,6 +66,14 @@ export default function DisabilityLoginPortal() {
             const payload: any = resultAction.payload;
             const user = payload?.data ?? payload;
             const role = payload?.role ?? user?.role;
+
+            const token = payload?.token ?? payload?.data?.token;
+
+            console.log("User at connectSocket time:", user);
+            console.log("User._id:", user?.id);
+
+            console.log("Token for socket:", token);
+            connectSocket(token, user.id);
 
             if (role === 'worker') router.push('/worker');
             else if (role === 'client') router.push('/client');

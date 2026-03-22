@@ -165,8 +165,8 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
     const renderPreferredHours = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Availability</h2>
-                <p className="text-muted-foreground">
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Availability</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-[13px]">
                     Select your preferred working hours. This helps us match you with the right clients and sessions.
                 </p>
             </div>
@@ -197,7 +197,7 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
                                                 ${dayData.enabled ? 'bg-[#042a2d]' : 'bg-white'}
                                             `} />
                                             </div>
-                                            <span className={`text-sm font-medium ${dayData.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                            <span className={`md:text-[13px] text-xs lg:text-sm font-medium ${dayData.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                 {day}
                                             </span>
                                         </div>
@@ -214,14 +214,14 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
                                                         type="button"
                                                         onClick={() => toggleTimeSlot(day, slot)}
                                                         className={`
-                                                        flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all border
+                                                        flex items-center justify-center gap-2 px-3 py-1.5 rounded-md md:text-[11px] text-[10px] lg:text-xs font-medium transition-all border
                                                         ${isSelected
                                                                 ? 'bg-[#8ac6dd]/20 border-[#8ac6dd]/50 text-[#042a2d]'
                                                                 : 'bg-background border-border text-muted-foreground hover:bg-muted/50'
                                                             }
                                                     `}
                                                     >
-                                                        {isSelected && <CheckCircle className="h-4 w-4 shrink-0" />}
+                                                        {isSelected && <CheckCircle className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 shrink-0" />}
                                                         {slot}
                                                     </button>
                                                 );
@@ -238,15 +238,15 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
             {/* Sticky Footnote/Toggle */}
             <div className="bg-muted/30 rounded-lg p-4 border border-border flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-[#8ac6dd]" />
+                    <Clock className="lg:h-4 lg:w-4 md:h-3.5 md:w-3.5 h-3 w-3 text-[#8ac6dd]" />
                     <div>
-                        <h4 className="text-sm font-semibold text-foreground">Advanced View</h4>
-                        <p className="text-xs text-muted-foreground">Show early morning and late night slots.</p>
+                        <h4 className="md:text-[13px] text-xs lg:text-sm font-semibold text-foreground">Advanced View</h4>
+                        <p className="md:text-[11px] text-[10px] lg:text-xs text-muted-foreground">Show early morning and late night slots.</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground/80">Show all slots</span>
+                    <span className="md:text-[11px] text-[10px] lg:text-xs font-medium text-foreground/80">Show all slots</span>
                     <Switch
                         checked={showAllTimes}
                         onCheckedChange={setShowAllTimes}
@@ -267,8 +267,8 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
     const renderIndicativeRates = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Hourly Rates</h2>
-                <p className="text-muted-foreground">
+                <h2 className="lg:text-2xl md:text-xl text-lg font-bold mb-1 md:mb-2">Hourly Rates</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">
                     Set your indicative rates for different session types.
                 </p>
             </div>
@@ -305,8 +305,8 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
             </Card>
 
             <div className="bg-[#8ac6dd]/10 rounded-lg p-4 border border-[#8ac6dd]/20 flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-[#8ac6dd] shrink-0" />
-                <p className="text-sm text-[#042a2d]/80">
+                <DollarSign className="md:h-4 md:w-4 h-3.5 w-3.5 lg:h-5 lg:w-5 text-[#8ac6dd] shrink-0" />
+                <p className="md:text-[13px] text-xs lg:text-sm text-[#042a2d]/80">
                     Higher rates typically apply for weekends and public holidays.
                 </p>
             </div>
@@ -322,14 +322,14 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
     const renderServicesOffered = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Services</h2>
-                <p className="text-muted-foreground">
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Services</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-xs">
                     Select the services you are happy to provide.
                 </p>
             </div>
 
             <Card className="border-none p-0">
-                <CardContent className="pt-6  p-0 space-y-6">
+                <CardContent className="md:pt-4 pt-2 lg:pt-6 p-0 space-y-6">
                     <div
                         onClick={() => setFreeMeetAndGreet(!freeMeetAndGreet)}
                         className={`
@@ -340,8 +340,8 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
                         <div className="flex items-center gap-3">
                             <Heart className={`h-4 w-4 ${freeMeetAndGreet ? 'text-[#8ac6dd] fill-[#8ac6dd]' : 'text-muted-foreground'}`} />
                             <div>
-                                <h4 className="text-sm font-semibold text-foreground">Free Meet & Greet</h4>
-                                <p className="text-xs text-muted-foreground">Initial meeting at no cost.</p>
+                                <h4 className="md:text-[13px] text-xs lg:text-sm font-semibold text-foreground">Free Meet & Greet</h4>
+                                <p className="md:text-[11px] text-[10px] lg:text-xs text-muted-foreground">Initial meeting at no cost.</p>
                             </div>
                         </div>
                         <div className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${freeMeetAndGreet ? 'bg-[#8ac6dd] border-[#8ac6dd]' : 'border-border'}`}>
@@ -362,7 +362,7 @@ export default function JobDetails({ onSave, currentView = 'preferred-hours', in
                                     }
                                 `}
                             >
-                                <span className={`text-sm font-medium transition-colors ${selectedServices.includes(service) ? 'text-[#042a2d]' : 'text-foreground/80'}`}>{service}</span>
+                                <span className={`md:text-[13px] text-xs lg:text-sm font-medium transition-colors ${selectedServices.includes(service) ? 'text-[#042a2d]' : 'text-foreground/80'}`}>{service}</span>
                                 <div className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${selectedServices.includes(service) ? 'bg-[#8ac6dd] border-[#8ac6dd]' : 'border-border'}`}>
                                     {selectedServices.includes(service) && <Check className="h-2.5 w-2.5 text-[#042a2d] stroke-[3px]" />}
                                 </div>

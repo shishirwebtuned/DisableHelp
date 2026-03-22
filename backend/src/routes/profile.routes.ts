@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createClientProfile,
+  deleteClientFile,
   deleteWorkerFile,
   getMyProfile,
   getProfileById,
@@ -17,7 +18,7 @@ const router = express.Router();
 
 // router.post("/client", protect, createClientProfile);
 
-router.get("/worker", protect, getMyProfile);
+router.get("/", protect, getMyProfile);
 
 router.get("/me/status", protect, getProfileStatus);
 
@@ -27,6 +28,8 @@ router.patch("/worker", protect, upload, updateWorkerProfile);
 
 router.delete("/worker/file", protect, deleteWorkerFile);
 
-router.patch("/client", protect, updateClientProfile);
+router.patch("/client", protect, upload, updateClientProfile);
+
+router.delete("/client/file", protect, deleteClientFile);
 
 export default router;

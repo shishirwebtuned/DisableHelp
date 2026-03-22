@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import api from '@/lib/axios';
-import { useAppDispatch } from '@/hooks/redux';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { getmee } from '@/redux/slices/authSlice';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ interface ProfileImageEditorProps {
 
 export default function ProfileImageEditor({ onSave, initialData, fileType = 'avatar' }: ProfileImageEditorProps) {
     const dispatch = useAppDispatch();
-    const [profileImage, setProfileImage] = useState(initialData?.base64 || 'https://ui.shadcn.com/avatars/10.png');
+    const [profileImage, setProfileImage] = useState(initialData?.base64 || '/profileImg.jpg');
     const [originalImage, setOriginalImage] = useState<string | null>(initialData?.base64 || null);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [zoom, setZoom] = useState(1);
@@ -33,6 +33,12 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
+
+    const { user } = useAppSelector((state) => state.auth);
+
+    const deleteUrl = user?.role === 'client'
+        ? 'profile/client/file'
+        : 'profile/worker/file';
 
     useEffect(() => {
         if (initialData) {
@@ -180,10 +186,10 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
 
     const handleRemovePhoto = async () => {
         // Local removal first
-        setProfileImage('https://ui.shadcn.com/avatars/01.png');
+        setProfileImage('/profileImg.jpg');
         setImageBinary(null);
         onSave({
-            base64: 'https://ui.shadcn.com/avatars/01.png',
+            base64: '/profileImg.jpg',
             binary: null
         });
 
@@ -191,7 +197,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
         try {
             const payload = { fileType };
             // axios.delete with body requires `data` option
-            await api.delete('profile/worker/file', { data: payload });
+            await api.delete(deleteUrl, { data: payload });
             dispatch(getmee());
             console.log('Profile image removed on server');
         } catch (err) {
@@ -226,13 +232,13 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Profile Photo</h2>
-                <p className="text-muted-foreground">Upload and edit your professional photo</p>
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2">Profile Photo</h2>
+                <p className="lg:text-base md:text-[15px] text-sm text-muted-foreground">Upload and edit your professional photo</p>
             </div>
             <Card>
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-5 lg:pt-6">
                     <div className="flex flex-col items-center gap-6">
-                        <Avatar className="h-32 w-32 ring-4 ring-gray-200 dark:ring-gray-700">
+                        <Avatar className="h-24 w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ring-2 ring-gray-200 dark:ring-gray-600">
                             <AvatarImage src={profileImage} />
                             <AvatarFallback>SJ</AvatarFallback>
                         </Avatar>
@@ -254,8 +260,8 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
                         </div>
                     </div>
                     <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                        <h4 className="font-medium mb-2">Photo Guidelines</h4>
-                        <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                        <h4 className="font-medium mb-2 lg:text-base md:text-[15px] text-sm">Photo Guidelines</h4>
+                        <ul className="text-xs md:text-[13px] lg:text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Use a clear, professional headshot</li>
                             <li>Face should be clearly visible</li>
                             <li>Good lighting and high quality</li>
@@ -292,7 +298,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
                                     onMouseUp={handleMouseUp}
                                     onMouseLeave={handleMouseUp}
                                 />
-                                <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] md:text-[11px] lg:text-xs px-2 py-1 rounded">
                                     <Move className="h-3 w-3 inline mr-1" />
                                     Drag to move
                                 </div>
@@ -304,7 +310,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
                             {/* Zoom Control */}
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium flex items-center gap-2">
+                                    <label className="text-xs md:text-[13px] lg:text-sm font-medium flex items-center gap-2">
                                         <ZoomIn className="h-4 w-4" />
                                         Zoom: {zoom.toFixed(1)}x
                                     </label>
@@ -322,7 +328,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
                             {/* Rotation Control */}
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium flex items-center gap-2">
+                                    <label className="text-xs md:text-[13px] lg:text-sm font-medium flex items-center gap-2">
                                         <RotateCw className="h-4 w-4" />
                                         Rotation: {rotation}°
                                     </label>

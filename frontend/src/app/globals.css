@@ -1,3 +1,5 @@
+@import url("https://unpkg.com/leaflet/dist/leaflet.css");
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -46,9 +48,15 @@
 
 :root {
   /* Font variables (provides fallbacks if local/next/font not used) */
-  --font-geist-sans: 'Geist', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  --font-geist-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-  --font-plus-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-geist-sans:
+    "Geist", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-geist-mono:
+    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono",
+    "Courier New", monospace;
+  --font-plus-jakarta:
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.13 0.028 261.692);
@@ -82,8 +90,6 @@
   --sidebar-border: oklch(0.928 0.006 264.531);
   --sidebar-ring: oklch(0.707 0.022 261.325);
 }
-
-
 
 @layer base {
   * {
@@ -120,7 +126,6 @@
     scrollbar-width: thin;
     scrollbar-color: #e2e8f0 transparent;
   }
-
 }
 
 /* Custom Scrollbar Utility */
@@ -155,16 +160,15 @@
   @apply bg-[#61c0e8] cursor-pointer;
 }
 
-
 /* Chrome, Safari, Edge, Opera */
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
 /* Firefox */
-input[type=number] {
+input[type="number"] {
   -moz-appearance: textfield;
 }
 
@@ -173,4 +177,34 @@ input[type=number] {
   .text-primary {
     color: var(--primary-foreground) !important;
   }
+}
+
+/* globals.css or map.css */
+.custom-marker-cluster {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #2563eb; /* blue color */
+  color: white;
+  font-weight: bold;
+  border-radius: 9999px;
+  border: 2px solid white;
+}
+
+.custom-marker-cluster.small {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+}
+
+.custom-marker-cluster.medium {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.custom-marker-cluster.large {
+  width: 50px;
+  height: 50px;
+  font-size: 16px;
 }

@@ -22,6 +22,7 @@ export const upload = multer({ storage }).fields([
   { name: "driverLicenseFile", maxCount: 1 },
   { name: "firstAidFile", maxCount: 1 },
   { name: "wwccFile", maxCount: 1 },
+  { name: "additionalDocuments", maxCount: 10 },
 ]);
 
 export const createWorkerProfile = catchAsync(async (req, res) => {
@@ -147,6 +148,32 @@ export const createWorkerProfile = catchAsync(async (req, res) => {
     };
   }
 
+  personalDetailsData.additionalDocuments = [];
+
+  if (files?.additionalDocuments) {
+    const docs = files.additionalDocuments;
+
+    for (const [i, file] of docs.entries()) {
+      if (!file) continue;
+      const uploaded = await uploadToCloudinary(
+        file.buffer,
+        "DisableHelp/supportWorker/additionalDocs",
+      );
+
+      personalDetailsData.additionalDocuments.push({
+        name: personalDetails?.additionalDocuments?.[i]?.name,
+        expiryDate: personalDetails?.additionalDocuments?.[i]?.expiryDate,
+
+        file: {
+          url: uploaded.url,
+          public_id: uploaded.public_id,
+        },
+
+        isVerified: false,
+      });
+    }
+  }
+
   const newProfile = await WorkerProfile.create({
     user: userId,
     gender,
@@ -179,6 +206,170 @@ export const createWorkerProfile = catchAsync(async (req, res) => {
   });
 });
 
+// export const updateWorkerProfile = catchAsync(async (req, res) => {
+//   const userId = req.user!.id;
+
+//   if (!mongoose.Types.ObjectId.isValid(userId)) {
+//     throw new AppError("Invalid user id", 400);
+//   }
+
+//   const profile = await WorkerProfile.findOne({ user: userId });
+
+//   if (!profile) {
+//     throw new AppError("Worker profile not found", 400);
+//   }
+
+//   const { body, files } = req;
+
+//   const updatedData: any = { ...body };
+
+//   const personalDetailsData: any = { ...(profile.personalDetails || {}) };
+
+//     let parsedPersonalDetails = body.personalDetails;
+//   if (typeof body.personalDetails === "string") {
+//     parsedPersonalDetails = JSON.parse(body.personalDetails);
+//   }
+
+//   if (body.personalDetails) {
+//     if (body.personalDetails.bio !== undefined) {
+//       personalDetailsData.bio = body.personalDetails.bio;
+//     }
+
+//     if (body.personalDetails.wwcc) {
+//       personalDetailsData.wwcc = personalDetailsData.wwcc || {
+//         wwccNumber: "",
+//         expiryDate: new Date(),
+//         isVerified: false,
+//       };
+//       if (body.personalDetails.wwcc.wwccNumber !== undefined) {
+//         personalDetailsData.wwcc.wwccNumber =
+//           body.personalDetails.wwcc.wwccNumber;
+//       }
+//       if (body.personalDetails.wwcc.expiryDate !== undefined) {
+//         personalDetailsData.wwcc.expiryDate =
+//           body.personalDetails.wwcc.expiryDate;
+//       }
+//     }
+//   }
+
+//   const fileMap: Record<string, string[]> = {
+//     avatar: ["avatar"],
+//     cprFile: ["additionalTraining", "cpr", "file"],
+//     driverLicenseFile: ["additionalTraining", "driverLicense", "file"],
+//     firstAidFile: ["additionalTraining", "firstAid", "file"],
+//     wwccFile: ["wwcc", "file"],
+//   };
+
+//   const filesMap = files as Record<string, Express.Multer.File[]>;
+
+//   for (const [fieldName, path] of Object.entries(fileMap)) {
+//     const fileArray = filesMap?.[fieldName];
+//     if (!fileArray?.[0]) continue;
+
+//     let parentObj: Record<string, any> = personalDetailsData;
+
+//     for (let i = 0; i < path.length - 1; i++) {
+//       const key = path[i] as string;
+//       if (!parentObj[key]) parentObj[key] = {};
+//       parentObj = parentObj[key];
+//     }
+
+//     const lastKey = path[path.length - 1] as string;
+
+//     const oldFile = parentObj[lastKey];
+
+//     if (oldFile?.public_id) {
+//       try {
+//         await cloudinary.uploader.destroy(oldFile.public_id);
+//       } catch (err) {
+//         console.warn(`Failed to delete old file ${oldFile.public_id}`, err);
+//       }
+//     }
+
+//     const uploadResult = await uploadToCloudinary(
+//       fileArray[0].buffer,
+//       `DisableHelp/supportWorker/${fieldName.replace("File", "")}`,
+//     );
+
+//     parentObj[lastKey] = {
+//       url: uploadResult.url,
+//       public_id: uploadResult.public_id,
+//     };
+
+//     if (fieldName !== "avatar") {
+//       parentObj.isVerified = false;
+
+//       const trainingKey = fieldName.replace("File", "");
+
+//       const expiry =
+//         body.personalDetails?.additionalTraining?.[trainingKey]?.expiryDate;
+
+//       if (expiry) {
+//         parentObj.expiryDate = expiry;
+//       }
+
+//       if (fieldName === "wwccFile") {
+//         if (body.personalDetails?.wwcc?.expiryDate) {
+//           parentObj.expiryDate = body.personalDetails.wwcc.expiryDate;
+//         }
+
+//         if (body.personalDetails?.wwcc?.wwccNumber) {
+//           parentObj.wwccNumber = body.personalDetails.wwcc.wwccNumber;
+//         }
+//       }
+//     }
+//   }
+
+//   let parsedPersonalDetails = body.personalDetails;
+
+//   if (typeof body.personalDetails === "string") {
+//     parsedPersonalDetails = JSON.parse(body.personalDetails);
+//   }
+
+//   if (filesMap?.additionalDocuments) {
+//     const existingDocs = personalDetailsData.additionalDocuments || [];
+
+//     for (const [i, file] of filesMap.additionalDocuments.entries()) {
+//       const uploaded = await uploadToCloudinary(
+//         file.buffer,
+//         "DisableHelp/supportWorker/additionalDocs",
+//       );
+
+//       existingDocs.push({
+//         name:
+//           parsedPersonalDetails?.additionalDocuments?.[i]?.name ||
+//           file.originalname,
+
+//         expiryDate: parsedPersonalDetails?.additionalDocuments?.[i]?.expiryDate,
+
+//         file: {
+//           url: uploaded.url,
+//           public_id: uploaded.public_id,
+//         },
+
+//         isVerified: false,
+//       });
+//     }
+
+//     personalDetailsData.additionalDocuments = existingDocs;
+//   }
+
+//   updatedData.personalDetails = personalDetailsData;
+
+//   const updatedProfile = await WorkerProfile.findByIdAndUpdate(
+//     profile._id,
+//     updatedData,
+//     { new: true },
+//   );
+
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 200,
+//     message: "Worker profile updated successfully",
+//     data: updatedProfile,
+//   });
+// });
+
 export const updateWorkerProfile = catchAsync(async (req, res) => {
   const userId = req.user!.id;
 
@@ -193,33 +384,39 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
   }
 
   const { body, files } = req;
-
   const updatedData: any = { ...body };
+  const personalDetailsData: any = { ...(profile.personalDetails || {}) };
 
-  const personalDetailsData = { ...(profile.personalDetails || {}) };
+  // Parse personalDetails if sent as string
+  let parsedPersonalDetails = body.personalDetails;
+  if (typeof body.personalDetails === "string") {
+    parsedPersonalDetails = JSON.parse(body.personalDetails);
+  }
 
-  if (body.personalDetails) {
-    if (body.personalDetails.bio !== undefined) {
-      personalDetailsData.bio = body.personalDetails.bio;
+  // Update bio
+  if (parsedPersonalDetails?.bio !== undefined) {
+    personalDetailsData.bio = parsedPersonalDetails.bio;
+  }
+
+  // Update WWCC
+  if (parsedPersonalDetails?.wwcc) {
+    personalDetailsData.wwcc = personalDetailsData.wwcc || {
+      wwccNumber: "",
+      expiryDate: new Date(),
+      isVerified: false,
+    };
+
+    if (parsedPersonalDetails.wwcc.wwccNumber !== undefined) {
+      personalDetailsData.wwcc.wwccNumber =
+        parsedPersonalDetails.wwcc.wwccNumber;
     }
-
-    if (body.personalDetails.wwcc) {
-      personalDetailsData.wwcc = personalDetailsData.wwcc || {
-        wwccNumber: "",
-        expiryDate: new Date(),
-        isVerified: false,
-      };
-      if (body.personalDetails.wwcc.wwccNumber !== undefined) {
-        personalDetailsData.wwcc.wwccNumber =
-          body.personalDetails.wwcc.wwccNumber;
-      }
-      if (body.personalDetails.wwcc.expiryDate !== undefined) {
-        personalDetailsData.wwcc.expiryDate =
-          body.personalDetails.wwcc.expiryDate;
-      }
+    if (parsedPersonalDetails.wwcc.expiryDate !== undefined) {
+      personalDetailsData.wwcc.expiryDate =
+        parsedPersonalDetails.wwcc.expiryDate;
     }
   }
 
+  // Map of file fields for main categories
   const fileMap: Record<string, string[]> = {
     avatar: ["avatar"],
     cprFile: ["additionalTraining", "cpr", "file"],
@@ -230,12 +427,12 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
 
   const filesMap = files as Record<string, Express.Multer.File[]>;
 
+  // Handle main files (avatar, CPR, license, first aid, WWCC)
   for (const [fieldName, path] of Object.entries(fileMap)) {
     const fileArray = filesMap?.[fieldName];
     if (!fileArray?.[0]) continue;
 
     let parentObj: Record<string, any> = personalDetailsData;
-
     for (let i = 0; i < path.length - 1; i++) {
       const key = path[i] as string;
       if (!parentObj[key]) parentObj[key] = {};
@@ -243,7 +440,6 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
     }
 
     const lastKey = path[path.length - 1] as string;
-
     const oldFile = parentObj[lastKey];
 
     if (oldFile?.public_id) {
@@ -268,24 +464,61 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
       parentObj.isVerified = false;
 
       const trainingKey = fieldName.replace("File", "");
-
       const expiry =
-        body.personalDetails?.additionalTraining?.[trainingKey]?.expiryDate;
+        parsedPersonalDetails?.additionalTraining?.[trainingKey]?.expiryDate;
 
       if (expiry) {
         parentObj.expiryDate = expiry;
       }
 
       if (fieldName === "wwccFile") {
-        if (body.personalDetails?.wwcc?.expiryDate) {
-          parentObj.expiryDate = body.personalDetails.wwcc.expiryDate;
+        if (parsedPersonalDetails?.wwcc?.expiryDate) {
+          parentObj.expiryDate = parsedPersonalDetails.wwcc.expiryDate;
         }
-
-        if (body.personalDetails?.wwcc?.wwccNumber) {
-          parentObj.wwccNumber = body.personalDetails.wwcc.wwccNumber;
+        if (parsedPersonalDetails?.wwcc?.wwccNumber) {
+          parentObj.wwccNumber = parsedPersonalDetails.wwcc.wwccNumber;
         }
       }
     }
+  }
+
+  // Handle additionalDocuments
+  if (filesMap?.additionalDocuments) {
+    const existingDocs = personalDetailsData.additionalDocuments || [];
+
+    for (const [i, file] of filesMap.additionalDocuments.entries()) {
+      const uploaded = await uploadToCloudinary(
+        file.buffer,
+        "DisableHelp/supportWorker/additionalDocs",
+      );
+
+      const docIndex = parsedPersonalDetails?.additionalDocuments?.[i]?.index;
+
+      const newDoc = {
+        name:
+          parsedPersonalDetails?.additionalDocuments?.[i]?.name ||
+          file.originalname,
+        expiryDate: parsedPersonalDetails?.additionalDocuments?.[i]?.expiryDate,
+        file: {
+          url: uploaded.url,
+          public_id: uploaded.public_id,
+        },
+        isVerified: false,
+      };
+
+      if (docIndex !== undefined && existingDocs[docIndex]) {
+        // Replace existing document
+        existingDocs[docIndex] = {
+          ...existingDocs[docIndex],
+          ...newDoc,
+        };
+      } else {
+        // Add new document
+        existingDocs.push(newDoc);
+      }
+    }
+
+    personalDetailsData.additionalDocuments = existingDocs;
   }
 
   updatedData.personalDetails = personalDetailsData;
@@ -306,7 +539,7 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
 
 export const deleteWorkerFile = catchAsync(async (req, res) => {
   const userId = req.user!.id;
-  const { fileType } = req.body;
+  const { fileType, index } = req.body;
 
   if (!fileType) {
     throw new AppError("fileType is required", 400);
@@ -319,6 +552,42 @@ export const deleteWorkerFile = catchAsync(async (req, res) => {
   }
 
   const personalDetails = profile.personalDetails || {};
+
+  if (fileType === "additionalDocuments") {
+    const docIndex = Number(index);
+    if (isNaN(docIndex)) {
+      throw new AppError("Valid document index required", 400);
+    }
+
+    const docs = personalDetails.additionalDocuments || [];
+    if (!docs[docIndex]) {
+      throw new AppError("Document not found", 404);
+    }
+
+    const doc = docs[docIndex];
+
+    if (doc.file?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(doc.file.public_id);
+      } catch (err) {
+        console.warn("Failed to delete additional document:", err);
+      }
+    }
+
+    // Remove document from array
+    docs.splice(docIndex, 1);
+    personalDetails.additionalDocuments = docs;
+
+    profile.personalDetails = personalDetails;
+    const updatedProfile = await profile.save();
+
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "Document deleted successfully",
+      data: updatedProfile,
+    });
+  }
 
   const fileMap: Record<string, string[]> = {
     avatar: ["avatar"],
@@ -413,9 +682,34 @@ export const updateClientProfile = catchAsync(async (req, res) => {
     throw new AppError("Client profile not found", 400);
   }
 
-  const { body } = req;
+  const { body, files } = req;
 
   const updatedData: any = { ...body };
+
+  const filesMap = files as Record<string, Express.Multer.File[]>;
+
+  if (filesMap?.avatar?.[0]) {
+    const avatarFile = filesMap.avatar[0];
+
+    // Delete old avatar from cloudinary if exists
+    if (profile.avatar?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(profile.avatar.public_id);
+      } catch (err) {
+        console.warn("Failed to delete old avatar:", err);
+      }
+    }
+
+    const uploadResult = await uploadToCloudinary(
+      avatarFile.buffer,
+      "DisableHelp/client/avatar",
+    );
+
+    updatedData.avatar = {
+      url: uploadResult.url,
+      public_id: uploadResult.public_id,
+    };
+  }
 
   const updatedProfile = await ClientProfile.findByIdAndUpdate(
     profile._id,
@@ -426,7 +720,66 @@ export const updateClientProfile = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "Worker profile updated successfully",
+    message: "Client profile updated successfully",
+    data: updatedProfile,
+  });
+});
+
+export const deleteClientFile = catchAsync(async (req, res) => {
+  const userId = req.user!.id;
+  const { fileType } = req.body;
+
+  if (!fileType) {
+    throw new AppError("fileType is required", 400);
+  }
+
+  const profile = await ClientProfile.findOne({ user: userId });
+  if (!profile) throw new AppError("Client profile not found", 404);
+
+  // File map — add new client file types here as needed
+  const fileMap: Record<string, string[]> = {
+    avatar: ["avatar"],
+  };
+
+  const path = fileMap[fileType];
+
+  if (!path) {
+    throw new AppError("Invalid fileType", 400);
+  }
+
+  // Traverse the path to find the file
+  let currentObj: Record<string, any> = profile as any;
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i];
+    if (key && !currentObj[key]) currentObj[key] = {};
+    if (key) currentObj = currentObj[key] as Record<string, any>;
+  }
+
+  const lastKey = path[path.length - 1];
+  if (!lastKey) throw new AppError("Invalid file path", 400);
+
+  const fileData = currentObj[lastKey];
+
+  if (!fileData?.public_id) {
+    throw new AppError("File not found", 404);
+  }
+
+  // Delete from cloudinary
+  try {
+    await cloudinary.uploader.destroy(fileData.public_id);
+  } catch (err) {
+    console.warn(`Failed to delete file ${fileData.public_id}:`, err);
+  }
+
+  // Clear the file reference
+  currentObj[lastKey] = { url: "", public_id: "" };
+
+  const updatedProfile = await profile.save();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "File deleted successfully",
     data: updatedProfile,
   });
 });

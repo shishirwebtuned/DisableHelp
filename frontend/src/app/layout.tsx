@@ -10,11 +10,12 @@ export const metadata: Metadata = {
   description: "NDIS-style marketplace like Mable",
 };
 
-export default function RootLayout({ 
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -36,10 +37,12 @@ export default function RootLayout({
         >
           <ReduxProvider>
             {children}
+
+
           </ReduxProvider>
-          <Toaster 
-            position="bottom-right" 
-            richColors 
+          <Toaster
+            position="bottom-right"
+            richColors
             closeButton
             expand={true}
             duration={4000}

@@ -63,17 +63,17 @@ export default function PublicProfilePage() {
 
             {/* Header */}
             <div className="border-b border-border pt-8 pb-8 px-6 sm:px-12">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-8">
-                    <Avatar className="h-32 w-32 border-2 border-border">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:gap-6 gap-5 lg:gap-8">
+                    <Avatar className="md:w-28 md:h-28 w-24 h-24 lg:h-32 lg:w-32 border-2 border-border">
                         <AvatarImage src={profile?.personalDetails?.avatar?.url} />
-                        <AvatarFallback className="text-3xl font-semibold bg-muted text-muted-foreground">
+                        <AvatarFallback className="md:text-2xl text-xl lg:text-3xl font-semibold bg-muted text-muted-foreground">
                             {user.firstName?.[0]}{user.lastName?.[0]}
                         </AvatarFallback>
                     </Avatar>
 
-                    <div className="flex-1 text-center md:text-left space-y-3">
+                    <div className="flex-1 text-center md:text-left space-y-2 md:space-y-3">
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                            <h1 className="text-3xl font-bold text-foreground">{user.firstName} {user.lastName}</h1>
+                            <h1 className="md:text-2xl text-[22px] lg:text-3xl font-bold text-foreground">{user.firstName} {user.lastName}</h1>
                             <div className="flex gap-2">
                                 {user.isVerified && (
                                     <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200  dark:text-green-400 dark:border-green-800">
@@ -85,7 +85,7 @@ export default function PublicProfilePage() {
                             </div>
                         </div>
                         {profile?.experienceSummary?.disability?.description ? (
-                            <p className="text-lg text-muted-foreground">
+                            <p className="text-[15px] md:text-base lg:text-lg text-muted-foreground">
                                 {profile.experienceSummary.disability.description}
                             </p>
                         ) : null}

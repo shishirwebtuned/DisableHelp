@@ -29,6 +29,7 @@ interface Document {
     status: string;
     fileUrl: string;
     type: string;
+    docIndex?: number;
 }
 
 export default function DocumentsPage() {
@@ -42,10 +43,13 @@ export default function DocumentsPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<{ doc: Document; index?: number } | null>(null);
     const [isUpdateMode, setIsUpdateMode] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [wwccNumber, setWwccNumber] = useState('');
+    const [docName, setDocName] = useState('');
+    const [updateDocIndex, setUpdateDocIndex] = useState<number | null>(null);
+
 
     const { mee, isLoading: isAuthLoading } = useSelector((state: any) => state.auth);
 
@@ -70,7 +74,9 @@ export default function DocumentsPage() {
                     cpr: 'CPR Certificate',
                     firstAid: 'First Aid',
                     driverLicense: 'Driver License',
-                    wwcc: 'WWCC'
+                    wwcc: 'WWCC',
+                    additional: 'Additional Document'
+
                 };
                 return labels[cat] || cat;
             };
@@ -112,6 +118,53 @@ export default function DocumentsPage() {
                 });
             }
 
+            if (personalDetails.additionalDocuments?.length) {
+
+                personalDetails.additionalDocuments.forEach(
+                    (doc: any, docIndex: number) => {
+
+                        if (doc?.file?.url) {
+
+                            mappedDocs.push({
+
+                                _id: `additional-${docIndex}`,
+
+                                name: doc.name || "Additional Document",
+
+                                category: "additional",
+
+                                uploadDate:
+                                    profile.updatedAt ||
+                                    new Date().toISOString(),
+
+                                expiryDate: doc.expiryDate,
+
+                                size: "N/A",
+
+                                status:
+                                    doc.isVerified
+                                        ? "verified"
+                                        : getStatus(doc.expiryDate),
+
+                                fileUrl: doc.file.url,
+
+                                type:
+                                    doc.file.url
+                                        .toLowerCase()
+                                        .endsWith('.pdf')
+                                        ? 'application/pdf'
+                                        : 'image/jpeg',
+                                docIndex
+
+                            });
+
+                        }
+
+                    }
+
+                );
+
+            };
             setDocuments(mappedDocs);
             setIsLoading(false);
         } else if (!isAuthLoading) {
@@ -149,20 +202,26 @@ export default function DocumentsPage() {
             if (expiryDate) formData.append('personalDetails[wwcc][expiryDate]', expiryDate);
             if (wwccNumber) formData.append('personalDetails[wwcc][wwccNumber]', wwccNumber);
             formData.append('wwccFile', selectedFile);
-            if (isUpdateMode) {
-                // also include nested key for older endpoints and indicate which file to replace
-                formData.append('personalDetails[wwcc][file]', selectedFile as any);
-                formData.append('fileType', 'wwccFile');
-            }
             formData.append('personalDetails[wwcc][isVerified]', 'false');
-        } else {
+        } else if (category === "additional") {
+
+            formData.append(
+                "additionalDocuments",
+                selectedFile
+            );
+            const index = isUpdateMode && updateDocIndex !== null ? updateDocIndex : 0;
+            formData.append(`personalDetails[additionalDocuments][${index}][name]`, docName);
+            if (expiryDate) {
+                formData.append(`personalDetails[additionalDocuments][${index}][expiryDate]`, expiryDate);
+            }
+            if (isUpdateMode && updateDocIndex !== null) {
+                formData.append(`personalDetails[additionalDocuments][${index}][index]`, String(updateDocIndex));
+            }
+
+        }
+        else {
             if (expiryDate) formData.append(`personalDetails[additionalTraining][${category}][expiryDate]`, expiryDate);
             formData.append(`${category}File`, selectedFile);
-            if (isUpdateMode) {
-                // also include nested key for older endpoints and indicate which file to replace
-                formData.append(`personalDetails[additionalTraining][${category}][file]`, selectedFile as any);
-                formData.append('fileType', `${category}File`);
-            }
             formData.append(`personalDetails[additionalTraining][${category}][isVerified]`, 'false');
         }
 
@@ -177,6 +236,7 @@ export default function DocumentsPage() {
             setExpiryDate('');
             setSelectedFile(null);
             setIsUpdateMode(false);
+            setDocName('');
             dispatch(getmee());
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to upload document');
@@ -186,36 +246,51 @@ export default function DocumentsPage() {
     };
 
     // Open confirmation modal for delete
-    const handleDeleteRequest = (docId: string) => {
-        setConfirmTarget(docId);
+    const handleDeleteRequest = (doc: Document, index?: number) => {
+        setConfirmTarget({ doc, index });
         setConfirmOpen(true);
     };
 
     // Perform actual delete
-    const handleDelete = async (docId: string | null) => {
-        if (!docId) return;
+    const handleDelete = async (doc: Document | null, index?: number) => {
+        if (!doc) return;
 
-        setIsDeleting(docId);
+        setIsDeleting(doc._id);
+
         try {
-            // Preferred API: delete file by fileType
-            await api.delete('profile/worker/file', { data: { fileType: `${docId}File` } });
+            // Determine fileType and payload
+            let payload: Record<string, any> = {};
+
+            if (doc.category === "additional") {
+                if (index === undefined) {
+                    toast.error("Document index required for deletion");
+                    return;
+                }
+                payload = { fileType: "additionalDocuments", index: doc.docIndex };
+            } else {
+                payload = { fileType: `${doc.category}File` };
+            }
+
+            // Preferred API call
+            await api.delete('profile/worker/file', { data: payload });
             dispatch(getmee());
             toast.success('Document removed successfully');
         } catch (error: any) {
-            // Fallback: attempt to clear fields via patch (older behavior)
+            // Fallback for older endpoints
             try {
                 const formData = new FormData();
-                if (docId === 'wwcc') {
+
+                if (doc.category === "wwcc") {
                     formData.append('personalDetails[wwcc][file]', '');
                     formData.append('personalDetails[wwcc][expiryDate]', '');
                     formData.append('personalDetails[wwcc][wwccNumber]', '');
-                    // also include top-level key
                     formData.append('wwccFile', '');
-                } else {
-                    formData.append(`personalDetails[additionalTraining][${docId}][file]`, '');
-                    formData.append(`${docId}File`, '');
-                    formData.append(`personalDetails[additionalTraining][${docId}][expiryDate]`, '');
+                } else if (doc.category === "additionalTraining") {
+                    formData.append(`personalDetails[additionalTraining][${doc.category}][file]`, '');
+                    formData.append(`${doc.category}File`, '');
+                    formData.append(`personalDetails[additionalTraining][${doc.category}][expiryDate]`, '');
                 }
+
                 await api.patch('profile/worker', formData);
                 toast.success('Document removed successfully');
                 dispatch(getmee());
@@ -247,7 +322,7 @@ export default function DocumentsPage() {
     };
 
     // Check if current selected category has a document (respect update mode)
-    const categoryHasDocument = !isUpdateMode && isCategoryUploaded(category);
+    const categoryHasDocument = category !== "additional" && !isUpdateMode && isCategoryUploaded(category);
 
     const handleUpdateRequest = (doc: Document) => {
         // Open upload dialog in update mode (allow replacing)
@@ -258,6 +333,10 @@ export default function DocumentsPage() {
         setPreviewUrl(doc.fileUrl || null);
         // clear selected file to force user to pick new one
         setSelectedFile(null);
+        if (doc.category === 'additional') {
+            setDocName(doc.name);
+            setUpdateDocIndex(doc.docIndex ?? null); // store the index of the document
+        }
         setIsDialogOpen(true);
     };
 
@@ -267,6 +346,9 @@ export default function DocumentsPage() {
             setIsUpdateMode(false);
             setPreviewUrl(null);
             setSelectedFile(null);
+            setUpdateDocIndex(null);
+            setDocName('');
+            setExpiryDate('');
         }
     }, [isDialogOpen]);
 
@@ -293,7 +375,7 @@ export default function DocumentsPage() {
                             <div className="grid gap-4 py-4">
                                 <div className="space-y-2">
                                     <Label>Category</Label>
-                                    <Select value={category} onValueChange={setCategory}>
+                                    <Select value={category} onValueChange={setCategory} disabled={isUpdateMode}>
                                         <SelectTrigger className='w-full'>
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
@@ -301,7 +383,12 @@ export default function DocumentsPage() {
                                             <SelectItem value="cpr" disabled={!isUpdateMode && isCategoryUploaded('cpr')}>CPR Certificate {!isUpdateMode && isCategoryUploaded('cpr') && '(Already uploaded)'}</SelectItem>
                                             <SelectItem value="firstAid" disabled={!isUpdateMode && isCategoryUploaded('firstAid')}>First Aid {!isUpdateMode && isCategoryUploaded('firstAid') && '(Already uploaded)'}</SelectItem>
                                             <SelectItem value="driverLicense" disabled={!isUpdateMode && isCategoryUploaded('driverLicense')}>Driver License {!isUpdateMode && isCategoryUploaded('driverLicense') && '(Already uploaded)'}</SelectItem>
-                                            <SelectItem value="wwcc" disabled={!isUpdateMode && isCategoryUploaded('wwcc')}>WWCC {!isUpdateMode && isCategoryUploaded('wwcc') && '(Already uploaded)'}</SelectItem>
+                                            <SelectItem value="wwcc" disabled={!isUpdateMode && isCategoryUploaded('wwcc')}>WWCC {!isUpdateMode && isCategoryUploaded('wwcc') && '(Already uploaded)'}
+
+                                            </SelectItem>
+                                            <SelectItem value="additional">
+                                                Additional Document
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {categoryHasDocument && (
@@ -321,6 +408,19 @@ export default function DocumentsPage() {
                                             onChange={(e) => setWwccNumber(e.target.value)}
                                             disabled={categoryHasDocument}
                                         />
+                                    </div>
+                                )}
+
+                                {category === 'additional' && (
+                                    <div className="space-y-2">
+                                        <Label>Document Name</Label>
+
+                                        <Input
+                                            placeholder="Enter document name"
+                                            value={docName}
+                                            onChange={(e) => setDocName(e.target.value)}
+                                        />
+
                                     </div>
                                 )}
 
@@ -367,9 +467,12 @@ export default function DocumentsPage() {
                     <TabsTrigger value="firstAid">First Aid</TabsTrigger>
                     <TabsTrigger value="driverLicense">License</TabsTrigger>
                     <TabsTrigger value="wwcc">WWCC</TabsTrigger>
+                    <TabsTrigger value="additional">
+                        Additional
+                    </TabsTrigger>
                 </TabsList>
 
-                {['all', 'cpr', 'firstAid', 'driverLicense', 'wwcc'].map((tab) => (
+                {['all', 'cpr', 'firstAid', 'driverLicense', 'wwcc', 'additional'].map((tab) => (
                     <TabsContent key={tab} value={tab} className="mt-0">
                         <div className=" overflow-hidden">
                             <Table>
@@ -394,7 +497,7 @@ export default function DocumentsPage() {
                                                 No documents found in this category.
                                             </TableCell>
                                         </TableRow>
-                                    ) : (tab === 'all' ? documents : documents.filter(d => d.category === tab)).map((doc) => (
+                                    ) : (tab === 'all' ? documents : documents.filter(d => d.category === tab)).map((doc, i) => (
                                         <TableRow key={doc._id} className="hover:bg-muted/30 transition-colors">
                                             <TableCell>
                                                 <div
@@ -437,7 +540,7 @@ export default function DocumentsPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                        onClick={() => handleDeleteRequest(doc._id)}
+                                                        onClick={() => handleDeleteRequest(doc, doc.docIndex)}
                                                         disabled={isDeleting === doc._id}
                                                     >
                                                         {isDeleting === doc._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -457,7 +560,9 @@ export default function DocumentsPage() {
                 onOpenChange={setConfirmOpen}
                 title="Delete Document"
                 description="Are you sure you want to remove this document? This action cannot be undone."
-                onConfirm={async () => { await handleDelete(confirmTarget); }}
+                onConfirm={async () => {
+                    if (confirmTarget) await handleDelete(confirmTarget.doc, confirmTarget.index);
+                }}
                 confirmLabel="Delete"
                 cancelLabel="Cancel"
                 isLoading={!!isDeleting}

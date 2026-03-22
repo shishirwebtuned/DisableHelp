@@ -14,6 +14,16 @@ export interface IClientProfile {
   receivePlannedSessionReminderEmails: boolean;
 
   isNdisManaged: boolean;
+  emergencyContact?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
+
+  avatar?: {
+    url: string;
+    public_id: string;
+  };
 }
 
 const clientProfileSchema = new Schema<IClientProfile>(
@@ -36,7 +46,10 @@ const clientProfileSchema = new Schema<IClientProfile>(
         ref: "User",
       },
     ],
-
+    avatar: {
+      url: String,
+      public_id: String,
+    },
     carePreferences: [String],
 
     receiveAgreementsEmails: {
@@ -55,6 +68,11 @@ const clientProfileSchema = new Schema<IClientProfile>(
     isNdisManaged: {
       type: Boolean,
       default: false,
+    },
+    emergencyContact: {
+      name: String,
+      phone: String,
+      relationship: String,
     },
   },
   { timestamps: true },

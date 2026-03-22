@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { type Date } from "mongoose";
 import { Application } from "../models/application.model.js";
 import { Job } from "../models/job.model.js";
 import { User } from "../models/user.model.js";
@@ -244,7 +244,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
   const application = await Application.findById(applicationId)
     .populate({
       path: "job",
-      select: "client hourlyRate",
+      select: "client hourlyRate startDate",
       populate: { path: "client", select: "firstName lastName email" },
     })
     .session(session);
@@ -257,6 +257,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
     _id: string;
     client: { _id: string; firstName: string; lastName: string; email: string };
     hourlyRate: number;
+    startDate: Date;
   };
 
   if (!job) {
@@ -284,7 +285,7 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
     { session },
   );
 
-  const [createdAgreement] = await Agreement.create(
+  const createdAgreements = await Agreement.create(
     [
       {
         job: job._id,
@@ -292,12 +293,14 @@ export const acceptApplication = catchAsync(async (req, res, next) => {
         worker: application.applicant,
         application: application._id,
         hourlyRate: job.hourlyRate,
-        startDate: new Date(),
+        startDate: job.startDate,
         schedule: application.availability,
       },
-    ],
+    ] as any[],
     { session },
   );
+
+  const createdAgreement = createdAgreements[0];
 
   if (!createdAgreement) {
     throw new AppError("Failed to create agreement", 500);

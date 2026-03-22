@@ -19,6 +19,7 @@ import {
   Edit3,
   UserCheck,
   Pencil,
+  Info,
 } from "lucide-react";
 
 export const NAV_ITEMS = {
@@ -29,7 +30,7 @@ export const NAV_ITEMS = {
     { label: "Sessions", href: "/worker/sessions", icon: Calendar },
     { label: "Find Jobs", href: "/worker/jobs", icon: Briefcase },
     { label: "My Clients", href: "/worker/clients", icon: Users },
-    { label: "Invoices", href: "/worker/invoices", icon: FileText },
+    { label: "Invoice", href: "/worker/invoice", icon: FileText },
     { label: "Timesheets", href: "/worker/timesheets", icon: Clock },
     { label: "Agreement", href: "/worker/agreement", icon: ClipboardCheck },
     { label: "Documents", href: "/worker/documents", icon: FolderOpen },
@@ -39,13 +40,15 @@ export const NAV_ITEMS = {
   client: [
     { label: "Dashboard", href: "/client", icon: LayoutDashboard },
     { label: "Edit Profile", href: "/client/profile", icon: User },
-    { label: "Sessions", href: "/client/sessions", icon: Calendar },
-    { label: "Support Workers", href: "/client/workers", icon: Users },
-    { label: "Job Listings", href: "/client/jobs", icon: Briefcase },
-    { label: "Documents", href: "/client/documents", icon: FolderOpen },
     { label: "Agreements", href: "/client/agreements", icon: ClipboardCheck },
-    { label: "Reviews", href: "/client/reviews", icon: Star },
+    { label: "Sessions", href: "/client/sessions", icon: Calendar },
+    { label: "Find my Support Workers", href: "/client/workers", icon: Users },
+    { label: "Job Listings", href: "/client/jobs", icon: Briefcase },
+    { label: "CALD support", href: "/client/cald-support", icon: Info },
+    { label: "Invoice", href: "/client/invoice", icon: FolderOpen },
+
     { label: "Messages", href: "/client/inbox", icon: MessageSquare, badge: 2 },
+    { label: "Reviews", href: "/client/reviews", icon: Star },
     { label: "Settings", href: "/client/settings", icon: Settings },
   ],
   admin: [

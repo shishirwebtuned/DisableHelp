@@ -5,6 +5,7 @@ import { sendResponse } from "../utils/sendResponse.js";
 import { buildFilter, getPagination } from "../utils/queryHelper.js";
 import { Session } from "../models/session.model.js";
 import { generateSessionsFromSchedule } from "../utils/sessionGenerator.js";
+import { Chat } from "../models/chat.model.js";
 
 export const acceptAgreementByWorker = catchAsync(async (req, res) => {
   const { agreementId } = req.params;
@@ -30,7 +31,31 @@ export const acceptAgreementByWorker = catchAsync(async (req, res) => {
 
   await agreement.save();
 
+  const clientId = agreement.client;
+  const rawWorkerId = agreement.worker;
+
+  await agreement.populate([
+    { path: "client", select: "firstName lastName email phoneNumber" },
+    { path: "worker", select: "firstName lastName email phoneNumber" },
+    { path: "job", select: "title" },
+  ]);
+
   await generateSessionsFromSchedule(agreement);
+
+  await Chat.findOneAndUpdate(
+    { client: clientId, worker: rawWorkerId },
+    {
+      $setOnInsert: {
+        client: clientId,
+        worker: rawWorkerId,
+      },
+      $set: {
+        agreement: agreement._id,
+        status: "active",
+      },
+    },
+    { upsert: true, new: true },
+  );
 
   sendResponse(res, {
     success: true,
@@ -83,6 +108,12 @@ export const terminateAgreement = catchAsync(async (req, res) => {
 
   await agreement.save();
 
+  await agreement.populate([
+    { path: "client", select: "firstName lastName email phoneNumber" },
+    { path: "worker", select: "firstName lastName email phoneNumber" },
+    { path: "job", select: "title" },
+  ]);
+
   await Session.updateMany(
     {
       agreement: agreement._id,
@@ -98,6 +129,12 @@ export const terminateAgreement = catchAsync(async (req, res) => {
       },
     },
   );
+
+  const chat = await Chat.findOne({ agreement: agreement._id });
+  if (chat) {
+    chat.status = "suspended";
+    await chat.save();
+  }
 
   sendResponse(res, {
     success: true,

@@ -1,227 +1,425 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-    Search,
-    MoreVertical,
-    Edit2,
-    Trash2,
-    Archive,
-    Reply,
-    Forward,
-    Mail,
-    Send
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Send, Search, Check, CheckCheck, Mail } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getSocket } from "@/lib/socket";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchMyChats, setActiveChat, updateLastMessage } from "@/redux/slices/chatSlice";
+import { fetchMessagesByChat, markMessagesRead, sendMessage, addMessage } from "@/redux/slices/messageSlice";
 
-// Mock messages data
-const mockMessages = [ 
-    {
-        id: '1',
-        sender: 'Sarah Worker',
-        subject: 'Tomorrow\'s Session Update',
-        body: 'Hi Alice, just confirming I will be there at 9 AM tomorrow for our personal care session. See you then!',
-        time: '9:15 AM',
-        unread: true,
-        avatar: '',
+const chatStatusConfig: Record<string, { label: string; className: string }> = {
+    active: {
+        label: "Active",
+        className: "bg-green-100 text-green-600 border border-green-300",
     },
-    {
-        id: '2',
-        sender: 'Emma Wilson',
-        subject: 'Service Agreement Questions',
-        body: 'Hello! I noticed a small detail in the community support agreement we discussed. Could we have a quick chat about it?',
-        time: 'Yesterday',
-        unread: false,
-        avatar: '',
+    pending: {
+        label: "Pending",
+        className: "bg-yellow-100 text-yellow-600 border border-yellow-300",
     },
-    {
-        id: '3',
-        sender: 'Platform Notification',
-        subject: 'Payment Successful',
-        body: 'Your payment for Invoice #INV-2045 has been processed successfully. Thank you!',
-        time: '2 days ago',
-        unread: false,
-        avatar: '',
-    }
-];
+    suspended: {
+        label: "Suspended",
+        className: "bg-red-100 text-red-600 border border-red-300",
+    },
+};
 
 export default function ClientInboxPage() {
-    const [selectedMessage, setSelectedMessage] = useState(mockMessages[0]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [replyText, setReplyText] = useState('');
+    const dispatch = useDispatch<AppDispatch>();
+    const { items: chats, activeChat } = useSelector((s: RootState) => s.chat);
+    const { items: messages, loading } = useSelector((s: RootState) => s.message);
+    const user = useSelector((s: RootState) => s.auth.user);
+
+    const [messageInput, setMessageInput] = useState("");
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const socketRef = useRef(getSocket());
+
+    const isInitialLoad = useRef(true);
+    const prevMessageCount = useRef(0);
+    const prevScrollHeight = useRef(0);
+    const isFetching = useRef(false);
+
+    const isActive = activeChat?.status === "active";
+
+    // 1. Fetch chat list on mount
+    useEffect(() => {
+        dispatch(fetchMyChats());
+    }, [dispatch]);
+
+    // 2. When active chat changes
+    useEffect(() => {
+        if (!activeChat) return;
+        const socket = socketRef.current;
+        const chatId = activeChat._id;
+
+        setPage(1);
+        setHasMore(true);
+        setLoadingMore(false);
+        isInitialLoad.current = true;
+        prevMessageCount.current = 0;
+        isFetching.current = false;
+
+        dispatch(fetchMessagesByChat(chatId));
+        socket.emit("joinChat", chatId);
+        dispatch(markMessagesRead(chatId));
+
+        return () => {
+            socket.emit("leaveChat", chatId);
+        };
+    }, [activeChat?._id]);
+
+    // 3. Socket listener
+    useEffect(() => {
+        const socket = socketRef.current;
+
+        const handleNewMessage = (msg: any) => {
+            if (activeChat && msg.chat === activeChat._id) {
+                dispatch(addMessage(msg));
+                dispatch(markMessagesRead(activeChat._id));
+            }
+            dispatch(updateLastMessage({ chatId: msg.chat, lastMessage: msg }));
+        };
+
+        socket.on("newMessage", handleNewMessage);
+        return () => { socket.off("newMessage", handleNewMessage); };
+    }, [activeChat?._id]);
+
+    // 4. Smart scroll behavior
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container || messages.length === 0) return;
+
+        const newCount = messages.length;
+        const prevCount = prevMessageCount.current;
+
+        if (isInitialLoad.current) {
+            // Initial — instant scroll to bottom
+            container.scrollTop = container.scrollHeight;
+            isInitialLoad.current = false;
+            prevMessageCount.current = newCount;
+            return;
+        }
+
+        if (newCount > prevCount) {
+            const added = newCount - prevCount;
+
+            if (added === 1) {
+                // New single message (sent/received) — smooth scroll to bottom
+                bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+                // Pagination prepend — restore scroll position so view doesn't jump
+                requestAnimationFrame(() => {
+                    if (container) {
+                        container.scrollTop = container.scrollHeight - prevScrollHeight.current;
+                    }
+                });
+            }
+        }
+
+        prevMessageCount.current = newCount;
+    }, [messages]);
+
+    // 5. Scroll-up pagination
+    const handleScroll = useCallback(async () => {
+        const container = messagesContainerRef.current;
+        if (!container || !hasMore || isFetching.current || !activeChat) return;
+        if (container.scrollTop > 80) return;
+
+        isFetching.current = true;
+        setLoadingMore(true);
+
+        // Capture scroll height BEFORE fetch so we can restore position
+        prevScrollHeight.current = container.scrollHeight;
+
+        const nextPage = page + 1;
+        const result = await dispatch(
+            fetchMessagesByChat({ chatId: activeChat._id, page: nextPage, limit: 10 } as any)
+        );
+
+        const fetched = (result.payload as any[]) ?? [];
+
+        if (fetched.length === 0) {
+            setHasMore(false);
+            setLoadingMore(false);
+            isFetching.current = false;
+            return;
+        }
+
+        setPage(nextPage);
+        setLoadingMore(false);
+        isFetching.current = false;
+        // scroll position restoration is handled in useEffect above via prevScrollHeight
+    }, [activeChat?._id, hasMore, page, dispatch]);
+
+    const handleSend = async () => {
+        if (!messageInput.trim() || !activeChat || !isActive) return;
+        await dispatch(sendMessage({ chatId: activeChat._id, message: messageInput.trim() }));
+        setMessageInput("");
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
+    const handleSelectChat = (chat: any) => {
+        if (activeChat?._id === chat._id) return;
+        dispatch(setActiveChat(chat));
+    };
+
+    const getOtherParticipant = (chat: any) =>
+        chat.client._id === user?._id ? chat.worker : chat.client;
+
+    const isOwnMessage = (msg: any) => msg.sender._id === user?._id;
+
+    const filteredChats = chats.filter((c) => {
+        const other = getOtherParticipant(c);
+        return `${other.firstName} ${other.lastName}`
+            .toLowerCase()
+            .includes(search.toLowerCase());
+    });
+
+    const statusConfig = activeChat
+        ? chatStatusConfig[activeChat.status] ?? chatStatusConfig.pending
+        : null;
 
     return (
-        <div className="h-[calc(100vh-180px)]">
-            <div className="flex items-center justify-between mb-2">
-                <div>
-                    <h1 className="text-xl font-bold tracking-tight">Messages</h1>
-                    <p className="text-muted-foreground">Chat with your support workers and teams</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                        <Archive className="h-4 w-4 mr-2" />
-                        Archive
-                    </Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700 size-sm">
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        New Message
-                    </Button>
-                </div>
+        <div className="space-y-4">
+            <div>
+                <h1 className="text-base md:text-lg lg:text-xl font-bold tracking-tight">Messages</h1>
+                <p className="text-muted-foreground text-[10px] md:text-xs lg:text-sm">Communicate with your support workers</p>
             </div>
 
-            <div className="grid grid-cols-12 gap-6 h-full">
-                {/* Inbox List */}
-                <Card className="col-span-12 lg:col-span-4 flex flex-col h-full border-none shadow-sm overflow-hidden">
-                    <div className="p-4 border-b bg-muted/30">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
+
+                {/* ── Conversations List ── */}
+                <Card className="md:col-span-1 md:py-3 py-2 lg:py-4 flex flex-col overflow-hidden">
+                    <CardHeader className="pb-1.5 md:pb-2 lg:pb-3 shrink-0">
+                        <CardTitle className="text-xs md:text-sm lg:text-base">Conversations</CardTitle>
+                        <div className="relative mt-1 md:mt-2">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 md:h-3 md:w-3 lg:h-4 lg:w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search conversations..."
-                                className="pl-10 h-9"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search..."
+                                className="pl-8 md:pl-9 lg:pl-10 h-6 md:h-7 lg:h-8 text-[10px] md:text-xs lg:text-sm"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                    </div>
-                    <ScrollArea className="flex-1">
-                        <div className="divide-y">
-                            {mockMessages.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    onClick={() => setSelectedMessage(msg)}
-                                    className={`p-4 cursor-pointer transition-colors hover:bg-muted/50 ${selectedMessage.id === msg.id ? 'bg-muted border-l-4 border-blue-600' : ''
-                                        }`}
-                                >
-                                    <div className="flex gap-3">
-                                        <Avatar className="h-10 w-10 border">
-                                            <AvatarFallback>{msg.sender.charAt(0)}</AvatarFallback>
+                    </CardHeader>
+                    <CardContent className="p-0 flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
+                            {filteredChats.length === 0 && (
+                                <p className="text-xs text-muted-foreground text-center py-4 md:py-6 lg:py-8">
+                                    No conversations
+                                </p>
+                            )}
+                            {filteredChats.map((chat) => {
+                                const other = getOtherParticipant(chat);
+                                const isSelected = activeChat?._id === chat._id;
+                                return (
+                                    <div
+                                        key={chat._id}
+                                        onClick={() => handleSelectChat(chat)}
+                                        className={`flex items-center gap-3 px-3 md:px-4 py-1.5 md:py-2 lg:py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${isSelected ? "bg-muted/80" : ""}`}
+                                    >
+                                        <Avatar className="w-8 h-8 md:w-8.5 md:h-8.5 lg:h-9 lg:w-9 shrink-0 ">
+                                            <AvatarFallback className="bg-gray-200 text-[8px] md:text-[10px] lg:text-xs">
+                                                {other.firstName[0]}{other.lastName[0]}
+                                            </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-0.5">
-                                                <h4 className={`text-sm font-semibold truncate ${msg.unread ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                                    {msg.sender}
-                                                </h4>
-                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">{msg.time}</span>
+                                            <div className="flex items-center justify-between gap-1">
+                                                <span className="text-xs md:text-[13px] lg:text-sm font-medium truncate">
+                                                    {other.firstName} {other.lastName}
+                                                </span>
+                                                <span className="text-[8px] md:text-[9px] lg:text-[10px] text-muted-foreground shrink-0">
+                                                    {chat.lastMessage
+                                                        ? new Date(chat.lastMessage.createdAt).toLocaleTimeString([], {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })
+                                                        : ""}
+                                                </span>
                                             </div>
-                                            <p className={`text-xs font-medium truncate mb-0.5 ${msg.unread ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                                {msg.subject}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground line-clamp-1">
-                                                {msg.body}
-                                            </p>
+                                            <span className="text-[10px] md:text-[11px] lg:text-xs text-muted-foreground truncate block">
+                                                {chat.lastMessage?.message ?? "No messages yet"}
+                                            </span>
                                         </div>
-                                        {msg.unread && (
-                                            <div className="mt-2 h-2 w-2 rounded-full bg-blue-600 flex-shrink-0" />
-                                        )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                                );
+                            })}
+                        </ScrollArea>
+                    </CardContent>
                 </Card>
 
-                {/* Message Detail / Chat View */}
-                <Card className="col-span-12 lg:col-span-8 flex flex-col h-full border-none shadow-sm overflow-hidden">
-                    {selectedMessage ? (
-                        <>
-                            <div className="p-4 border-b flex items-center justify-between bg-muted/30">
-                                <div className="flex items-center gap-3">
-                                    <Avatar>
-                                        <AvatarFallback>{selectedMessage.sender.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="text-sm font-semibold">{selectedMessage.sender}</div>
-                                        <div className="text-xs text-green-600 flex items-center gap-1">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                            Online
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <Reply className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
+                {/* ── Chat Area ── */}
+                {activeChat ? (
+                    <Card className="md:col-span-2 flex flex-col overflow-hidden py-1.5 md:py-2">
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-3 md:px-3.5 lg:px-4 py-2 md:py-3 border-b shrink-0">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8 md:h-9 md:w-9">
+                                    <AvatarFallback className="text-xs">
+                                        {getOtherParticipant(activeChat).firstName[0]}
+                                        {getOtherParticipant(activeChat).lastName[0]}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="text-[12px] md:text-[13px] lg:text-sm font-semibold leading-tight">
+                                        {getOtherParticipant(activeChat).firstName}{" "}
+                                        {getOtherParticipant(activeChat).lastName}
+                                    </p>
+                                    <p className="text-[9px] md:text-[10px] lg:text-[11px] text-muted-foreground leading-tight">
+                                        {getOtherParticipant(activeChat).email ?? ""}
+                                    </p>
                                 </div>
                             </div>
-                            <ScrollArea className="flex-1 p-6">
-                                <div className="space-y-6">
-                                    <div className="flex flex-col items-center mb-4">
-                                        <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground uppercase font-bold tracking-wider">
-                                            Earlier Today
-                                        </span>
-                                    </div>
-
-                                    {/* Received Message Bubble */}
-                                    <div className="flex gap-3 max-w-[80%]">
-                                        <Avatar className="h-8 w-8 mt-1">
-                                            <AvatarFallback>{selectedMessage.sender.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="space-y-1">
-                                            <div className="bg-muted p-3 rounded-2xl rounded-tl-none text-sm">
-                                                <p className="font-bold mb-1 text-xs">{selectedMessage.subject}</p>
-                                                {selectedMessage.body}
-                                            </div>
-                                            <span className="text-[10px] text-muted-foreground ml-1">{selectedMessage.time}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Mock Sent Message Bubble */}
-                                    <div className="flex flex-row-reverse gap-3 max-w-[80%] ml-auto">
-                                        <Avatar className="h-8 w-8 mt-1">
-                                            <AvatarFallback>AF</AvatarFallback>
-                                        </Avatar>
-                                        <div className="space-y-1 items-end flex flex-col">
-                                            <div className="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none text-sm">
-                                                Thanks Sarah! Looking forward to it. I'll have the tea ready.
-                                            </div>
-                                            <span className="text-[10px] text-muted-foreground mr-1">9:30 AM &bull; Read</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-
-                            <div className="p-4 border-t bg-muted/20">
-                                <div className="flex gap-2 items-center">
-                                    <Input
-                                        placeholder="Type your message..."
-                                        className="flex-1 bg-background"
-                                        value={replyText}
-                                        onChange={(e) => setReplyText(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && setReplyText('')}
-                                    />
-                                    <Button
-                                        size="icon"
-                                        className="bg-blue-600 hover:bg-blue-700 h-10 w-10 shrink-0"
-                                        onClick={() => setReplyText('')}
-                                    >
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex gap-4 mt-2 px-1">
-                                    <button className="text-[10px] text-muted-foreground hover:text-blue-600 transition-colors">Attach File</button>
-                                    <button className="text-[10px] text-muted-foreground hover:text-blue-600 transition-colors">Send Schedule</button>
-                                    <button className="text-[10px] text-muted-foreground hover:text-blue-600 transition-colors">Templates</button>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-12">
-                            <Mail className="h-12 w-12 mb-4 opacity-20" />
-                            <p>Select a worker to start chatting</p>
+                            {statusConfig && (
+                                <Badge className={`text-[10px] md:text-[11px] lg:text-xs font-medium px-2 py-0.5 capitalize ${statusConfig.className}`}>
+                                    {statusConfig.label}
+                                </Badge>
+                            )}
                         </div>
-                    )}
-                </Card>
+
+                        {/* Content */}
+                        <div
+                            ref={messagesContainerRef}
+                            className="flex-1 overflow-y-auto px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 lg:py-3"
+                            onScroll={() => { handleScroll(); }}
+                        >
+                            {/* Top indicators */}
+                            {loadingMore && (
+                                <div className="flex justify-center py-2">
+                                    <span className="text-[9px] md:text-[10px] lg:text-[11px] text-gray-700 bg-muted/70 px-3 py-1 rounded-full">
+                                        Loading older messages...
+                                    </span>
+                                </div>
+                            )}
+                            {!hasMore && !loadingMore && messages.length > 0 && (
+                                <div className="flex justify-center py-2">
+                                    <span className="text-[9px] md:text-[10px] lg:text-[11px] text-gray-700 bg-muted/70 px-3 py-1 rounded-full">
+                                        Beginning of conversation
+                                    </span>
+                                </div>
+                            )}
+
+                            {loading ? (
+                                <div className="flex items-center justify-center h-full text-muted-foreground text-xs md:text-[13px] lg:text-sm">
+                                    Loading messages...
+                                </div>
+                            ) : messages.length === 0 ? (
+                                <div className="flex items-center justify-center h-full text-muted-foreground text-xs md:text-[13px] lg:text-sm">
+                                    No messages yet. Say hello!
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {messages.map((msg, index) => {
+                                        const own = isOwnMessage(msg);
+                                        const prevMsg = messages[index - 1];
+                                        const showDateSeparator = !prevMsg ||
+                                            new Date(msg.createdAt).toDateString() !==
+                                            new Date(prevMsg.createdAt).toDateString();
+
+                                        return (
+                                            <div key={msg._id}>
+                                                {/* Date separator */}
+                                                {showDateSeparator && (
+                                                    <div className="flex justify-center my-2 md:my-2.5 lg:my-3">
+                                                        <span className="text-[8px] md:text-[9px] lg:text-[10px] text-gray-700 bg-muted/70 px-3 py-0.5 rounded-full">
+                                                            {new Date(msg.createdAt).toLocaleDateString([], {
+                                                                weekday: "short",
+                                                                month: "short",
+                                                                day: "numeric",
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className={`flex flex-col ${own ? "items-end" : "items-start"}`}>
+                                                    <div className={`max-w-[70%] rounded-2xl px-3 py-2 ${own
+                                                        ? "bg-blue-500 text-white rounded-br-sm"
+                                                        : "bg-muted rounded-bl-sm"
+                                                        }`}>
+                                                        <p className="text-xs md:text-[13px] lg:text-sm leading-relaxed break-words">
+                                                            {msg.message}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 mt-0.5 px-1">
+                                                        <span className="text-[8px] md:text-[9px] lg:text-[10px] text-muted-foreground">
+                                                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}
+                                                        </span>
+                                                        {own && (
+                                                            msg.read
+                                                                ? <CheckCheck className="h-2.5 w-2.5 md:h-3 md:w-3 text-blue-400" />
+                                                                : <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <div ref={bottomRef} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="border-t px-3 md:px-3.5 lg:px-4 pb-1 pt-2 md:pb-1.5 md:pt-3 shrink-0">
+                            {!isActive && (
+                                <p className="text-[10px] md:text-[11px] lg:text-xs text-muted-foreground mb-2 text-center">
+                                    {activeChat.status === "suspended"
+                                        ? "This chat has been suspended and is read-only."
+                                        : "This chat is pending and not yet active."}
+                                </p>
+                            )}
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder={isActive ? "Type your message..." : "Messaging is disabled"}
+                                    className="flex-1 h-7 md:h-8 lg:h-9 text-[11px] md:text-xs lg:text-sm"
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    disabled={!isActive}
+                                />
+                                <Button
+                                    size="icon"
+                                    className="h-7 w-7 md:h-8 md:w-8 lg:h-9 lg:w-9 shrink-0"
+                                    onClick={handleSend}
+                                    disabled={!messageInput.trim() || !isActive}
+                                >
+                                    <Send className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 mt-[1px] mr-[1px]" />
+                                </Button>
+                            </div>
+                            <p className="text-[8px] md:text-[9px] lg:text-[10px] text-muted-foreground mt-2">
+                                <Badge variant="outline" className="text-[8px] md:text-[9px] lg:text-[10px] border border-[red] text-red-400 mr-1">Note</Badge>
+                                Admin can view all conversations for compliance
+                            </p>
+                        </div>
+                    </Card>
+                ) : (
+                    <Card className="md:col-span-2 flex flex-col items-center justify-center gap-4 text-gray-600 text-xs md:text-sm lg:text-base">
+                        <Mail className="w-8 h-8 md:h-10 md:w-10 lg:h-12 lg:w-12 mb-0 opacity-60" />
+                        <p>
+                            Select a conversation to start chatting
+                        </p>
+                    </Card>
+                )}
             </div>
         </div>
     );

@@ -252,8 +252,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
     const renderLanguages = () => (
         <div className="space-y-2">
             <div>
-                <h2 className="text-2xl font-bold ">Languages</h2>
-                <p className="text-muted-foreground">Languages you speak</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold ">Languages</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Languages you speak</p>
             </div>
             <Card className=' border-none '>
                 <CardContent className=" space-y-2 p-0 ">
@@ -313,8 +313,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
     const renderInterests = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Interests & Hobbies</h2>
-                <p className="text-muted-foreground">
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Interests & Hobbies</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">
                     Select the things that you enjoy doing. Clients are more likely to find Support Workers who share similar interests.
                 </p>
             </div>
@@ -335,8 +335,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
                                 }
                             `}
                         >
-                            <Icon className={`h-10 w-10 mb-3 ${isSelected ? 'text-blue-500' : 'text-muted-foreground'}`} />
-                            <span className="text-sm font-medium text-center text-foreground">{interest.label}</span>
+                            <Icon className={`lg:h-10 lg:w-10 md:h-8 md:w-8 h-7 w-7 mb-2 lg:mb-3 ${isSelected ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                            <span className="md:text-[13px] text-xs lg:text-sm font-medium text-center text-foreground">{interest.label}</span>
                         </button>
                     );
                 })}
@@ -352,8 +352,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
     const renderCulturalBackground = () => (
         <div className="space-y-2">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Cultural Background & Preferences</h2>
-                <p className="text-muted-foreground">Your cultural background and preferences</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Cultural Background & Preferences</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your cultural background and preferences</p>
             </div>
             <Card className=' border-none '>
                 <CardContent className="pt-4 p-0 space-y-4">
@@ -469,8 +469,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2">My Preferences</h2>
-                    <p className="text-muted-foreground">Your work preferences and requirements</p>
+                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">My Preferences</h2>
+                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your work preferences and requirements</p>
                 </div>
                 <Button onClick={() => setIsPreferencesModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -481,20 +481,20 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
                 <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Preferred Client Age</p>
-                            <p className="font-medium text-foreground">{preferences.preferredClientAge}</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-1">Preferred Client Age</p>
+                            <p className="font-medium text-foreground lg:text-base md:text-[15px] text-sm">{preferences.preferredClientAge}</p>
                         </div>
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Preferred Gender</p>
-                            <p className="font-medium text-foreground">{preferences.preferredGender}</p>
+                            <p className="md:text-[13px] text-xs lg:text-smtext-muted-foreground mb-1">Preferred Gender</p>
+                            <p className="font-medium text-foreground lg:text-base md:text-[15px] text-sm">{preferences.preferredGender}</p>
                         </div>
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Willing to Travel</p>
-                            <p className="font-medium text-foreground">{preferences.willingToTravel === 'yes' ? 'Yes' : 'No'}</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-1">Willing to Travel</p>
+                            <p className="font-medium text-foreground lg:text-base md:text-[15px] text-sm">{preferences.willingToTravel === 'yes' ? 'Yes' : 'No'}</p>
                         </div>
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Max Travel Distance</p>
-                            <p className="font-medium text-foreground">{preferences.maxTravelDistance} km</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-1">Max Travel Distance</p>
+                            <p className="font-medium text-foreground lg:text-base md:text-[15px] text-sm">{preferences.maxTravelDistance} km</p>
                         </div>
                     </div>
                 </CardContent>
@@ -510,8 +510,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
     const renderBankAccount = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Bank Account Details</h2>
-                <p className="text-muted-foreground">For receiving payments</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Bank Account Details</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">For receiving payments</p>
             </div>
             <Card className=' border-none p-0'>
                 <CardContent className="pt-2 p-0 space-y-4">
@@ -559,8 +559,8 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
     const renderImmunisation = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Immunisation Status</h2>
-                <p className="text-muted-foreground">Your vaccination status</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Immunisation Status</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your vaccination status</p>
             </div>
             <Card className=' border-none p-0'>
                 <CardContent className="pt-6 p-0 space-y-4">

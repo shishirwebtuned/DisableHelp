@@ -194,6 +194,24 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
           isVerified: { type: Boolean, default: false },
         },
       },
+      additionalDocuments: [
+        {
+          name: {
+            type: String,
+            required: true,
+          },
+          expiryDate: Date,
+          file: {
+            url: String,
+            public_id: String,
+          },
+          isVerified: { type: Boolean, default: false },
+          uploadedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
       wwcc: {
         wwccNumber: String,
         expiryDate: Date,

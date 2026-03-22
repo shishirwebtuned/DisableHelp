@@ -12,6 +12,7 @@ import { getEmailErrorMessage } from "../utils/getEmailErrorMessage.js";
 import { ClientProfile } from "../models/clientProfile.model.js";
 import { WorkerProfile } from "../models/workerProfile.model.js";
 import { buildFilter, getPagination } from "../utils/queryHelper.js";
+import { Agreement } from "../models/agreement.model.js";
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -393,5 +394,128 @@ export const getMe = catchAsync(async (req, res) => {
     statusCode: 200,
     message: "User profile retrieved successfully",
     data: { user, profile },
+  });
+});
+
+export const getWorkersWithProfile = catchAsync(async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+  const { languages, search, approved } = req.query;
+
+  // Build WorkerProfile filter
+  const profileFilter: any = {};
+
+  if (languages) {
+    const languageList = (languages as string).split(",").map((l) => l.trim());
+
+    const regexList = languageList.map((lang) => new RegExp(`^${lang}$`, "i"));
+
+    profileFilter.$or = [
+      { "languages.firstLanguages": { $in: regexList } },
+      { "languages.secondLanguages": { $in: regexList } },
+    ];
+  }
+
+  // Get matching profiles
+  const matchingProfiles =
+    await WorkerProfile.find(profileFilter).select("user languages");
+  const matchingUserIds = matchingProfiles.map((p) => p.user);
+
+  // Build User filter
+  const userFilter: any = {
+    role: "worker",
+    _id: { $in: matchingUserIds },
+  };
+
+  if (search) {
+    const regex = new RegExp(search as string, "i");
+    userFilter.$or = [
+      { firstName: regex },
+      { lastName: regex },
+      { email: regex },
+    ];
+  }
+
+  if (approved !== undefined) {
+    userFilter.approved = approved === "true";
+  }
+
+  const users = await User.find(userFilter)
+    .select("-password -otp -otpExpiry")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await User.countDocuments(userFilter);
+
+  // Attach languages from profile to each user
+  const profileMap = new Map(
+    matchingProfiles.map((p) => [p.user.toString(), p.languages]),
+  );
+
+  const usersWithLanguages = users.map((u) => ({
+    ...u.toObject(),
+    languages: profileMap.get(u._id.toString()) ?? {
+      firstLanguages: [],
+      secondLanguages: [],
+    },
+  }));
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Workers retrieved successfully",
+    data: {
+      users: usersWithLanguages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+  });
+});
+
+export const getMyWorkers = catchAsync(async (req, res) => {
+  const clientId = req.user._id;
+
+  const agreements = await Agreement.find({
+    client: clientId,
+    status: "active",
+  }).populate(
+    "worker",
+    "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message:
+      agreements.length === 0
+        ? "No active workers found"
+        : "My workers retrieved successfully",
+    data: { workers: agreements.map((a) => a.worker) },
+  });
+});
+
+export const getMyClients = catchAsync(async (req, res) => {
+  const workerId = req.user._id;
+
+  const agreements = await Agreement.find({
+    worker: workerId,
+    status: "active",
+  }).populate(
+    "client",
+    "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message:
+      agreements.length === 0
+        ? "No active clients found"
+        : "My clients retrieved successfully",
+    data: { clients: agreements.map((a) => a.client) },
   });
 });

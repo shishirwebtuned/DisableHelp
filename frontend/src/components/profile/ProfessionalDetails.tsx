@@ -178,8 +178,8 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2">Experience Summary</h2>
-                    <p className="text-muted-foreground">Your overall experience</p>
+                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Experience Summary</h2>
+                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your overall experience</p>
                 </div>
                 <Button onClick={() => setIsExperienceModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -190,12 +190,12 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
                 <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Years of Experience</p>
-                            <p className="text-2xl font-bold text-foreground">{experience.years} years</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-1">Years of Experience</p>
+                            <p className="md:text-xl text-lg lg:text-2xl font-bold text-foreground">{experience.years} years</p>
                         </div>
                         <div className="p-4 border border-border rounded-lg bg-card">
-                            <p className="text-sm text-muted-foreground mb-1">Specializations</p>
-                            <p className="text-sm font-medium text-foreground">{experience.specializations}</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-1">Specializations</p>
+                            <p className="md:text-[13px] text-xs lg:text-sm font-medium text-foreground">{experience.specializations}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -210,8 +210,8 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2">Work History</h2>
-                    <p className="text-muted-foreground">Add your previous work experience</p>
+                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Work History</h2>
+                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your previous work experience</p>
                 </div>
                 <Button onClick={() => setIsWorkModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -249,8 +249,8 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold mb-2">Education & Training</h2>
-                    <p className="text-muted-foreground">Add your qualifications</p>
+                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-2">Education & Training</h2>
+                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your qualifications</p>
                 </div>
                 <Button onClick={() => setIsEducationModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -287,15 +287,15 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
     const renderCredentials = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Compliance & Screening</h2>
-                <p className="text-muted-foreground">NDIS Check, WWCC and other certifications</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Compliance & Screening</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">NDIS Check, WWCC and other certifications</p>
             </div>
 
             <Card className=' p-0 border-none space-y-6'>
                 <CardContent className="pt-6 p-0 space-y-6">
                     {/* NDIS Worker Screening */}
                     <div className="space-y-4 border border-border p-4 rounded-lg bg-card">
-                        <h3 className="font-semibold text-lg text-foreground">NDIS Worker Screening</h3>
+                        <h3 className="font-semibold text-sm md:text-base lg:text-lg text-foreground">NDIS Worker Screening</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label className="text-foreground/80">Screening Number</Label>
@@ -322,7 +322,7 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
 
                     {/* WWCC */}
                     <div className="space-y-4 border border-border p-4 rounded-lg bg-card">
-                        <h3 className="font-semibold text-lg text-foreground">Working with Children Check</h3>
+                        <h3 className="font-semibold text-sm md:text-base lg:text-lg text-foreground">Working with Children Check</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label>WWCC Number</Label>
@@ -339,7 +339,7 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
 
                     {/* Additional Training */}
                     <div className="space-y-4 border border-border p-4 rounded-lg bg-card">
-                        <h3 className="font-semibold text-lg text-foreground">Certifications</h3>
+                        <h3 className="font-semibold text-sm md:text-base lg:text-lg text-foreground">Certifications</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <Label>CPR Expiry</Label>

@@ -194,6 +194,16 @@ export interface IWorkerProfile {
       };
       isVerified: boolean;
     };
+    additionalDocuments?: {
+      _id?: string;
+      name: string;
+      expiryDate?: Date;
+      file: {
+        url: string;
+        public_id: string;
+      };
+      isVerified: boolean;
+    }[];
   };
   hasActiveAgreement: boolean;
 }

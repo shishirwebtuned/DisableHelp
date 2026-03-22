@@ -390,8 +390,8 @@ export default function WorkerProfilePage() {
                 return (
                     <div className="space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold mb-2">Section Coming Soon</h2>
-                            <p className="text-muted-foreground">This section is being developed</p>
+                            <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-2">Section Coming Soon</h2>
+                            <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">This section is being developed</p>
                         </div>
                     </div>
                 );
@@ -408,8 +408,8 @@ export default function WorkerProfilePage() {
                 {/* Header */}
                 <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl sm:text-xl font-bold mb-2">My Profile</h1>
-                        <p className="text-sm sm:text-base text-muted-foreground">
+                        <h1 className="text-base md:text-lg lg:text-xl font-bold mb-2">My Profile</h1>
+                        <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
                             Complete your profile to attract more clients
                         </p>
                     </div>
@@ -417,8 +417,8 @@ export default function WorkerProfilePage() {
                         <Link href="/worker/view-profile" className="w-full sm:w-auto">
                             <Button variant="outline" className="w-full sm:w-auto">
                                 <Eye className="h-4 w-4 mr-2" />
-                                <span className="hidden sm:inline">Preview Profile</span>
-                                <span className="sm:hidden">Preview</span>
+                                <span className="hidden sm:inline lg:text-base md:text-[15px] text-sm">Preview Profile</span>
+                                <span className="sm:hidden lg:text-base md:text-[15px] text-sm">Preview</span>
                             </Button>
                         </Link>
                         <Button
@@ -428,13 +428,13 @@ export default function WorkerProfilePage() {
                         >
                             {loading ? (
                                 <>
-                                    <span className="hidden sm:inline">Submitting...</span>
-                                    <span className="sm:hidden">...</span>
+                                    <span className="hidden sm:inline lg:text-base md:text-[15px] text-sm">Submitting...</span>
+                                    <span className="sm:hidden lg:text-base md:text-[15px] text-sm">...</span>
                                 </>
                             ) : (
                                 <>
-                                    <span className="hidden sm:inline">Submit All Data</span>
-                                    <span className="sm:hidden">Submit</span>
+                                    <span className="hidden sm:inline lg:text-base md:text-[15px] text-sm">Submit All Data</span>
+                                    <span className="sm:hidden lg:text-base md:text-[15px] text-sm">Submit</span>
                                 </>
                             )}
                         </Button>
@@ -448,129 +448,129 @@ export default function WorkerProfilePage() {
                                 {/* Personal Details */}
                                 <div>
                                     <Card className=''>
-                                    <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Personal Details</h3>
-                                    <div className="space-y-0.5">
-                                        {sections.personalDetails.map((section) => (
-                                            <button
-                                                key={section.id}
-                                                onClick={() => setCurrentSection(section.id)}
-                                                className={`
+                                        <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Personal Details</h3>
+                                        <div className="space-y-0.5">
+                                            {sections.personalDetails.map((section) => (
+                                                <button
+                                                    key={section.id}
+                                                    onClick={() => setCurrentSection(section.id)}
+                                                    className={`
                                                     w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                                                     ${currentSection === section.id
-                                                        ? ' text-[#8ac6dd]  font-medium '
-                                                        : ''
-                                                    }
+                                                            ? ' text-[#8ac6dd]  font-medium '
+                                                            : ''
+                                                        }
                                                 `}
-                                            >
-                                                {section.completed ? (
-                                                    <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
-                                                ) : (
-                                                    <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
-                                                )}
-                                                <span className="flex-1 text-left">{section.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                                >
+                                                    {section.completed ? (
+                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
+                                                    ) : (
+                                                        <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
+                                                    )}
+                                                    <span className="flex-1 text-left">{section.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </Card>
                                 </div>
 
                                 {/* Job Details */}
                                 <Card>
-                                <div>
-                                    <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Job Details</h3>
-                                    <div className="space-y-0.5">
-                                        {sections.jobDetails.map((section) => (
-                                            <button
-                                                key={section.id}
-                                                onClick={() => setCurrentSection(section.id)}
-                                                className={`
+                                    <div>
+                                        <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Job Details</h3>
+                                        <div className="space-y-0.5">
+                                            {sections.jobDetails.map((section) => (
+                                                <button
+                                                    key={section.id}
+                                                    onClick={() => setCurrentSection(section.id)}
+                                                    className={`
                                                     w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                                                     ${currentSection === section.id
-                                                        ? ' text-[#8ac6dd] bg-[#8ac6dd]/5 '
-                                                        : ''
-                                                    }
+                                                            ? ' text-[#8ac6dd] bg-[#8ac6dd]/5 '
+                                                            : ''
+                                                        }
                                                 `}
-                                            >
-                                                {section.completed ? (
-                                                    <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
-                                                ) : (
-                                                    <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
-                                                )}
-                                                <span className="flex-1 text-left">{section.label}</span>
-                                            </button>
-                                        ))}
+                                                >
+                                                    {section.completed ? (
+                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
+                                                    ) : (
+                                                        <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
+                                                    )}
+                                                    <span className="flex-1 text-left">{section.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
                                 </Card>
 
                                 {/* Professional Details */}
                                 <Card>
-                                <div>
-                                    <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Professional Details</h3>
-                                    <div className="space-y-0.5">
-                                        {sections.professionalDetails.map((section) => (
-                                            <button
-                                                key={section.id}
-                                                onClick={() => setCurrentSection(section.id)}
-                                                className={`
+                                    <div>
+                                        <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Professional Details</h3>
+                                        <div className="space-y-0.5">
+                                            {sections.professionalDetails.map((section) => (
+                                                <button
+                                                    key={section.id}
+                                                    onClick={() => setCurrentSection(section.id)}
+                                                    className={`
                                                     w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                                                     ${currentSection === section.id
-                                                        ? ' text-[#8ac6dd] font-medium '
-                                                        : ''
-                                                    }
+                                                            ? ' text-[#8ac6dd] font-medium '
+                                                            : ''
+                                                        }
                                                 `}
-                                            >
-                                                {section.completed ? (
-                                                    <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
-                                                ) : (
-                                                    <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
-                                                )}
-                                                <span className="flex-1 text-left">{section.label}</span>
-                                            </button>
-                                        ))}
+                                                >
+                                                    {section.completed ? (
+                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
+                                                    ) : (
+                                                        <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
+                                                    )}
+                                                    <span className="flex-1 text-left">{section.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
                                 </Card>
 
                                 {/* Additional Details */}
-                              <Card>                            
-                                 <div>
-                                    <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Additional Details</h3>
-                                    <div className="space-y-0.5">
-                                        {sections.additionalDetails.map((section) => (
-                                            <button
-                                                key={section.id}
-                                                onClick={() => setCurrentSection(section.id)}
-                                                className={`
+                                <Card>
+                                    <div>
+                                        <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Additional Details</h3>
+                                        <div className="space-y-0.5">
+                                            {sections.additionalDetails.map((section) => (
+                                                <button
+                                                    key={section.id}
+                                                    onClick={() => setCurrentSection(section.id)}
+                                                    className={`
                                                     w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
                                                     ${currentSection === section.id
-                                                        ? ' text-[#8ac6dd font-medium'
-                                                        : ''
-                                                    }
+                                                            ? ' text-[#8ac6dd font-medium'
+                                                            : ''
+                                                        }
                                                 `}
-                                            >
-                                                {section.completed ? (
-                                                    <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : ' text-[#8ac6dd]'}`} />
-                                                ) : (
-                                                    <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
-                                                )}
-                                                <span className="flex-1 text-left">{section.label}</span>
-                                            </button>
-                                        ))}
+                                                >
+                                                    {section.completed ? (
+                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : ' text-[#8ac6dd]'}`} />
+                                                    ) : (
+                                                        <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
+                                                    )}
+                                                    <span className="flex-1 text-left">{section.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
                                 </Card>
                             </div>
                         </div>
                     </div>
-                  
+
 
 
                     {/* Main Content */}
                     <div className="lg:col-span-3">
                         <Card>
                             {/* Horizontal Scrollable Navigation (Mobile/Tablet only) */}
-                            <div className="lg:hidden border-b sticky top-0 bg-white dark:bg-slate-950 z-20">
+                            <div className="lg:hidden border-b sticky top-0 bg-white z-20">
                                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800" style={{ maxHeight: '4rem' }}>
                                     <div className="flex gap-1 p-2 min-w-max items-center">
                                         {Object.values(sections).flat().map((section) => (
@@ -578,10 +578,10 @@ export default function WorkerProfilePage() {
                                                 key={section.id}
                                                 onClick={() => setCurrentSection(section.id)}
                                                 className={`
-                                                    flex items-center gap-2 px-4 py-2 rounded-md text-sm whitespace-nowrap transition-colors
+                                                    flex items-center gap-2 px-4 py-2 rounded-md md:text-[13px] text-xs lg:text-sm whitespace-nowrap transition-colors
                                                     ${currentSection === section.id
-                                                        ? ' bg-[#8ac6dd] text-white shadow-sm'
-                                                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                        ? ' bg-[#8ac6dd] text-white shadow-sm border border-[#8ac6dd]'
+                                                        : 'bg-white border border-[#8ac6dd]  hover:bg-gray-100 '
                                                     }
                                                 `}
                                             >
@@ -596,7 +596,7 @@ export default function WorkerProfilePage() {
                                     </div>
                                 </div>
                             </div>
-                            <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+                            <CardContent className="pt-2 md:pt-4 lg:pt-6 px-3 sm:px-6">
                                 <div className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
                                     {renderSection()}
                                 </div>

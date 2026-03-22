@@ -134,8 +134,8 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
     const renderPersonalInfo = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
-                <p className="text-muted-foreground">Update your personal details</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Personal Information</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-[13px]">Update your personal details</p>
             </div>
             <Card className=' border-none p-0'>
                 <CardContent className="pt-6 p-0 space-y-4">
@@ -194,21 +194,21 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
     const renderBio = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Bio & About Me</h2>
-                <p className="text-muted-foreground">Tell clients about yourself and your approach to support work</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Bio & About Me</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-[13px]">Tell clients about yourself and your approach to support work</p>
             </div>
             <Card className=' border-none p-0'>
-                <CardContent className="pt-6 p-0 space-y-4">
+                <CardContent className="md:pt-4 pt-2 lg:pt-6 p-0 space-y-4">
                     <div>
                         <Label>Your Bio (500 words max)</Label>
                         <Textarea
                             rows={10}
                             placeholder="Tell clients about your experience, approach to care, and what makes you a great support worker..."
-                            className="mt-2"
+                            className="mt-2 lg:text-base md:text-sm text-xs"
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
                         />
-                        <p className="text-sm text-muted-foreground mt-2">{bio.trim() ? bio.trim().split(/\s+/).length : 0} / 500 words</p>
+                        <p className="md:text-[13px] text-[11px] lg:text-sm text-muted-foreground mt-2">{bio.trim() ? bio.trim().split(/\s+/).length : 0} / 500 words</p>
                     </div>
                 </CardContent>
             </Card>
@@ -223,8 +223,8 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
     const renderContact = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Contact Details</h2>
-                <p className="text-muted-foreground">Your contact information</p>
+                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Contact Details</h2>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-[13px]">Your contact information</p>
             </div>
             <Card className=' p-0 border-none'>
                 <CardContent className="pt-6 p-0 space-y-4">

@@ -1,15 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import {  getAgreementsByWorker ,updateAgreementStatus } from '@/redux/slices/agreementsSlice';
+import { getAgreementsByWorker, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
-     Search,
+    Search,
     Download,
-    Eye,
     Mail,
     Phone,
     Calendar,
@@ -17,39 +16,40 @@ import {
     Briefcase,
     FileText,
     Clock,
+    CheckCircle,
+    Eye,
 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import axios from '@/lib/axios';
 import Pagination from '@/components/ui/pagination';
 import Loading from '@/components/ui/loading';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import {
+    Dialog, DialogContent, DialogHeader,
+    DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
 
 export default function AdminAgreementsPage() {
     const dispatch = useAppDispatch();
     const { items: agreements, loading, total, totalPages, page: currentPageFromStore } = useAppSelector((state) => state.agreements);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'expired' | 'rejected'>('all');
     const [currentPage, setCurrentPage] = useState<number>(currentPageFromStore || 1);
+
+    // Terms dialog state
+    const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+    const [selectedTermsAgreementId, setSelectedTermsAgreementId] = useState<string | null>(null);
+    const [acceptingTerms, setAcceptingTerms] = useState(false);
+    const [viewOnlyTerms, setViewOnlyTerms] = useState(false);
+
     const pageSize = 10;
-    const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
     useEffect(() => {
         dispatch(getAgreementsByWorker({ page: currentPage, limit: pageSize, status: statusFilter }));
     }, [dispatch, currentPage, statusFilter]);
 
-    const getStatusVariant = (status: string) => {
-        switch (status) {
-            case 'active': return 'default';
-            case 'pending': return 'secondary';
-            case 'expired': return 'destructive';
-            case 'rejected': return 'destructive';
-            default: return 'outline';
-        }
-    };
 
 
-
-    // Filter agreements based on search term
     const filteredAgreements = agreements.filter((agreement) => {
         const searchLower = searchTerm.toLowerCase();
         const workerName = typeof agreement.worker === 'string' ? '' : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
@@ -63,9 +63,23 @@ export default function AdminAgreementsPage() {
         );
     });
 
-    // // Calculate stats
-    // const activeCount = agreements.filter(a => a.status === 'active').length;
-    // const pendingCount = agreements.filter(a => a.status === 'pending').length;
+    const handleAcceptTerms = async () => {
+        if (!selectedTermsAgreementId) return;
+        setAcceptingTerms(true);
+        await dispatch(updateAgreementStatus({ id: selectedTermsAgreementId, status: 'accepted' }));
+        setAcceptingTerms(false);
+        setTermsDialogOpen(false);
+        setSelectedTermsAgreementId(null);
+    };
+
+    const statusStyles: Record<string, string> = {
+        pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+        active: 'bg-blue-100 text-blue-700 border border-blue-200',
+        completed: 'bg-green-100 text-green-700 border border-green-200',
+        terminated: 'bg-red-100 text-red-700 border border-red-200',
+    };
+
+
 
     return (
         <>
@@ -78,30 +92,8 @@ export default function AdminAgreementsPage() {
                     </div>
                 </div>
 
-                {/* Quick Stats */}
-                {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Active Agreements</CardDescription>
-                            <CardTitle className="text-2xl font-bold">{activeCount}</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Pending Approval</CardDescription>
-                            <CardTitle className="text-2xl font-bold text-amber-600 text-amber-700 dark:text-amber-400">{pendingCount}</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Total Agreements</CardDescription>
-                            <CardTitle className="text-2xl font-bold text-blue-600 text-blue-700 dark:text-blue-400">{total}</CardTitle>
-                        </CardHeader>
-                    </Card>
-                </div> */}
-
                 {/* Search and Filters */}
-                <div className="border-none ">
+                <div className="border-none">
                     <div className="pt-3">
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="relative flex-1">
@@ -113,11 +105,14 @@ export default function AdminAgreementsPage() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <Select value={statusFilter} onValueChange={(val) => {
-                                const v = val as 'all' | 'pending' | 'active' | 'expired' | 'rejected';
-                                setStatusFilter(v);
-                                setCurrentPage(1);
-                            }}>
+                            <Select
+                                value={statusFilter}
+                                onValueChange={(val) => {
+                                    const v = val as 'all' | 'pending' | 'active' | 'expired' | 'rejected';
+                                    setStatusFilter(v);
+                                    setCurrentPage(1);
+                                }}
+                            >
                                 <SelectTrigger className="w-[160px]">
                                     <SelectValue placeholder="Filter by status" />
                                 </SelectTrigger>
@@ -132,12 +127,13 @@ export default function AdminAgreementsPage() {
                         </div>
                     </div>
                 </div>
+
                 {/* Agreements Cards */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredAgreements.length > 0 ? (
                         filteredAgreements.map((agreement) => (
-                            <Card key={agreement._id} className="">
-                                <CardHeader className="pb-3">
+                            <Card key={agreement._id}>
+                                <CardHeader className="pb-1">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <CardTitle className="flex items-center gap-2 text-lg">
@@ -147,18 +143,23 @@ export default function AdminAgreementsPage() {
                                                 ID: {agreement._id.slice(-12).toUpperCase()}
                                             </CardDescription>
                                         </div>
-                                        <Badge variant={getStatusVariant(agreement.status)} className="capitalize">
+                                        <Badge className={`text-xs font-medium capitalize px-2 py-0.5 ${statusStyles[agreement.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
                                             {agreement.status}
                                         </Badge>
                                     </div>
                                 </CardHeader>
+
                                 <CardContent className="space-y-4">
                                     {/* Client Information */}
-                                    <div className=" rounded-lg p-3 space-y-2">
-                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Client Details</div>
+                                    <div className="rounded-lg px-0 space-y-2">
+                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                            Client Details
+                                        </div>
                                         <div className="flex items-center gap-2 text-sm">
                                             <Mail className="h-4 w-4 text-muted-foreground" />
-                                            <span className="font-medium">{agreement.client.firstName} {agreement.client.lastName}</span>
+                                            <span className="font-medium">
+                                                {agreement.client.firstName} {agreement.client.lastName}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Mail className="h-3.5 w-3.5" />
@@ -173,7 +174,9 @@ export default function AdminAgreementsPage() {
                                         {agreement.client.dateOfBirth && (
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Calendar className="h-3.5 w-3.5" />
-                                                <span className="text-xs">DOB: {new Date(agreement.client.dateOfBirth).toLocaleDateString()}</span>
+                                                <span className="text-xs">
+                                                    DOB: {new Date(agreement.client.dateOfBirth).toLocaleDateString()}
+                                                </span>
                                             </div>
                                         )}
                                     </div>
@@ -185,28 +188,36 @@ export default function AdminAgreementsPage() {
                                                 <DollarSign className="h-3.5 w-3.5" />
                                                 Hourly Rate
                                             </div>
-                                            <div className="text-sm font-bold text-green-600 dark:text-green-400">${agreement.hourlyRate}/hr</div>
+                                            <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                                                ${agreement.hourlyRate}/hr
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                                 <Calendar className="h-3.5 w-3.5" />
                                                 Start Date
                                             </div>
-                                            <div className="text-sm font-medium">{new Date(agreement.startDate).toLocaleDateString()}</div>
+                                            <div className="text-sm font-medium">
+                                                {new Date(agreement.startDate).toLocaleDateString()}
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                                 <FileText className="h-3.5 w-3.5" />
                                                 Application
                                             </div>
-                                            <div className="text-xs font-mono text-muted-foreground">{agreement.application.slice(-8).toUpperCase()}</div>
+                                            <div className="text-xs font-mono text-muted-foreground">
+                                                {agreement.application.slice(-8).toUpperCase()}
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                                 <Clock className="h-3.5 w-3.5" />
                                                 Created
                                             </div>
-                                            <div className="text-xs font-medium">{new Date(agreement.createdAt).toLocaleDateString()}</div>
+                                            <div className="text-xs font-medium">
+                                                {new Date(agreement.createdAt).toLocaleDateString()}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -216,55 +227,54 @@ export default function AdminAgreementsPage() {
                                         Last updated: {new Date(agreement.updatedAt).toLocaleDateString()} at {new Date(agreement.updatedAt).toLocaleTimeString()}
                                     </div>
 
-                                    {/* Terms Accepted & Actions */}
-                                    <div className="flex items-center justify-between pt-2 border-t">
-                                        <div className="flex items-center gap-2" onClick={() => dispatch(updateAgreementStatus({ id: agreement._id, status: 'accepted' }))}>
-                                            <Checkbox checked={agreement.termsAcceptedByWorker===true}   />
-                                            <span className="text-sm font-medium">Terms Accepted</span>
-                                        </div>
+                                    {/* Terms & Actions */}
+                                    <div className="flex items-center justify-between pt-3 border-t">
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8"
-                                                onClick={async () => {
-                                                    try {
-                                                        setDownloadingId(agreement._id);
-                                                        const response = await axios.get(`/agreements/${agreement._id}/download`, {
-                                                            responseType: 'blob',
-                                                        });
+                                            {agreement.termsAcceptedByWorker ? (
+                                                <Badge className="bg-green-100 text-green-700 border border-green-200 text-xs font-medium">
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Terms Accepted
+                                                </Badge>
+                                            ) : (
 
-                                                        // Try to determine filename from content-disposition
-                                                        const disposition = response.headers?.['content-disposition'] || response.headers?.['Content-Disposition'];
-                                                        let filename = `agreement-${agreement._id}.pdf`;
-                                                        if (disposition) {
-                                                            const match = /filename\*=UTF-8''(.+)$/.exec(disposition) || /filename="?([^";]+)"?/.exec(disposition);
-                                                            if (match && match[1]) {
-                                                                filename = decodeURIComponent(match[1]);
-                                                            }
-                                                        }
+                                                <Badge className="bg-red-100 text-red-700 border border-red-200 text-xs font-medium">
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Terms Not Accepted
+                                                </Badge>
+                                            )}
 
-                                                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                                                        const link = document.createElement('a');
-                                                        link.href = url;
-                                                        link.setAttribute('download', filename);
-                                                        document.body.appendChild(link);
-                                                        link.click();
-                                                        link.parentNode?.removeChild(link);
-                                                        window.URL.revokeObjectURL(url);
-                                                    } catch (err) {
-                                                        console.error('Download failed', err);
-                                                        alert('Failed to download agreement.');
-                                                    } finally {
-                                                        setDownloadingId(null);
-                                                    }
-                                                }}
-                                                disabled={downloadingId === agreement._id}
-                                            >
-                                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                                {downloadingId === agreement._id ? 'Downloading...' : 'Download'}
-                                            </Button>
                                         </div>
+                                        <div>
+                                            {agreement.termsAcceptedByWorker ? (
+                                                <button
+                                                    className="h-7 md:text-[11px] text-[9px] lg:text-[13px] bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground border px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                                    onClick={() => {
+                                                        setSelectedTermsAgreementId(agreement._id);
+                                                        setViewOnlyTerms(true);
+                                                        setTermsDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Eye className="w-3 h-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 mr-1.5" />
+                                                    View Terms
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="h-7 md:text-[11px] text-[9px] lg:text-[13px] bg-blue-500 text-white hover:bg-blue-400 p-2 flex flex-row items-center rounded-sm shadow-md cursor-pointer"
+                                                    onClick={() => {
+                                                        setSelectedTermsAgreementId(agreement._id);
+                                                        setViewOnlyTerms(false);
+
+                                                        setTermsDialogOpen(true);
+
+                                                    }}
+                                                >
+                                                    <FileText className="w-3 h-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 mr-1.5" />
+                                                    <span>
+                                                        Accept Terms</span>
+                                                </button>
+                                            )}
+                                        </div>
+
                                     </div>
                                 </CardContent>
                             </Card>
@@ -280,11 +290,81 @@ export default function AdminAgreementsPage() {
                 <Pagination
                     totalPages={totalPages || 1}
                     currentPage={currentPage}
-                    onPageChange={(page) => {
-                        setCurrentPage(page);
-                    }}
+                    onPageChange={(page) => setCurrentPage(page)}
                 />
             </div>
+
+            {/* Terms & Conditions Dialog */}
+            <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Terms & Conditions</DialogTitle>
+                        <DialogDescription>
+                            Please read the terms and conditions carefully before accepting.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="max-h-64 overflow-y-auto rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
+                        <p className="font-semibold text-foreground">Service Agreement Terms</p>
+                        <p>
+                            By accepting these terms, you agree to provide support services as outlined
+                            in this agreement in a professional and timely manner.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">1. Confidentiality.</span>{' '}
+                            You agree to keep all client information strictly confidential and not
+                            disclose any personal details to third parties.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">2. Code of Conduct.</span>{' '}
+                            You agree to treat all clients with respect, dignity, and compassion at all
+                            times during service delivery.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">3. Compliance.</span>{' '}
+                            You agree to comply with all relevant legislation including the NDIS Code of
+                            Conduct, Work Health and Safety laws, and any applicable state regulations.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">4. Invoicing.</span>{' '}
+                            Invoices must be submitted accurately and within the agreed timeframe.
+                            Falsification of hours or services rendered may result in immediate
+                            termination of this agreement.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">5. Termination.</span>{' '}
+                            Either party may terminate this agreement with reasonable notice as specified
+                            in the service schedule.
+                        </p>
+                        <p>
+                            <span className="font-medium text-foreground">6. Insurance.</span>{' '}
+                            You confirm that you hold valid and current professional indemnity and public
+                            liability insurance as required.
+                        </p>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-1">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTermsDialogOpen(false)}
+                            disabled={acceptingTerms}
+                        >
+                            {viewOnlyTerms ? 'Close' : 'Cancel'}
+                        </Button>
+                        {!viewOnlyTerms && (
+                            <Button
+                                size="sm"
+                                onClick={handleAcceptTerms}
+                                disabled={acceptingTerms}
+                            >
+                                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                {acceptingTerms ? 'Accepting...' : 'Accept Terms'}
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

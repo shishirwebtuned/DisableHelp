@@ -12,6 +12,11 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import applicationRoutes from "./routes/application.routes.js";
 import agreementRoutes from "./routes/agreement.routes.js";
 import sessionRoutes from "./routes/session.routes.js";
+import invoiceRoutes from "./routes/invoice.routes.js";
+import messageRoutes from "./routes/message.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
+
+import locationRoutes from "./routes/location.routes.js";
 
 dotenv.config();
 
@@ -32,6 +37,11 @@ app.use(`${baseApi}/job`, jobRoutes);
 app.use(`${baseApi}/application`, applicationRoutes);
 app.use(`${baseApi}/agreement`, agreementRoutes);
 app.use(`${baseApi}/session`, sessionRoutes);
+// app.use(`${baseApi}/chat`, chatRoutes);
+// app.use(`${baseApi}/message`, messageRoutes);
+app.use(`${baseApi}/location`, locationRoutes);
+app.use(`${baseApi}/invoice`, invoiceRoutes);
+app.use(`${baseApi}/notifications`, notificationRoutes);
 
 // Error handler
 app.use(errorHandler);
