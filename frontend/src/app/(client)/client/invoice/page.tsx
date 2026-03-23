@@ -224,6 +224,21 @@ export default function ClientInvoicePage() {
                                             </p>
                                         )}
 
+                                        {(invoice as any).file?.url && (
+                                            <div className='flex flex-row gap-5'>
+                                                <p className='text-xs md:text-[13px] lg:text-[13px]'>Attachment :  ({invoice?.file?.originalName}) </p>
+                                                <a
+                                                    href={(invoice as any).file.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    View
+                                                </a>
+                                            </div>
+                                        )}
+
                                         {/* Decline reason */}
                                         {invoice.status === 'declined' && invoice.declineReason && (
                                             <div className="flex items-start gap-1 text-[11px] text-red-600 bg-red-50 rounded px-2 py-1">

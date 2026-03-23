@@ -36,7 +36,7 @@ const jobSchema = new Schema(
     },
     location: {
       line1: { type: String, required: true },
-      line2: { type: String, required: true },
+      line2: { type: String, required: false },
       state: { type: String, required: true },
       postalCode: { type: String, required: true },
     },

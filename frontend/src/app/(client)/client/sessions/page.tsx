@@ -6,19 +6,16 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import {
     fetchSessionsByUser,
     rescheduleSession,
-    cancelSession,
 } from '@/redux/slices/sessionsSlice';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import {
-    Calendar as CalendarIcon,
     Clock,
     User,
     CheckCircle2,
     MoreVertical,
-    Plus,
     Filter,
     Search,
     Inbox,
@@ -42,7 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from '@/components/ui/date-picker';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import Loading from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 
@@ -76,8 +73,8 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
 export default function ClientSessionsPage() {
     const router = useRouter();
     const dispatch = useAppDispatch();
-    const { items: sessions, loading } = useAppSelector((state) => state.sessions);
-    const { items: services, loading: servicesLoading } = useAppSelector((state) => state.services);
+    const { items: sessions = [], loading } = useAppSelector((state) => state.sessions);
+    const { items: services = [], loading: servicesLoading } = useAppSelector((state) => state.services);
 
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
@@ -240,7 +237,7 @@ export default function ClientSessionsPage() {
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight">Support Sessions</h1>
+                        <h1 className="md:text-[19px] text-lg lg:text-xl font-bold tracking-tight">Support Sessions</h1>
                     </div>
 
                     <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} direction="right">
@@ -376,13 +373,13 @@ export default function ClientSessionsPage() {
                 <div className="grid grid-cols-12 gap-6">
                     {/* Left Sidebar - Calendar & Quick Info */}
                     <div className="col-span-12 lg:col-span-4 space-y-6">
-                        <div className=" border-none ">
+                        <div className="border-none shadow-sm rounded-lg">
 
                             <CalendarComponent
                                 mode="single"
                                 selected={selectedDate}
                                 onSelect={setSelectedDate}
-                                className="rounded-md border-none w-full"
+                                className="rounded-lg border-none w-full"
                             />
                         </div>
 
@@ -395,8 +392,8 @@ export default function ClientSessionsPage() {
                                 <div className="space-y-3">
                                     <div>
                                         <p className="text-blue-100 text-xs uppercase tracking-wider font-bold">Time & Date</p>
-                                        <p className="font-medium">{new Date(nextSession.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                                        <p className="text-lg font-bold">{new Date(nextSession.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="font-medium">{new Date(nextSession?.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                                        <p className="text-lg font-bold">{new Date(nextSession?.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                     <div className="pt-2 border-t border-white/20">
                                         <p className="text-blue-100 text-xs uppercase tracking-wider font-bold">Supporting Worker</p>
@@ -405,7 +402,7 @@ export default function ClientSessionsPage() {
                                                 {`${nextSession.worker?.firstName?.[0] ?? ""} ${nextSession.worker?.lastName?.[0] ?? ""}`}
                                             </div>
                                             <p>
-                                                {`${nextSession.worker.firstName}  ${nextSession.worker.lastName}`}
+                                                {`${nextSession?.worker?.firstName}  ${nextSession?.worker?.lastName}`}
                                             </p>
                                         </div>
                                     </div>
@@ -413,7 +410,7 @@ export default function ClientSessionsPage() {
                                         variant="secondary"
                                         size="sm"
                                         className="w-full mt-1 bg-white text-blue-700 hover:bg-white/90 border-none font-bold"
-                                        onClick={() => router.push(`/profile/${nextSession.worker._id}`)}
+                                        onClick={() => nextSession?.worker?._id && router.push(`/profile/${nextSession.worker._id}`)}
                                     >
                                         View Worker Profile
                                     </Button>
@@ -425,19 +422,19 @@ export default function ClientSessionsPage() {
                     {/* Right Content - Sessions List */}
                     <div className="col-span-12 lg:col-span-8 flex flex-col space-y-4">
                         <div className="">
-                            <div className=" flex gap-4">
+                            <div className="flex sm:flex-row items-center gap-2 md:gap-3 lg:gap-4">
                                 <div className="relative flex-1">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Search className="absolute left-3 top-[50%] lg:top-1/2 transform -translate-y-1/2 text-muted-foreground lg:h-4 lg:w-4 md:h-3.5 md:w-3.5 h-3 w-3" />
                                     <Input
                                         placeholder="Search by worker or job title..."
-                                        className="pl-10 h-10 bg-slate-800 text-white"
+                                        className="md:pl-9 pl-8 lg:pl-10 bg-white text-black h-9"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                                     <SelectTrigger className="h-10 w-[160px]">
-                                        <Filter className="h-4 w-4 mr-2" />
+                                        <Filter className="lg:h-4 lg:w-4 md:h-3.5 md:w-3.5 h-3 w-3 mr-2" />
                                         <SelectValue placeholder="Filter status" />
                                     </SelectTrigger>
 
@@ -454,7 +451,7 @@ export default function ClientSessionsPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
-                                <h3 className="font-bold text-lg">
+                                <h3 className="font-bold text-base md:text-[17px] lg:text-lg">
                                     {!selectedDate
                                         ? "Upcoming Schedule"
                                         : selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) === new Date().toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
@@ -481,17 +478,17 @@ export default function ClientSessionsPage() {
                                                         </div>
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-3">
-                                                                <h4 className="font-bold text-base">{session.job.title}</h4>
-                                                                <StatusBadge status={session.status} className="text-[10px] py-0 h-4 font-bold uppercase tracking-wider" />
+                                                                <h4 className="font-bold text-base">{session?.job?.title}</h4>
+                                                                <StatusBadge status={session?.status} className="text-[10px] py-0 h-4 font-bold uppercase tracking-wider" />
                                                             </div>
                                                             <div className="flex flex-wrap gap-y-1 gap-x-4 text-sm text-muted-foreground mt-2">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <User className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{session.worker.firstName} {session.worker.lastName}</span>
+                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{session?.worker?.firstName} {session?.worker?.lastName}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1.5">
                                                                     <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span>{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({session.durationMinutes})</span>
+                                                                    <span>{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({session?.durationMinutes})</span>
                                                                 </div>
                                                                 {/* <div className="flex items-center gap-1.5">
                                                                     {session.mode === 'remote' ? <Video className="h-3.5 w-3.5 text-blue-500" /> : <MapPin className="h-3.5 w-3.5 text-blue-500" />}
@@ -518,7 +515,7 @@ export default function ClientSessionsPage() {
                                                             <DropdownMenuContent align="end" className="w-48 p-1">
                                                                 <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
-                                                                    onClick={() => router.push(`/profile/${session.worker._id}`)}
+                                                                    onClick={() => session?.worker?._id && router.push(`/profile/${session.worker._id}`)}
                                                                 >
                                                                     View Worker Profile
                                                                 </DropdownMenuItem>
@@ -534,14 +531,15 @@ export default function ClientSessionsPage() {
                                                                 >
                                                                     Edit Booking
                                                                 </DropdownMenuItem> */}
-                                                                {session.status !== 'cancelled' && (
+
+                                                                {/* {session.status !== 'cancelled' && (
                                                                     <DropdownMenuItem
                                                                         className="text-destructive cursor-pointer py-2 font-bold"
                                                                     // onClick={() => handleCancelSession(session._id)}
                                                                     >
                                                                         Cancel Session
                                                                     </DropdownMenuItem>
-                                                                )}
+                                                                )} */}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -556,7 +554,10 @@ export default function ClientSessionsPage() {
                                         <Inbox className="h-8 w-8 opacity-40" />
                                     </div>
                                     <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">No sessions scheduled</h3>
-                                    <p className="max-w-xs text-sm mt-1">There are no sessions booked for {selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric' })}. Try selecting another date or book a new session.</p>
+                                    <p className="max-w-xs text-sm mt-1">
+                                        {selectedDate ?
+                                            `There are no sessions booked for ${selectedDate?.toLocaleDateString([], { month: 'long', day: 'numeric' })}. Try selecting another date or book a new session.` : "No upcoming sessions found. Try selecting a date or book a new session."
+                                        } </p>
                                     <Button variant="secondary" className="mt-6 font-bold" onClick={() => setSelectedDate(new Date())}>
                                         Go to Today
                                     </Button>

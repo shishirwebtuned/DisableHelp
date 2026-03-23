@@ -24,6 +24,12 @@ export interface Invoice {
   startTime: string;
   endTime: string;
   notes?: string;
+  file?: {
+    url: string;
+    public_id: string;
+    originalName?: string;
+    mimeType?: string;
+  };
   declineReason?: string;
   approvedAt?: string;
   declinedAt?: string;
@@ -103,11 +109,21 @@ export const createInvoice = createAsyncThunk(
       startTime: string;
       endTime: string;
       notes?: string;
+      file?: File;
     },
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.post(`${baseApi}`, invoiceData);
+      const fd = new FormData();
+      fd.append("client", invoiceData.client);
+      fd.append("totalAmount", String(invoiceData.totalAmount));
+      fd.append("date", invoiceData.date);
+      fd.append("startTime", invoiceData.startTime);
+      fd.append("endTime", invoiceData.endTime);
+      if (invoiceData.notes) fd.append("notes", invoiceData.notes);
+      if (invoiceData.file) fd.append("invoiceFile", invoiceData.file);
+
+      const response = await api.post(`${baseApi}`, fd);
       return response.data.data.invoice;
     } catch (error: any) {
       return rejectWithValue(
@@ -132,12 +148,33 @@ export const editInvoice = createAsyncThunk(
         startTime?: string;
         endTime?: string;
         notes?: string;
+        file?: File;
       };
     },
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.put(`${baseApi}/${invoiceId}`, data);
+      let payload: FormData | Record<string, any>;
+
+      if (data.file) {
+        // Use FormData when file is present
+        const fd = new FormData();
+        if (data.totalAmount !== undefined)
+          fd.append("totalAmount", String(data.totalAmount));
+        if (data.date !== undefined) fd.append("date", data.date);
+        if (data.startTime !== undefined)
+          fd.append("startTime", data.startTime);
+        if (data.endTime !== undefined) fd.append("endTime", data.endTime);
+        if (data.notes !== undefined) fd.append("notes", data.notes);
+        fd.append("invoiceFile", data.file);
+        payload = fd;
+      } else {
+        // Plain JSON when no file
+        const { file, ...rest } = data;
+        payload = rest;
+      }
+
+      const response = await api.put(`${baseApi}/${invoiceId}`, payload);
       return response.data.data.invoice;
     } catch (error: any) {
       return rejectWithValue(
@@ -192,6 +229,34 @@ export const declineInvoice = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error?.response?.data?.message || "Failed to decline invoice",
+      );
+    }
+  },
+);
+
+export const adminUpdateInvoiceStatus = createAsyncThunk(
+  "invoices/adminUpdateStatus",
+  async (
+    {
+      invoiceId,
+      status,
+      declineReason,
+    }: {
+      invoiceId: string;
+      status: "approved" | "declined";
+      declineReason?: string;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.patch(`${baseApi}/${invoiceId}/admin-status`, {
+        status,
+        declineReason,
+      });
+      return response.data.data.invoice;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to update invoice status",
       );
     }
   },
@@ -330,6 +395,18 @@ const invoiceSlice = createSlice({
         if (index !== -1) state.items[index] = action.payload;
       })
       .addCase(declineInvoice.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+      .addCase(adminUpdateInvoiceStatus.fulfilled, (state, action) => {
+        const index = state.items.findIndex(
+          (i) => i._id === action.payload._id,
+        );
+        if (index !== -1) state.items[index] = action.payload;
+        if (state.selectedInvoice?._id === action.payload._id) {
+          state.selectedInvoice = action.payload;
+        }
+      })
+      .addCase(adminUpdateInvoiceStatus.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },

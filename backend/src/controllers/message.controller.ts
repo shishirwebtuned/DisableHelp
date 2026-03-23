@@ -164,7 +164,13 @@ export const getMessagesByChatId = catchAsync(async (req, res) => {
 
   if (!chat) throw new AppError("Chat not found", 404);
 
-  if (![chat.client.toString(), chat.worker.toString()].includes(userId)) {
+  const isAdmin = req.user.role === "admin";
+  const isParticipant = [
+    chat.client.toString(),
+    chat.worker.toString(),
+  ].includes(userId);
+
+  if (!isAdmin && !isParticipant) {
     throw new AppError("Not authorized", 403);
   }
 
@@ -193,19 +199,21 @@ export const getMessagesByChatId = catchAsync(async (req, res) => {
 
   const total = await Message.countDocuments(filter);
 
-  await Message.updateMany(
-    {
-      chat: new mongoose.Types.ObjectId(chatId as string),
-      sender: { $ne: new mongoose.Types.ObjectId(userId as string) },
-      read: false,
-    },
-    {
-      $set: {
-        read: true,
-        readAt: new Date(),
+  if (isParticipant) {
+    await Message.updateMany(
+      {
+        chat: new mongoose.Types.ObjectId(chatId as string),
+        sender: { $ne: new mongoose.Types.ObjectId(userId as string) },
+        read: false,
       },
-    },
-  );
+      {
+        $set: {
+          read: true,
+          readAt: new Date(),
+        },
+      },
+    );
+  }
 
   sendResponse(res, {
     success: true,

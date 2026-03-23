@@ -66,6 +66,8 @@ export default function WorkerInvoicesPage() {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<any | null>(null);
+    // const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+
     const [deleteConfirmation, setDeleteConfirmation] = useState<{
         isOpen: boolean;
         id: string | null;
@@ -167,6 +169,7 @@ export default function WorkerInvoicesPage() {
                                 <TableHead>Time</TableHead>
                                 <TableHead>Amount</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Attachment</TableHead>
                                 <TableHead>Submitted</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -201,6 +204,21 @@ export default function WorkerInvoicesPage() {
                                                 {status.icon}
                                                 {status.label}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {(invoice as any).file?.url ? (
+                                                <a
+                                                    href={(invoice as any).file.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    View
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">—</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {invoice.createdAt
@@ -297,6 +315,7 @@ function InvoiceForm({
 }) {
     const dispatch = useDispatch<AppDispatch>();
     const [submitting, setSubmitting] = useState(false);
+    const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         client: invoice?.client?._id || '',
         totalAmount: invoice?.totalAmount?.toString() || '',
@@ -323,6 +342,8 @@ function InvoiceForm({
                     startTime: formData.startTime,
                     endTime: formData.endTime,
                     notes: formData.notes,
+                    file: invoiceFile ?? undefined,
+
                 },
             }));
         } else {
@@ -333,6 +354,8 @@ function InvoiceForm({
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 notes: formData.notes,
+                file: invoiceFile ?? undefined, // 👈 add
+
             }));
         }
 
@@ -452,6 +475,41 @@ function InvoiceForm({
                 />
             </div>
 
+            <div className="space-y-1.5">
+                <Label htmlFor="invoiceFile">
+                    Attachment <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                {/* Show existing file if editing */}
+                {invoice?.file?.url && !invoiceFile && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2">
+                        <FileText className="h-3.5 w-3.5 shrink-0" />
+                        <a
+                            href={invoice.file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline truncate"
+                        >
+                            {invoice.file.originalName ?? 'View current attachment'}
+                        </a>
+                        <span className="text-muted-foreground ml-auto shrink-0">
+                            (replace by selecting new file)
+                        </span>
+                    </div>
+                )}
+                <Input
+                    id="invoiceFile"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={e => setInvoiceFile(e.target.files?.[0] ?? null)}
+                />
+                {invoiceFile && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        {invoiceFile.name}
+                    </p>
+                )}
+            </div>
+
             <DialogFooter className="pt-2">
                 <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
                     Cancel
@@ -465,6 +523,6 @@ function InvoiceForm({
                         : (invoice ? 'Save Changes' : 'Submit Invoice')}
                 </Button>
             </DialogFooter>
-        </form>
+        </form >
     );
 }

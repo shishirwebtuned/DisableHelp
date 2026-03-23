@@ -42,7 +42,12 @@ const invoiceSchema = new Schema(
     notes: {
       type: String,
     },
-
+    file: {
+      url: { type: String },
+      public_id: { type: String },
+      originalName: { type: String },
+      mimeType: { type: String },
+    },
     declineReason: {
       type: String,
     },

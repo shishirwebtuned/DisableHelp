@@ -13,7 +13,7 @@ export const approveUser = catchAsync(async (req, res) => {
 
   if (approved !== undefined) user.approved = approved;
 
-  await user.save();
+  await user.save({ validateModifiedOnly: true });
 
   const { password, ...userResponse } = user.toObject();
 

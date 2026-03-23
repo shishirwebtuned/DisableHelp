@@ -100,6 +100,18 @@ const createCustomClusterIcon = (cluster: any) => {
     });
 };
 
+function FocusWorker({ worker }: { worker: any }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (worker?.coords) {
+            map.flyTo(worker.coords as [number, number], 14, { duration: 1.2 });
+        }
+    }, [worker]);
+
+    return null;
+}
+
 export default function ClientWorkersPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: workers, loading } = useSelector((state: RootState) => state.users);
@@ -108,6 +120,7 @@ export default function ClientWorkersPage() {
     const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
+    const [focusedWorker, setFocusedWorker] = useState<any>(null);
 
     const router = useRouter();
 
@@ -184,14 +197,14 @@ export default function ClientWorkersPage() {
                             <div className="flex gap-2">
                                 <Button
                                     variant={view === "list" ? "default" : "outline"}
-                                    onClick={() => setView('list')}
+                                    onClick={() => { setView('list'); setFocusedWorker(null); }}
                                     size="sm"
                                 >
                                     <ListIcon className="h-4 w-4 mr-1" /> List
                                 </Button>
                                 <Button
                                     variant={view === "map" ? "default" : "outline"}
-                                    onClick={() => setView('map')}
+                                    onClick={() => { setView('map'); setFocusedWorker(null); }}
                                     size="sm"
                                 >
                                     <MapIcon className="h-4 w-4 mr-1" /> Map
@@ -203,6 +216,21 @@ export default function ClientWorkersPage() {
                         {view === "map" && isClient && (
                             <Card>
                                 <CardContent className="p-0">
+                                    {focusedWorker && (
+                                        <div className="px-3 py-2 border-b flex items-center justify-between">
+                                            <span className="text-xs text-muted-foreground">
+                                                Showing: <span className="font-medium text-foreground">{focusedWorker.firstName} {focusedWorker.lastName}</span>
+                                            </span>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 text-xs"
+                                                onClick={() => setFocusedWorker(null)}
+                                            >
+                                                Show All
+                                            </Button>
+                                        </div>
+                                    )}
                                     <div className="w-full h-[300px] md:h-[350px] lg:h-[400px]">
                                         <MapContainer
                                             center={[-25.2744, 133.7751]}
@@ -214,6 +242,7 @@ export default function ClientWorkersPage() {
                                             <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
                                                 {workersWithCoords
                                                     .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
+                                                    .filter(w => focusedWorker ? w._id === focusedWorker._id : true)
                                                     .map(worker => (
                                                         <Marker
                                                             key={worker._id}
@@ -246,11 +275,15 @@ export default function ClientWorkersPage() {
                                                     ))}
                                             </MarkerClusterGroup>
 
-                                            <FitBounds
-                                                markers={workersWithCoords
-                                                    .filter(w => w.coords)
-                                                    .map(w => w.coords as [number, number])}
-                                            />
+                                            {focusedWorker?.coords ? (
+                                                <FocusWorker worker={focusedWorker} />
+                                            ) : (
+                                                <FitBounds
+                                                    markers={workersWithCoords
+                                                        .filter(w => w.coords)
+                                                        .map(w => w.coords as [number, number])}
+                                                />
+                                            )}
                                         </MapContainer>
                                     </div>
                                 </CardContent>
@@ -357,6 +390,18 @@ export default function ClientWorkersPage() {
                                                         className="h-8 text-xs flex-1"
                                                     >
                                                         View Profile
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => {
+                                                            const workerCoord = workersWithCoords.find(w => w._id === worker._id);
+                                                            setFocusedWorker(workerCoord ?? worker);
+                                                            setView('map');
+                                                        }}
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-8 text-xs flex-1"
+                                                    >
+                                                        View on Map
                                                     </Button>
                                                 </div>
                                             </CardContent>
