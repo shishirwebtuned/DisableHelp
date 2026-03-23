@@ -7,10 +7,11 @@ import { getPagination } from "../utils/queryHelper.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import cloudinary from "../utils/cloudinary.js";
+import type { RequestHandler } from "express";
 
 const storage = multer.memoryStorage();
 
-export const upload = multer({ storage }).fields([
+export const upload: RequestHandler = multer({ storage }).fields([
   { name: "invoiceFile", maxCount: 1 },
 ]);
 

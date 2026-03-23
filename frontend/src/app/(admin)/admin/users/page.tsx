@@ -71,7 +71,7 @@ export default function AdminUsersPage() {
         return () => clearTimeout(t);
     }, [dispatch, searchTerm, roleFilter, statusFilter, currentPage]);
 
-    const handleUpdateStatus = async (userId: string, newStatus: 'active' | 'suspended') => {
+    const handleUpdateStatus = async (userId: string, newStatus: boolean) => {
         await dispatch(updateUserStatus({ userId, status: newStatus }));
     };
 
@@ -92,14 +92,14 @@ export default function AdminUsersPage() {
         }
 
         return {
-                id: u.id ?? u._id,
+            id: u.id ?? u._id,
             name: fullName || 'Unknown',
             firstName,
             lastName,
             email: u.email ?? '',
             role: u.role ?? 'unknown',
             status: u.status ?? 'active',
-                approved: typeof u.approved !== 'undefined' ? u.approved : (u.isVerified ?? false),
+            approved: typeof u.approved !== 'undefined' ? u.approved : (u.isVerified ?? false),
             verification: u.verification ?? 'verified',
             joinedDate: joinedDate ?? new Date().toISOString(),
             avatar: u.avatar ?? null,
@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
         switch (status) {
             case true: return <ShieldCheck className="h-3 w-3 text-green-600 mr-1" />;
             case false: return <Clock className="h-3 w-3 text-amber-600 mr-1" />;
-                        default: return null;
+            default: return null;
         }
     };
 
@@ -204,7 +204,7 @@ export default function AdminUsersPage() {
                                     <SelectItem value="inactive">Inactive</SelectItem>
                                 </SelectContent>
                             </Select>
-                       
+
                         </div>
                     </div>
                 </div>
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
                             <TableHead></TableHead>
                             <TableHead>Contact Info</TableHead>
                             <TableHead>Role</TableHead>
-                         <TableHead>Verification</TableHead>
+                            <TableHead>Verification</TableHead>
                             <TableHead>Joined Date</TableHead>
                             <TableCell> View Details</TableCell>
                             <TableHead className="text-right">Actions</TableHead>
@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
                             displayedUsers.map((user: any, index) => (
                                 <TableRow key={user.id} className="group">
                                     <TableCell>{((currentPage - 1) * (pagination?.limit ?? 10)) + index + 1}</TableCell>
-                                   
+
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-medium text-sm">{user.name}</span>
@@ -251,11 +251,11 @@ export default function AdminUsersPage() {
                                         {new Date(user.joinedDate).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell>
-<Link href={`/admin/profile/${user.id}`}>
-                                        <Button  variant="link" className=" cursor-pointer text-xs font-medium">
-                                            View Details 
-                                        </Button>
-</Link>
+                                        <Link href={`/admin/profile/${user.id}`}>
+                                            <Button variant="link" className=" cursor-pointer text-xs font-medium">
+                                                View Details
+                                            </Button>
+                                        </Link>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
@@ -281,7 +281,7 @@ export default function AdminUsersPage() {
                                                 {user.status === 'active' ? (
                                                     <DropdownMenuItem
                                                         className="text-destructive cursor-pointer"
-                                                        onClick={() => handleUpdateStatus(user.id, 'suspended')}
+                                                        onClick={() => handleUpdateStatus(user.id, true)}
                                                     >
                                                         <UserX className="mr-2 h-4 w-4" />
                                                         Suspend User
@@ -289,7 +289,7 @@ export default function AdminUsersPage() {
                                                 ) : (
                                                     <DropdownMenuItem
                                                         className="text-green-600 cursor-pointer"
-                                                        onClick={() => handleUpdateStatus(user.id, 'active')}
+                                                        onClick={() => handleUpdateStatus(user.id, false)}
                                                     >
                                                         <CheckCircle2 className="mr-2 h-4 w-4" />
                                                         Activate User

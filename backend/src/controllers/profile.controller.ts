@@ -13,10 +13,11 @@ import {
   type IClientProfile,
 } from "../models/clientProfile.model.js";
 import type { IWorkerProfile } from "../types/type.js";
+import type { RequestHandler } from "express";
 
 const storage = multer.memoryStorage();
 
-export const upload = multer({ storage }).fields([
+export const upload: RequestHandler = multer({ storage }).fields([
   { name: "avatar", maxCount: 1 },
   { name: "cprFile", maxCount: 1 },
   { name: "driverLicenseFile", maxCount: 1 },
