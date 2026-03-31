@@ -30,6 +30,8 @@ export const registerUser = catchAsync(async (req, res) => {
     dateOfBirth,
     termsAccepted,
     accountManagerName,
+    isSelfManaged,
+    isNdisProvider,
   } = req.body;
 
   const allowedRoles = ["client", "worker"];
@@ -57,7 +59,7 @@ export const registerUser = catchAsync(async (req, res) => {
   const verificationToken = hashedToken;
   const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  const newUser = new User({
+  const userData: any = {
     email,
     password,
     firstName,
@@ -70,9 +72,24 @@ export const registerUser = catchAsync(async (req, res) => {
     termsAccepted,
     address,
     verificationTokenExpiry,
+    isSelfManaged,
     accountManagerName,
-  });
+    isNdisProvider,
+  };
 
+  if (role === "client") {
+    userData.isSelfManaged = isSelfManaged;
+    if (!userData.isSelfManaged) {
+      userData.accountManagerName = accountManagerName || "";
+    }
+  }
+
+  // Only add worker-specific fields
+  if (role === "worker") {
+    userData.isNdisProvider = isNdisProvider;
+  }
+
+  const newUser = new User(userData);
   await newUser.save();
 
   const profileModel = role === "client" ? ClientProfile : WorkerProfile;
@@ -416,8 +433,9 @@ export const getWorkersWithProfile = catchAsync(async (req, res) => {
   }
 
   // Get matching profiles
-  const matchingProfiles =
-    await WorkerProfile.find(profileFilter).select("user languages");
+  const matchingProfiles = await WorkerProfile.find(profileFilter)
+    .select("user languages services gender personalDetails.avatar")
+    .lean();
   const matchingUserIds = matchingProfiles.map((p) => p.user);
 
   // Build User filter
@@ -447,16 +465,25 @@ export const getWorkersWithProfile = catchAsync(async (req, res) => {
 
   const total = await User.countDocuments(userFilter);
 
-  // Attach languages from profile to each user
   const profileMap = new Map(
-    matchingProfiles.map((p) => [p.user.toString(), p.languages]),
+    matchingProfiles.map((p) => [
+      p.user.toString(),
+      {
+        languages: p.languages,
+        services: p.services,
+        gender: p.gender,
+        avatar: p.personalDetails?.avatar,
+      },
+    ]),
   );
 
-  const usersWithLanguages = users.map((u) => ({
+  const usersWithProfiles = users.map((u) => ({
     ...u.toObject(),
-    languages: profileMap.get(u._id.toString()) ?? {
-      firstLanguages: [],
-      secondLanguages: [],
+    profile: profileMap.get(u._id.toString()) ?? {
+      languages: { firstLanguages: [], secondLanguages: [] },
+      services: [],
+      gender: null,
+      avatar: null,
     },
   }));
 
@@ -465,7 +492,7 @@ export const getWorkersWithProfile = catchAsync(async (req, res) => {
     statusCode: 200,
     message: "Workers retrieved successfully",
     data: {
-      users: usersWithLanguages,
+      users: usersWithProfiles,
       pagination: {
         total,
         page,
@@ -478,23 +505,107 @@ export const getWorkersWithProfile = catchAsync(async (req, res) => {
 
 export const getMyWorkers = catchAsync(async (req, res) => {
   const clientId = req.user._id;
+  const { page, limit, skip } = getPagination(req.query);
+  const { languages, search, approved } = req.query;
 
   const agreements = await Agreement.find({
     client: clientId,
     status: "active",
-  }).populate(
-    "worker",
-    "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+  }).select("worker");
+
+  const myWorkerIds = agreements.map((a) => a.worker);
+
+  if (myWorkerIds.length === 0) {
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "No active workers found",
+      data: { users: [], pagination: { total: 0, page, limit, totalPages: 0 } },
+    });
+  }
+
+  const profileFilter: any = { user: { $in: myWorkerIds } };
+
+  if (languages) {
+    const languageList = (languages as string).split(",").map((l) => l.trim());
+    const regexList = languageList.map((lang) => new RegExp(`^${lang}$`, "i"));
+
+    profileFilter.$or = [
+      { "languages.firstLanguages": { $in: regexList } },
+      { "languages.secondLanguages": { $in: regexList } },
+    ];
+  }
+
+  const matchingProfiles = await WorkerProfile.find(profileFilter)
+    .select("user languages services gender personalDetails.avatar")
+    .lean();
+
+  const matchingUserIds = matchingProfiles.map((p) => p.user);
+
+  // Build User filter
+  const userFilter: any = {
+    role: "worker",
+    _id: { $in: matchingUserIds },
+  };
+
+  if (search) {
+    const regex = new RegExp(search as string, "i");
+    userFilter.$or = [
+      { firstName: regex },
+      { lastName: regex },
+      { email: regex },
+    ];
+  }
+
+  if (approved !== undefined) {
+    userFilter.approved = approved === "true";
+  }
+
+  const users = await User.find(userFilter)
+    .select(
+      "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+    )
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await User.countDocuments(userFilter);
+
+  const profileMap = new Map(
+    matchingProfiles.map((p) => [
+      p.user.toString(),
+      {
+        languages: p.languages,
+        services: p.services,
+        gender: p.gender,
+        avatar: p.personalDetails?.avatar,
+      },
+    ]),
   );
+
+  const usersWithProfiles = users.map((u) => ({
+    ...u.toObject(),
+    profile: profileMap.get(u._id.toString()) ?? {
+      languages: { firstLanguages: [], secondLanguages: [] },
+      services: [],
+      gender: null,
+      avatar: null,
+    },
+  }));
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message:
-      agreements.length === 0
-        ? "No active workers found"
-        : "My workers retrieved successfully",
-    data: { workers: agreements.map((a) => a.worker) },
+    message: "My workers retrieved successfully",
+    data: {
+      users: usersWithProfiles,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });
 

@@ -28,6 +28,10 @@ export interface User {
     firstLanguages: string[];
     secondLanguages: string[];
   };
+  isSelfManaged?: boolean;
+  accountManagerName?: string;
+  isNdisProvider?: boolean;
+  profile?: any;
 }
 
 interface SelectedUser {
@@ -44,6 +48,7 @@ interface Pagination {
 
 interface UsersState {
   items: User[];
+  myWorkers: User[];
   pagination: Pagination;
   selectedUser: SelectedUser | null;
   loading: boolean;
@@ -52,6 +57,7 @@ interface UsersState {
 
 const initialState: UsersState = {
   items: [],
+  myWorkers: [],
   pagination: { total: 0, page: 1, limit: 10, totalPages: 1 },
   selectedUser: null,
   loading: false,
@@ -115,13 +121,13 @@ export const updateUser = createAsyncThunk(
   },
 );
 
-export const updateUserStatus = createAsyncThunk(
-  "users/updateUserStatus",
-  async ({ userId, status }: { userId: string; status: User["approved"] }) => {
-    const response = await api.patch(`${baseapi}/${userId}/status`, { status });
-    return response.data;
-  },
-);
+// export const updateUserStatus = createAsyncThunk(
+//   "users/updateUserStatus",
+//   async ({ userId, approved }: { userId: string; approved: User["approved"] }) => {
+//     const response = await api.patch(`${baseapi}/${userId}/status`, { status });
+//     return response.data;
+//   },
+// );
 
 export const deleteUser = createAsyncThunk(
   "users/deleteUser",
@@ -167,6 +173,35 @@ export const fetchWorkersWithProfile = createAsyncThunk(
       users: response.data.data.users,
       pagination: response.data.data.pagination,
     };
+  },
+);
+
+export const fetchMyWorkers = createAsyncThunk(
+  "users/fetchMyWorkers",
+  async (
+    params:
+      | {
+          search?: string;
+          languages?: string;
+          approved?: boolean;
+          page?: number;
+          limit?: number;
+        }
+      | undefined,
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.get("users/my/workers", { params });
+
+      return {
+        users: response.data.data.users,
+        pagination: response.data.data.pagination,
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to fetch workers",
+      );
+    }
   },
 );
 
@@ -216,14 +251,14 @@ const usersSlice = createSlice({
         }
       })
       // Update user status
-      .addCase(updateUserStatus.fulfilled, (state, action) => {
-        const index = state.items.findIndex(
-          (user) => user._id === action.payload.id,
-        );
-        if (index !== -1) {
-          state.items[index].approved = action.payload.approved;
-        }
-      })
+      // .addCase(updateUserStatus.fulfilled, (state, action) => {
+      //   const index = state.items.findIndex(
+      //     (user) => user._id === action.payload.id,
+      //   );
+      //   if (index !== -1) {
+      //     state.items[index].approved = action.payload.approved;
+      //   }
+      // })
       // Delete user
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.items = state.items.filter((user) => user._id !== action.payload);
@@ -292,6 +327,17 @@ const usersSlice = createSlice({
       .addCase(fetchWorkersWithProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch workers";
+      })
+      .addCase(fetchMyWorkers.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchMyWorkers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myWorkers = action.payload.users;
+      })
+      .addCase(fetchMyWorkers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

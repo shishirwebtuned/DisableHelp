@@ -40,7 +40,7 @@ interface FormState {
     jobSessions: SessionDay[];
     preference: { gender: string; others: string[] };
     jobSessionByClient: boolean;
-    hourlyRate: number;
+    // hourlyRate: number;
 }
 
 export default function EditJobPage() {
@@ -60,7 +60,7 @@ export default function EditJobPage() {
         jobSessions: [],
         preference: { gender: '', others: [] },
         jobSessionByClient: false,
-        hourlyRate: 0
+        // hourlyRate: 0
 
     });
     const [enableJobSessions, setEnableJobSessions] = useState(false);
@@ -97,7 +97,7 @@ export default function EditJobPage() {
             jobSessions,
             preference: job.preference ?? { gender: '', others: [] },
             jobSessionByClient: job.jobSessionByClient ?? false,
-            hourlyRate: job.hourlyRate ?? 0
+            // hourlyRate: job.hourlyRate ?? 0
         });
         setEnableJobSessions(job.jobSessionByClient ?? (jobSessions.length > 0));
         setPrefilled(true);
@@ -167,7 +167,7 @@ export default function EditJobPage() {
             jobSessions: enableJobSessions ? form.jobSessions : [],
             preference: { gender: form.preference.gender || undefined, others: form.preference.others },
             jobSessionByClient,
-            hourlyRate: form.hourlyRate,
+            // hourlyRate: form.hourlyRate,
         };
 
         const result = await dispatch(updateJobThunk({ id, jobData: payload }));
@@ -211,10 +211,10 @@ export default function EditJobPage() {
                         <Textarea className="mt-1.5 resize-none" rows={2} value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="e.g. Personal Support Worker Needed" />
                     </div>
                     {/* hourly Rate */}
-                    <div>
+                    {/* <div>
                         <Label>Hourly Rate</Label>
                         <Input type="number" className="mt-1.5" value={form.hourlyRate} onChange={(e) => setField('hourlyRate', Number(e.target.value))} placeholder="e.g. 25.00" />
-                    </div>
+                    </div> */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Start Date <span className="text-destructive">*</span></Label>
@@ -225,7 +225,7 @@ export default function EditJobPage() {
                             <Select value={form.frequency} onValueChange={(v) => setField('frequency', v)}>
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="daily">Daily</SelectItem>
+                                    {/* <SelectItem value="daily">Daily</SelectItem> */}
                                     <SelectItem value="weekly">Weekly</SelectItem>
                                     <SelectItem value="fortnightly">Fortnightly</SelectItem>
                                     <SelectItem value="monthly">Monthly</SelectItem>

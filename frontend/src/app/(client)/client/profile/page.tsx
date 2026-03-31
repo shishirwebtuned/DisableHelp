@@ -42,7 +42,7 @@ export default function ClientProfilePage() {
         receiveAgreementsEmails: true,
         receiveEventDeliveriesEmails: true,
         receivePlannedSessionReminderEmails: true,
-        isNdisManaged: false,
+        // isNdisManaged: false,
         emergencyContact: {
             name: '',
             phone: '',
@@ -58,7 +58,7 @@ export default function ClientProfilePage() {
                 receiveAgreementsEmails: profile.receiveAgreementsEmails ?? true,
                 receiveEventDeliveriesEmails: profile.receiveEventDeliveriesEmails ?? true,
                 receivePlannedSessionReminderEmails: profile.receivePlannedSessionReminderEmails ?? true,
-                isNdisManaged: profile.isNdisManaged ?? false,
+                // isNdisManaged: profile.isNdisManaged ?? false,
                 emergencyContact: {
                     name: profile.emergencyContact?.name || '',
                     phone: profile.emergencyContact?.phone || '',
@@ -82,7 +82,7 @@ export default function ClientProfilePage() {
             const fd = new FormData();
             fd.append('avatar', profileImageBinary, 'avatar.jpg');
             fd.append('gender', formData.gender);
-            fd.append('isNdisManaged', String(formData.isNdisManaged));
+            // fd.append('isNdisManaged', String(formData.isNdisManaged));
             fd.append('receiveAgreementsEmails', String(formData.receiveAgreementsEmails));
             fd.append('receiveEventDeliveriesEmails', String(formData.receiveEventDeliveriesEmails));
             fd.append('receivePlannedSessionReminderEmails', String(formData.receivePlannedSessionReminderEmails));
@@ -98,7 +98,7 @@ export default function ClientProfilePage() {
 
     const profileStats = [
         { label: 'Profile Complete', value: '85%', icon: Activity, color: 'text-purple-600' },
-        { label: 'NDIS Status', value: profile?.isNdisManaged ? 'Managed' : 'Self', icon: CheckCircle, color: 'text-green-600' },
+        // { label: 'NDIS Status', value: profile?.isNdisManaged ? 'Managed' : 'Self', icon: CheckCircle, color: 'text-green-600' },
     ];
 
     if (!user) return <div className="text-sm text-muted-foreground p-6">Loading...</div>;
@@ -186,13 +186,18 @@ export default function ClientProfilePage() {
 
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className='text-sm md:text-[13px] lg:text-base'>NDIS</CardTitle>
+                                    <CardTitle className='text-sm md:text-[13px] lg:text-base'>Account Management</CardTitle>
                                     <CardDescription className='text-xs md:text-[13px] lg:text-sm'>
-                                        {profile?.isNdisManaged ? 'NDIS Managed' : 'Self Managed'}
+                                        {user?.isSelfManaged ? 'Self-Managed' : 'Managed by Family/Friends'}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-2">
+                                    <div className="space-y-4">
+                                        {!user?.isSelfManaged && user?.accountManagerName && (
+                                            <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground">
+                                                Account Manager: <span className="font-medium">{user.accountManagerName}</span>
+                                            </p>
+                                        )}
                                         <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground">
                                             Status:{' '}
                                             <span className={user.approved ? 'text-green-500 font-normal px-2 py-1 md:py-1.5 rounded-2xl ml-1 border border-green-500 bg-green-50' : 'text-yellow-500 font-medium px-2 py-1 md:py-1.5 rounded-2xl ml-1 border border-yellow-500 bg-yellow-50'}>
@@ -420,7 +425,7 @@ export default function ClientProfilePage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        {/* <Card>
                             <CardHeader>
                                 <CardTitle className='text-sm md:text-[13px] lg:text-base'>NDIS Information</CardTitle>
                             </CardHeader>
@@ -441,7 +446,7 @@ export default function ClientProfilePage() {
                                     </Select>
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card> */}
 
                         <Card>
                             <CardHeader>

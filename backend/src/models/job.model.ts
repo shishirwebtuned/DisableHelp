@@ -2,8 +2,8 @@ import mongoose, { Schema } from "mongoose";
 
 const timeSlotSchema = new Schema(
   {
-    startTime: { type: String },
-    endTime: { type: String },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
   },
   { _id: false },
 );
@@ -12,6 +12,7 @@ const sessionSchema = new Schema(
   {
     day: {
       type: String,
+      required: true,
     },
     period: [timeSlotSchema],
   },
@@ -32,7 +33,7 @@ const jobSchema = new Schema(
     frequency: {
       type: String,
       required: true,
-      enum: ["daily", "weekly", "fortnightly", "monthly"],
+      enum: ["weekly", "fortnightly", "monthly"],
     },
     location: {
       line1: { type: String, required: true },
@@ -58,10 +59,10 @@ const jobSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    hourlyRate: {
-      type: Number,
-      required: true,
-    },
+    // hourlyRate: {
+    //   type: Number,
+    //   required: true,
+    // },
     jobSessions: [sessionSchema],
     preference: {
       gender: { type: String, enum: ["male", "female", "other"] },

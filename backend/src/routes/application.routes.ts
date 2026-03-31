@@ -7,17 +7,32 @@ import {
   getApplicationById,
   getApplicationsByApplicantId,
   getApplicationsByJobId,
+  rejectApplication,
 } from "../controllers/application.controller.js";
 
 const router = express.Router();
 
-router.post("/", protect, createApplication);
+export const initApplicationRoutes = (io: any) => {
+  router.post("/", protect, createApplication);
 
-router.get("/applicant/:applicantId", protect, getApplicationsByApplicantId);
-router.get("/job/:jobId", protect, getApplicationsByJobId);
+  router.get("/applicant/:applicantId", protect, getApplicationsByApplicantId);
+  router.get("/job/:jobId", protect, getApplicationsByJobId);
 
-router.get("/", protect, getAllApplications);
-router.patch("/:applicationId/accept", protect, clientOnly, acceptApplication);
-router.get("/:applicationId", protect, getApplicationById);
+  router.get("/", protect, getAllApplications);
+  router.patch(
+    "/:applicationId/accept",
+    protect,
+    clientOnly,
+    acceptApplication(io),
+  );
+  router.patch(
+    "/:applicationId/reject",
+    protect,
+    clientOnly,
+    rejectApplication(io),
+  );
+  router.get("/:applicationId", protect, getApplicationById);
 
+  return router;
+};
 export default router;

@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Search, Check, CheckCheck, Mail } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getSocket } from "@/lib/socket";
+import { getSocket, setActiveSocketChat } from "@/lib/socket";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchMyChats, setActiveChat, updateLastMessage } from "@/redux/slices/chatSlice";
 import { fetchMessagesByChat, markMessagesRead, sendMessage, addMessage } from "@/redux/slices/messageSlice";
@@ -57,9 +57,10 @@ export default function ClientInboxPage() {
         dispatch(fetchMyChats());
     }, [dispatch]);
 
-    // 2. When active chat changes
+    // 2. When active chat changes — join/leave socket room + fetch messages
     useEffect(() => {
         if (!activeChat) return;
+
         const socket = socketRef.current;
         const chatId = activeChat._id;
 
@@ -71,29 +72,45 @@ export default function ClientInboxPage() {
         isFetching.current = false;
 
         dispatch(fetchMessagesByChat(chatId));
-        socket.emit("joinChat", chatId);
         dispatch(markMessagesRead(chatId));
 
+        setActiveSocketChat(chatId);
+
+
+        if (socket.connected) {
+            socket.emit("joinChat", chatId);
+        } else {
+            socket.once("connect", () => {
+                socket.emit("joinChat", chatId);
+            });
+        }
         return () => {
             socket.emit("leaveChat", chatId);
-        };
-    }, [activeChat?._id]);
+            setActiveSocketChat(null);
 
-    // 3. Socket listener
+        };
+    }, [activeChat?._id, dispatch]);
+
+    // 3. Socket listener for new messages
     useEffect(() => {
         const socket = socketRef.current;
 
         const handleNewMessage = (msg: any) => {
-            if (activeChat && msg.chat === activeChat._id) {
+            if (activeChat && (msg.chat === activeChat._id || msg.chat?._id === activeChat._id)) {
                 dispatch(addMessage(msg));
                 dispatch(markMessagesRead(activeChat._id));
             }
-            dispatch(updateLastMessage({ chatId: msg.chat, lastMessage: msg }));
+            dispatch(updateLastMessage({
+                chatId: msg.chat?._id || msg.chat,
+                lastMessage: msg,
+            }));
         };
 
         socket.on("newMessage", handleNewMessage);
-        return () => { socket.off("newMessage", handleNewMessage); };
-    }, [activeChat?._id]);
+        return () => {
+            socket.off("newMessage", handleNewMessage);
+        };
+    }, [activeChat?._id, dispatch]);
 
     // 4. Smart scroll behavior
     useEffect(() => {
@@ -104,7 +121,6 @@ export default function ClientInboxPage() {
         const prevCount = prevMessageCount.current;
 
         if (isInitialLoad.current) {
-            // Initial — instant scroll to bottom
             container.scrollTop = container.scrollHeight;
             isInitialLoad.current = false;
             prevMessageCount.current = newCount;
@@ -113,12 +129,9 @@ export default function ClientInboxPage() {
 
         if (newCount > prevCount) {
             const added = newCount - prevCount;
-
             if (added === 1) {
-                // New single message (sent/received) — smooth scroll to bottom
                 bottomRef.current?.scrollIntoView({ behavior: "smooth" });
             } else {
-                // Pagination prepend — restore scroll position so view doesn't jump
                 requestAnimationFrame(() => {
                     if (container) {
                         container.scrollTop = container.scrollHeight - prevScrollHeight.current;
@@ -138,8 +151,6 @@ export default function ClientInboxPage() {
 
         isFetching.current = true;
         setLoadingMore(true);
-
-        // Capture scroll height BEFORE fetch so we can restore position
         prevScrollHeight.current = container.scrollHeight;
 
         const nextPage = page + 1;
@@ -159,7 +170,6 @@ export default function ClientInboxPage() {
         setPage(nextPage);
         setLoadingMore(false);
         isFetching.current = false;
-        // scroll position restoration is handled in useEffect above via prevScrollHeight
     }, [activeChat?._id, hasMore, page, dispatch]);
 
     const handleSend = async () => {
@@ -235,7 +245,7 @@ export default function ClientInboxPage() {
                                         onClick={() => handleSelectChat(chat)}
                                         className={`flex items-center gap-3 px-3 md:px-4 py-1.5 md:py-2 lg:py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${isSelected ? "bg-muted/80" : ""}`}
                                     >
-                                        <Avatar className="w-8 h-8 md:w-8.5 md:h-8.5 lg:h-9 lg:w-9 shrink-0 ">
+                                        <Avatar className="w-8 h-8 md:w-8.5 md:h-8.5 lg:h-9 lg:w-9 shrink-0">
                                             <AvatarFallback className="bg-gray-200 text-[8px] md:text-[10px] lg:text-xs">
                                                 {other.firstName[0]}{other.lastName[0]}
                                             </AvatarFallback>
@@ -299,9 +309,8 @@ export default function ClientInboxPage() {
                         <div
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto px-2.5 md:px-3 lg:px-4 py-2 md:py-2.5 lg:py-3"
-                            onScroll={() => { handleScroll(); }}
+                            onScroll={handleScroll}
                         >
-                            {/* Top indicators */}
                             {loadingMore && (
                                 <div className="flex justify-center py-2">
                                     <span className="text-[9px] md:text-[10px] lg:text-[11px] text-gray-700 bg-muted/70 px-3 py-1 rounded-full">
@@ -336,7 +345,6 @@ export default function ClientInboxPage() {
 
                                         return (
                                             <div key={msg._id}>
-                                                {/* Date separator */}
                                                 {showDateSeparator && (
                                                     <div className="flex justify-center my-2 md:my-2.5 lg:my-3">
                                                         <span className="text-[8px] md:text-[9px] lg:text-[10px] text-gray-700 bg-muted/70 px-3 py-0.5 rounded-full">
@@ -415,9 +423,7 @@ export default function ClientInboxPage() {
                 ) : (
                     <Card className="md:col-span-2 flex flex-col items-center justify-center gap-4 text-gray-600 text-xs md:text-sm lg:text-base">
                         <Mail className="w-8 h-8 md:h-10 md:w-10 lg:h-12 lg:w-12 mb-0 opacity-60" />
-                        <p>
-                            Select a conversation to start chatting
-                        </p>
+                        <p>Select a conversation to start chatting</p>
                     </Card>
                 )}
             </div>

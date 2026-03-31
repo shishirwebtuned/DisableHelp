@@ -117,13 +117,14 @@ export const terminateAgreement = catchAsync(async (req, res) => {
   await Session.updateMany(
     {
       agreement: agreement._id,
-      startTime: { $gte: new Date() },
+      date: { $gte: new Date() },
       status: { $in: ["scheduled", "in-progress"] },
     },
     {
       $set: {
         status: "cancelled",
         cancelledBy: userId,
+        cancelledByRole: userRole,
         cancelledAt: new Date(),
         notes: `Session cancelled due to agreement termination: ${terminationReason}`,
       },

@@ -12,6 +12,9 @@ export const sendMessage = (io: any) =>
     const { chatId } = req.params;
     const { message } = req.body;
     const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const actionUrl = userRole === "client" ? "/worker/inbox" : "/client/inbox";
 
     if (!message || !message.trim()) {
       throw new AppError("Message cannot be empty", 400);
@@ -60,6 +63,7 @@ export const sendMessage = (io: any) =>
       sender: userId,
       type: "message",
       title: "New Message",
+      actionUrl: actionUrl,
       message: `${senderName} sent you a message`,
     });
 

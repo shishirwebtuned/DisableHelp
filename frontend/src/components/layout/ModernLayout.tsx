@@ -8,11 +8,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NAV_ITEMS } from '@/lib/constants';
 import { UserButton } from './UserButton';
 import NotificationsCenter from '@/components/common/NotificationsCenter';
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const plusJakarta = Plus_Jakarta_Sans({
     subsets: ['latin'],
@@ -29,18 +30,18 @@ export default function ModernLayout({ children }: { children: React.ReactNode }
         ? NAV_ITEMS[user.role as keyof typeof NAV_ITEMS]
         : NAV_ITEMS.worker;
 
-    
+
 
     const SidebarContent = () => (
         <div className={`h-full flex flex-col p-3 ${plusJakarta.className}`}>
-                <div className="mb-4 flex items-center">
-                    <div className="h-9 w-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                        D
-                    </div>
-                    <span className="ml-3 font-bold text-lg text-foreground">
-                        DisableHelp
-                    </span>
+            <div className="mb-4 flex items-center">
+                <div className="h-9 w-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                    D
                 </div>
+                <span className="ml-3 font-bold text-lg text-foreground">
+                    DisableHelp
+                </span>
+            </div>
 
             <nav className="flex-1 w-full space-y-1">
                 {navItems.map((item: any, idx: number) => {
@@ -67,7 +68,7 @@ export default function ModernLayout({ children }: { children: React.ReactNode }
             {/* Floating Sidebar - Desktop */}
             <div className={`hidden md:flex h-full ${sidebarOpen ? 'w-20 lg:w-64' : 'w-20'} flex-col items-center lg:items-start p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded transition-all duration-200 ${plusJakarta.className}`}>
                 <div className="mb-4 flex items-center justify-center w-full">
-                    <div className= { `${sidebarOpen ? "h-9 w-9" : "hidden"} bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                    <div className={`${sidebarOpen ? "h-9 w-9" : "hidden"} bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
                         D
                     </div>
                     <span className={`ml-3 font-bold text-lg hidden lg:block text-foreground ${sidebarOpen ? '' : 'opacity-0 pointer-events-none'}`}>
@@ -93,18 +94,18 @@ export default function ModernLayout({ children }: { children: React.ReactNode }
                     })}
 
 
-                     <button
-                    // variant="ghost"
-                    // size="icon"
-                    className="mt-2 hidden  self-center lg:flex   text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                >
-                    {sidebarOpen ? <ChevronLeft className="h-6 w-6 text-blue-600" /> : <ChevronRight className="h-6 w-6 text-blue-600" />}
-                </button>
+                    <button
+                        // variant="ghost"
+                        // size="icon"
+                        className="mt-2 hidden  self-center lg:flex   text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                    >
+                        {sidebarOpen ? <ChevronLeft className="h-6 w-6 text-blue-600" /> : <ChevronRight className="h-6 w-6 text-blue-600" />}
+                    </button>
                 </nav>
 
                 {/* Sidebar Toggle (desktop) */}
-               
+
             </div>
 
             {/* Main Content Area */}
@@ -118,12 +119,17 @@ export default function ModernLayout({ children }: { children: React.ReactNode }
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="w-[280px] p-0">
+                            <SheetHeader className='hidden'>
+                                <VisuallyHidden>
+                                    <SheetTitle>Navigation Menu</SheetTitle>
+                                </VisuallyHidden>
+                            </SheetHeader>
                             <SidebarContent />
                         </SheetContent>
                     </Sheet>
-                    
+
                     <span className="md:hidden font-bold text-sm">DisableHelp</span>
-                    
+
                     <div className="ml-auto flex items-center space-x-2">
                         <NotificationsCenter />
                         <UserButton variant="minimal" />

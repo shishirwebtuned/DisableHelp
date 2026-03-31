@@ -2,6 +2,7 @@
 import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
+let activeChatId: string | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
@@ -12,6 +13,10 @@ export const getSocket = (): Socket => {
     });
   }
   return socket;
+};
+
+export const setActiveSocketChat = (chatId: string | null) => {
+  activeChatId = chatId;
 };
 
 export const connectSocket = (token: string, userId: string) => {
@@ -27,17 +32,26 @@ export const connectSocket = (token: string, userId: string) => {
 
     s.emit("joinUserRoom", userId);
     console.log("📡 Joined user room:", userId);
+
+    if (activeChatId) {
+      s.emit("joinChat", activeChatId);
+      console.log("📡 Rejoined chat room:", activeChatId);
+    }
   });
+
   s.on("disconnect", () => console.log("❌ Socket disconnected"));
   s.on("connect_error", (err) => console.log("❌ Socket error:", err.message));
 
   if (!s.connected) {
     s.connect();
   } else {
-    // Already connected — join room immediately
     s.emit("joinUserRoom", userId);
+    if (activeChatId) {
+      s.emit("joinChat", activeChatId);
+    }
     console.log("📡 Already connected, joined user room:", userId);
   }
+
   return s;
 };
 

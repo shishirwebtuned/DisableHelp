@@ -42,6 +42,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
 import Loading from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
+import { formatDuration, formatTime } from '@/lib/formatTime';
 
 type Status = "scheduled" | "in-progress" | "completed" | "cancelled";
 
@@ -393,13 +394,15 @@ export default function ClientSessionsPage() {
                                     <div>
                                         <p className="text-blue-100 text-xs uppercase tracking-wider font-bold">Time & Date</p>
                                         <p className="font-medium">{new Date(nextSession?.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                                        <p className="text-lg font-bold">{new Date(nextSession?.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="text-lg font-bold"> {formatTime(nextSession.startTime)} - {formatTime(nextSession.endTime)} (
+                                            {formatDuration(nextSession.durationMinutes)})
+                                        </p>
                                     </div>
                                     <div className="pt-2 border-t border-white/20">
                                         <p className="text-blue-100 text-xs uppercase tracking-wider font-bold">Supporting Worker</p>
                                         <div className="font-medium flex items-center gap-2 mt-1">
                                             <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
-                                                {`${nextSession.worker?.firstName?.[0] ?? ""} ${nextSession.worker?.lastName?.[0] ?? ""}`}
+                                                {`${nextSession.worker?.firstName?.[0] ?? ""}${nextSession.worker?.lastName?.[0] ?? ""}`}
                                             </div>
                                             <p>
                                                 {`${nextSession?.worker?.firstName}  ${nextSession?.worker?.lastName}`}
@@ -488,7 +491,8 @@ export default function ClientSessionsPage() {
                                                                 </div>
                                                                 <div className="flex items-center gap-1.5">
                                                                     <Clock className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span>{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({session?.durationMinutes})</span>
+                                                                    <span> {formatTime(session.startTime)} - {formatTime(session.endTime)} (
+                                                                        {formatDuration(session.durationMinutes)})</span>
                                                                 </div>
                                                                 {/* <div className="flex items-center gap-1.5">
                                                                     {session.mode === 'remote' ? <Video className="h-3.5 w-3.5 text-blue-500" /> : <MapPin className="h-3.5 w-3.5 text-blue-500" />}

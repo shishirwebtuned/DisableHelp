@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import {Loader2, Eye, EyeOff, User, UserPlus, Mail, Lock, MapPin, ClipboardCheck, Check, Pencil,} from 'lucide-react';
+import { Loader2, Eye, EyeOff, User, UserPlus, Mail, Lock, MapPin, ClipboardCheck, Check, Pencil, } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/utils';
 
@@ -44,8 +44,9 @@ const formSchema = z.object({
     dateOfBirth: z.string().min(1, { message: "Please select a date of birth." })
         .regex(/^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, { message: "Please select a valid date of birth." }),
     role: z.enum(['worker', 'client'], { message: "Please select a role." }),
-    openingForSelf: z.boolean().optional(),
-    accountMangerName: z.string().optional(),
+    isSelfManaged: z.boolean().optional(),
+    isNdisProvider: z.boolean().optional(),
+    accountManagerName: z.string().optional(),
     email: z.string().email({ message: "Please enter a valid email address." }),
     phoneNumber: z.string().min(10, { message: "Please enter a valid phone number." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters." })
@@ -62,15 +63,15 @@ const formSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
 }).refine((d) => {
-    if (d.role === 'client' && !d.openingForSelf) {
-        return d.accountMangerName && d.accountMangerName.length >= 2;
+    if (d.role === 'client' && !d.isSelfManaged) {
+        return d.accountManagerName && d.accountManagerName.length >= 2;
     }
     return true;
-}, { message: "Please enter a valid account manager name.", path: ["accountMangerName"] });
+}, { message: "Please enter a valid account manager name.", path: ["accountManagerName"] });
 
 /* Fields validated per step */
 const stepFields: Record<number, string[]> = {
-    1: ['role', 'openingForSelf', 'accountMangerName'],
+    1: ['role', 'isSelfManaged', 'accountManagerName', 'isNdisProvider'],
     2: ['firstName', 'lastName', 'dateOfBirth', 'gender'],
     3: ['email', 'phoneNumber'],
     4: ['password', 'confirmPassword'],
@@ -104,13 +105,13 @@ export default function RegisterPage() {
             firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
             phoneNumber: '', role: undefined, termsAccepted: false, gender: undefined,
             dateOfBirth: '', address: { line1: '', line2: '', state: '', postalCode: '' },
-            openingForSelf: true, accountMangerName: '',
+            isSelfManaged: true, accountManagerName: '', isNdisProvider: false
         },
         mode: 'onTouched',
     });
 
     const watchRole = form.watch('role');
-    const watchOpeningForSelf = form.watch('openingForSelf');
+    const watchIsSelfManaged = form.watch('isSelfManaged');
     const allValues = form.watch();
 
     const validateCurrentStep = async () => {
@@ -130,9 +131,19 @@ export default function RegisterPage() {
         setError(null);
         try {
             const submitData = { ...values };
-            if (values.role === 'client' && values.openingForSelf) submitData.accountMangerName = '';
-            const { openingForSelf, ...payload } = submitData;
-            const resultAction = await dispatch(registerAction(payload));
+
+            if (values.role === 'client') {
+                submitData.isNdisProvider = undefined;
+                if (values.isSelfManaged) {
+                    submitData.accountManagerName = '';
+                }
+            } else if (values.role === 'worker') {
+                submitData.isSelfManaged = undefined;
+                submitData.accountManagerName = undefined;
+            }
+
+            const resultAction = await dispatch(registerAction(submitData));
+
             if (registerAction.fulfilled.match(resultAction)) {
                 router.push('/info?email=' + encodeURIComponent(values.email));
             } else {
@@ -245,8 +256,8 @@ export default function RegisterPage() {
                                                             onClick={() => {
                                                                 field.onChange(opt.value);
                                                                 if (opt.value === 'worker') {
-                                                                    form.setValue('openingForSelf', true);
-                                                                    form.setValue('accountMangerName', '');
+                                                                    form.setValue('isSelfManaged', true);
+                                                                    form.setValue('accountManagerName', '');
                                                                 }
                                                             }}
                                                             className={cn(
@@ -271,7 +282,7 @@ export default function RegisterPage() {
                                         <div className="rounded-xl bg-muted/40 p-4 space-y-3">
                                             <FormField
                                                 control={form.control}
-                                                name="openingForSelf"
+                                                name="isSelfManaged"
                                                 render={({ field }) => (
                                                     <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                                                         <FormControl>
@@ -279,7 +290,7 @@ export default function RegisterPage() {
                                                                 checked={field.value}
                                                                 onCheckedChange={(c) => {
                                                                     field.onChange(c);
-                                                                    if (c) { form.setValue('accountMangerName', ''); form.clearErrors('accountMangerName'); }
+                                                                    if (c) { form.setValue('accountManagerName', ''); form.clearErrors('accountManagerName'); }
                                                                 }}
                                                             />
                                                         </FormControl>
@@ -290,10 +301,10 @@ export default function RegisterPage() {
                                                     </FormItem>
                                                 )}
                                             />
-                                            {!watchOpeningForSelf && (
+                                            {!watchIsSelfManaged && (
                                                 <FormField
                                                     control={form.control}
-                                                    name="accountMangerName"
+                                                    name="accountManagerName"
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>Account Manager Name</FormLabel>
@@ -304,6 +315,34 @@ export default function RegisterPage() {
                                                     )}
                                                 />
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Worker-only: NDIS Provider / Independent Worker */}
+                                    {watchRole === 'worker' && (
+                                        <div className="rounded-xl bg-muted/40 p-4 space-y-3">
+                                            <FormField
+                                                control={form.control}
+                                                name="isNdisProvider"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value || false}
+                                                                onCheckedChange={(c) => field.onChange(c)}
+                                                            />
+                                                        </FormControl>
+                                                        <div className="leading-none">
+                                                            <FormLabel className="text-sm font-medium cursor-pointer">
+                                                                I am an NDIS registered provider
+                                                            </FormLabel>
+                                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                                Uncheck if you are an independent worker
+                                                            </p>
+                                                        </div>
+                                                    </FormItem>
+                                                )}
+                                            />
                                         </div>
                                     )}
 
@@ -464,7 +503,7 @@ export default function RegisterPage() {
                                     </div>
                                     <FormField control={form.control} name="termsAccepted" render={({ field }) => (
                                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl bg-muted/40 p-4">
-                                            <FormControl><Checkbox  checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                             <div className="space-y-1 leading-none">
                                                 <FormLabel>
                                                     I agree to the{' '}
@@ -489,8 +528,8 @@ export default function RegisterPage() {
                                         <ReviewRow label="Name" value={`${allValues.firstName || ''} ${allValues.lastName || ''}`.trim()} />
                                         <ReviewRow label="Date of Birth" value={allValues.dateOfBirth || '\u2014'} />
                                         <ReviewRow label="Gender" value={genderLabel} />
-                                        {watchRole === 'client' && !watchOpeningForSelf && (
-                                            <ReviewRow label="Account Manager" value={allValues.accountMangerName || '\u2014'} />
+                                        {watchRole === 'client' && !watchIsSelfManaged && (
+                                            <ReviewRow label="Account Manager" value={allValues.accountManagerName || '\u2014'} />
                                         )}
                                     </div>
 

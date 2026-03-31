@@ -14,7 +14,7 @@ const notificationSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["message", "invoice", "agreement", "job", "system"],
+      enum: ["message", "invoice", "application", "agreement", "job", "system"],
       required: true,
     },
     title: { type: String, required: true },

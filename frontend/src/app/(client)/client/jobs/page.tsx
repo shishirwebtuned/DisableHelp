@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import {
     Drawer, DrawerClose, DrawerContent, DrawerDescription,
     DrawerFooter, DrawerHeader, DrawerTitle,
@@ -23,11 +23,16 @@ import {
     Users, Check, X, Mail, Phone, CalendarDays, UserCheck,
     Briefcase, Timer, Layers, Search,
     Currency,
+    UserPlus,
+    DollarSign,
+    BadgeCheck,
+    MapPinCheckInside,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Job } from '@/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function formatLocation(loc: Job['location']): string {
     if (!loc) return '';
@@ -66,8 +71,8 @@ function JobDetailPanel({ job, onEdit, onApplicants }: {
     const dur = job.duration;
     return (
         <div className="h-full overflow-y-auto">
-            <div className="pb-5 mb-5 border-b">
-                <h2 className="text-2xl font-bold leading-snug mb-3">{job.title}</h2>
+            <div className="pb-5 mb-4 border-b">
+                <h2 className="md:text-[21px] text-[18px] lg:text-2xl font-bold leading-snug mb-3">{job.title}</h2>
                 <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="default" className="gap-1.5 cursor-pointer" onClick={onEdit}>
                         <Edit className="h-3.5 w-3.5" /> Edit
@@ -78,37 +83,35 @@ function JobDetailPanel({ job, onEdit, onApplicants }: {
                 </div>
             </div>
 
-            <div className="rounded-xl p-4 mb-5">
+            <div className="rounded-xl md:p-3 p-2.5 lg:p-4 mb-5">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#8ac6dd] text-white flex items-center justify-center text-sm font-bold shrink-0">
-                        {job.title.slice(0, 1).toUpperCase()}
-                    </div>
+
                     <div className="min-w-0 flex-1">
-                        <p className="font-semibold leading-none mb-4 ">{job.title}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                            {job.frequency && (
-                                <span className="flex items-center gap-1 capitalize"><Repeat className="h-3.5 w-3.5" />{job.frequency}</span>
+                        <p className="font-semibold leading-none mb-4 ">{job?.title}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 md:text-[13px] text-xs lg:text-sm text-muted-foreground">
+                            {job?.frequency && (
+                                <span className="flex items-center gap-1 capitalize"><Repeat className="h-3.5 w-3.5" />{job?.frequency}</span>
                             )}
                             {dur && (
                                 <span className="flex items-center gap-1"><Timer className="h-3.5 w-3.5" />{dur.hours} hrs, {dur.session} session{dur.session !== 1 ? 's' : ''}</span>
                             )}
-                            {job.startDate && (
-                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Starting {formatDate(job.startDate)}</span>
+                            {job?.startDate && (
+                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Starting {formatDate(job?.startDate)}</span>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Currency className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-sm font-medium">${(job as any).hourlyRate ?? job.rate}/hr</span>
-                    </div>
-                    <StatusBadge status={job.status || 'pending'} />
+                    {/* <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 shrink-0 text-green-500" />
+                        <span className="md:text-[13px] text-xs lg:text-sm font-medium">${(job as any).hourlyRate ?? job.rate}/hr</span>
+                    </div> */}
+                    {/* <StatusBadge status={job.status || 'pending'} /> */}
                 </div>
             </div>
 
-            <h3 className="text-base font-bold mb-3">Support details</h3>
-            <div className="rounded-xl border  p-4 space-y-4">
+            <h3 className="md:text-[15px] text-sm lg:text-base font-bold mb-3">Support details</h3>
+            <div className="rounded-xl border p-4 space-y-4">
                 {loc && (
-                    <div className="flex items-center gap-2 text-sm font-medium">
+                    <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm font-medium">
                         <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span>{loc}</span>
                     </div>
@@ -117,12 +120,12 @@ function JobDetailPanel({ job, onEdit, onApplicants }: {
                 {(job.supportDetails ?? []).map((sd: any, i: number) => (
                     <div key={i}>
                         {(i > 0 || loc) && <Separator className="mb-4" />}
-                        <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                        <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm font-semibold mb-2">
                             <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
                             <span>{sd.name}</span>
                         </div>
                         {sd.description && (
-                            <p className="ml-6 text-sm text-muted-foreground">
+                            <p className="ml-6 md:text-[13px] text-xs lg:text-sm text-muted-foreground">
                                 {sd.description}
                             </p>
                         )}
@@ -133,13 +136,13 @@ function JobDetailPanel({ job, onEdit, onApplicants }: {
                     <>
                         {((job.supportDetails ?? []).length > 0 || loc) && <Separator />}
                         <div>
-                            <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                            <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm font-semibold mb-2">
                                 <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
                                 <span>Schedule</span>
                             </div>
                             <div className="space-y-1 ml-6">
                                 {(job.jobSessions ?? []).map((s: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-3 text-sm">
+                                    <div key={i} className="flex items-center gap-3 md:text-[13px] text-xs lg:text-sm">
                                         <span className="capitalize font-medium w-24 shrink-0">{s.day}</span>
                                         <div className="flex flex-wrap gap-1.5">
                                             {(s.period ?? []).map((p: any, j: number) => (
@@ -159,7 +162,7 @@ function JobDetailPanel({ job, onEdit, onApplicants }: {
                     <>
                         <Separator />
                         <div>
-                            <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                            <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm font-semibold mb-2">
                                 <UserCheck className="h-4 w-4 text-muted-foreground shrink-0" />
                                 <span>Worker Preferences</span>
                             </div>
@@ -195,9 +198,11 @@ export default function ClientJobsPage() {
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; _id: string | null; title: string }>({
         isOpen: false, _id: null, title: '',
     });
+    const [workerType, setWorkerType] = useState("all");
+
 
     useEffect(() => {
-        dispatch(getJobByClient({ page: 1, limit: 1 }));
+        dispatch(getJobByClient({ page: 1, limit: 10 }));
         dispatch(fetchApplications());
     }, [dispatch]);
 
@@ -226,25 +231,40 @@ export default function ClientJobsPage() {
         ? applications.filter((app) => app.job?._id === selectedJobId || (app as any).jobId === selectedJobId)
         : [];
 
+    const filteredJobApplications = selectedJobApplications.filter(app => {
+        if (workerType === "all") return true;
+        if (workerType === 'ndis') return app.applicant?.isNdisProvider;
+        if (workerType === 'individual') return !app.applicant?.isNdisProvider;
+        return true;
+    });
+
     const filtered = myJobs.filter((j) =>
         j.title.toLowerCase().includes(search.toLowerCase())
     );
 
+    const statusStyles: Record<string, string> = {
+        pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+        // accepted: 'bg-blue-100 text-blue-700 border border-blue-200',
+        accepted: 'bg-green-100 text-green-700 border border-green-200',
+        rejected: 'bg-red-100 text-red-700 border border-red-200',
+    };
+
+
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 shrink-0">
+            <div className="flex flex-row flex-wrap items-center justify-between gap-3 mb-4 shrink-0">
                 <div>
-                    <h1 className="text-xl font-bold tracking-tight">Job Postings</h1>
-                    <p className="text-sm text-muted-foreground">Manage your support-worker listings</p>
+                    <h1 className="text-[17px] md:text-[20px] lg:text-xl font-bold tracking-tight">Job Postings</h1>
+                    <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground">Manage your job list</p>
                 </div>
-                <Button onClick={() => router.push('/client/jobs/new')} className="gap-2 cursor-pointer shrink-0">
-                    <Plus className="h-4 w-4" /> Create Job
+                <Button onClick={() => router.push('/client/jobs/new')} className="gap-1 lg:gap-2 cursor-pointer shrink-0 w-fit md:h-8 h-7 lg:h-9 ">
+                    <Plus className="lg:h-4 lg:w-4 md:h-3.5 md:w-3.5 h-3 w-3" /> Create Job
                 </Button>
             </div>
 
-            <div className="flex flex-1 min-h-0 rounded-xl border overflow-hidden bg-background">
+            <div className="flex lg:flex-row flex-col flex-1 min-h-0 rounded-xl border overflow-hidden bg-background">
                 {/* LEFT: job list */}
-                <div className="w-full sm:w-[340px] lg:w-[380px] shrink-0 border-r flex flex-col">
+                <div className="w-full lg:w-[380px] shrink-0 border-r flex flex-col">
                     <div className="p-3 border-b">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -252,7 +272,7 @@ export default function ClientJobsPage() {
                                 placeholder="Search jobs..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-8 h-8 text-sm"
+                                className="pl-8 h-8 text-xs md:text-[13px] lg:text-sm"
                             />
                         </div>
                     </div>
@@ -321,10 +341,10 @@ export default function ClientJobsPage() {
 
 
                                             )}
-                                            <p className="flex items-center gap-1.5">
+                                            {/* <p className="flex items-center gap-1.5">
                                                 <Currency className="h-3 w-3 shrink-0" />
                                                 ${job.hourlyRate ?? job.rate}/hr
-                                            </p>
+                                            </p> */}
                                         </div>
                                         <div className="flex items-center justify-between mt-2.5">
                                             <p className="text-xs text-muted-foreground">
@@ -357,7 +377,7 @@ export default function ClientJobsPage() {
                 </div>
 
                 {/* RIGHT: detail */}
-                <div className="flex-1 min-w-0 p-6 overflow-y-auto hidden sm:block">
+                <div className="flex-1 min-w-0 p-6 h-full overflow-y-auto hidden sm:block">
                     {selectedJob ? (
                         <JobDetailPanel
                             job={selectedJob}
@@ -380,7 +400,7 @@ export default function ClientJobsPage() {
                         <DialogTitle>Job Details</DialogTitle>
                         <DialogDescription>Full details for this job posting</DialogDescription>
                     </DialogHeader>
-                    <div className="px-6 pb-6">
+                    <div className="px-4 pb-5">
                         {selectedJob && (
                             <JobDetailPanel
                                 job={selectedJob}
@@ -399,7 +419,19 @@ export default function ClientJobsPage() {
                         <DrawerTitle>Job Applicants</DrawerTitle>
                         <DrawerDescription>Review and manage applications for this position</DrawerDescription>
                     </DrawerHeader>
-                    <div className="overflow-y-auto px-6 pb-6">
+                    <div className='flex flex-row items-center justify-end md:px-5 px-3 lg:px-6 pb-2'>
+                        <Select value={workerType} onValueChange={(val) => { setWorkerType(val); }}>
+                            <SelectTrigger className="md:w-[140px] w-[100px] lg:w-[170px] h-8 text-xs">
+                                <SelectValue placeholder="Filter workers" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Workers</SelectItem>
+                                <SelectItem value="ndis">NDIS Providers</SelectItem>
+                                <SelectItem value="individual">Individual Workers</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="overflow-y-auto md:px-5 px-3 lg:px-6 pb-6">
                         {applicationsLoading ? (
                             <div className="flex justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -411,13 +443,13 @@ export default function ClientJobsPage() {
                             </div>
                         ) : (
                             <div className="space-y-4 mt-2">
-                                {selectedJobApplications.map((application) => (
+                                {filteredJobApplications.map((application) => (
                                     <Card key={application._id} className="hover:shadow-md transition-shadow">
-                                        <CardHeader className="pb-3">
+                                        <CardHeader className="pb-2 px-3">
                                             <div className="flex items-start justify-between flex-wrap-reverse gap-3">
-                                                <div className="flex gap-3 min-w-0">
-                                                    <Avatar className="h-10 w-10">
-                                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                                                <div className="flex flex-wrap gap-2 md:gap-3 items-center min-w-0">
+                                                    <Avatar className="md:h-9 h-8 lg:h-10 lg:w-10 md:w-9 w-8">
+                                                        <AvatarFallback className="bg-gray-300 text-primary font-semibold md:text-[13px] text-xs lg:text-sm">
                                                             {`${application.applicant?.firstName ?? ''} ${application.applicant?.lastName ?? ''}`
                                                                 .trim()
                                                                 .split(' ')
@@ -426,59 +458,103 @@ export default function ClientJobsPage() {
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="min-w-0">
-                                                        <p className="font-semibold text-sm truncate">
+                                                        <p className="font-semibold md:text-[13px] text-xs lg:text-sm truncate flex flex-row items-center">
                                                             {`${application.applicant?.firstName ?? ''} ${application.applicant?.lastName ?? ''}`.trim() || 'Unknown'}
+                                                            {application.applicant.approved ? <BadgeCheck className='md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1' /> : ""}
                                                         </p>
-                                                        <div className="text-xs text-muted-foreground mt-0.5 space-y-0.5">
+                                                        <div className="md:text-[11px] text-[10px] lg:text-xs text-gray-700 mt-0.5 space-y-0.5">
                                                             <div className="flex items-center gap-1">
-                                                                <Mail className="h-3 w-3" />
+                                                                <Mail className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
                                                                 <span className="truncate max-w-[180px] sm:max-w-[300px] block">{application.applicant?.email}</span>
                                                             </div>
                                                             <div className="flex items-center gap-1">
-                                                                <Users className="h-3 w-3" />
-                                                                <Link href={`/profile/${application.applicant?._id}`} className="text-blue-500 hover:underline">
-                                                                    <span className="truncate max-w-[180px] sm:max-w-[300px] block">View Worker Profile</span>
-                                                                </Link>
+                                                                <UserPlus className="w-2.5 h-2.5 md:w-3 md:h-3 lg:h-3.5 lg:w-3.5 text-blue-400" />
+                                                                <div className='border-2 px-2 py-0.5 rounded-full border-blue-400 text-blue-400'>
+                                                                    {application.applicant.isNdisProvider ? "NDIS Provider" : "Individual Suport Worker"
+                                                                    }
+                                                                </div>
                                                             </div>
                                                             {application.applicant?.phoneNumber && (
                                                                 <div className="flex items-center gap-1">
-                                                                    <Phone className="h-3 w-3" />
+                                                                    <Phone className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
                                                                     <span className="truncate max-w-[140px] sm:max-w-[220px] block">{application.applicant.phoneNumber}</span>
+                                                                </div>
+                                                            )}
+                                                            {application?.applicant?.address && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <MapPinCheckInside className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
+                                                                    <span className="truncate max-w-[140px] sm:max-w-[220px] block">
+                                                                        {application?.applicant?.address?.line1} {application?.applicant?.address?.line2}, {application?.applicant?.address?.state}, {application?.applicant?.address?.postalCode}</span>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <Badge variant={application.status === 'accepted' ? 'default' : application.status === 'rejected' ? 'destructive' : 'secondary'} className="capitalize shrink-0">
+                                                {/* <Badge variant={application.status === 'accepted' ? 'default' : application.status === 'rejected' ? 'destructive' : 'secondary'} className="capitalize shrink-0">
                                                     {application.status}
-                                                </Badge>
+                                                </Badge> */}
+
+                                                <div className='flex w-full items-center justify-end'>
+                                                    <Badge className={`md:text-[11px] text-[10px] lg:text-xs font-medium capitalize px-2 py-0.5 ${statusStyles[application.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                                                        {application.status}
+                                                    </Badge>
+                                                </div>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="pt-0 space-y-3">
+
+                                        <CardContent className="-mt-4 space-y-3">
+                                            <div className="flex flex-row flex-wrap items-center justify-center mb-3 wull gap-x-2 gap-y-2.5">
+                                                <Link
+                                                    href={`/profile/${application.applicant?._id}`}
+                                                    className="flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-600 text-[10px] md:text-[11px] lg:text-xs font-medium px-3 py-1.5 hover:bg-blue-100 transition-colors cursor-pointer"
+                                                >
+                                                    <span className="truncate max-w-[200px]">
+                                                        View Worker Profile
+                                                    </span>
+                                                </Link>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setIsApplicantsDrawerOpen(false);
+                                                        router.push(`/client/workers?focusWorker=${application.applicant?._id}`);
+                                                    }}
+                                                    className="flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 text-gray-800 text-[10px] md:text-[11px] lg:text-xs font-medium px-3 py-1.5 hover:bg-gray-200 transition-colors cursor-pointer"
+                                                >
+                                                    View on Map
+                                                </button>
+                                            </div>
                                             {application.introduction && (
                                                 <div>
-                                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Introduction</p>
-                                                    <p className="text-sm">{application.introduction}</p>
+                                                    <p className="text-[10px] md:text-[11px] lg:text-xs font-semibold text-muted-foreground mb-1">Introduction</p>
+                                                    <p className="md:text-[13px] text-xs lg:text-sm">{application.introduction}</p>
                                                 </div>
                                             )}
                                             {application.skills && (
                                                 <div>
-                                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Skills</p>
-                                                    <p className="text-sm">{application.skills}</p>
+                                                    <p className="text-[10px] md:text-[11px] lg:text-xs font-semibold text-muted-foreground mb-1">Skills</p>
+                                                    <p className="md:text-[13px] text-xs lg:text-sm">{application.skills}</p>
                                                 </div>
                                             )}
                                             {(application.availability ?? []).length > 0 && (
                                                 <div>
-                                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Availability</p>
+                                                    <p className="text-[10px] md:text-[11px] lg:text-xs font-semibold text-muted-foreground mb-1">Availability</p>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {application.availability.map((a, i) => (
-                                                            <Badge key={i} variant="outline" className="text-xs capitalize">
+                                                            <Badge key={i} variant="outline" className="text-[10px] md:text-[11px] lg:text-xs capitalize">
                                                                 {a.day}{a.period?.length > 0 ? `: ${a.period.map(p => `${p.startTime}–${p.endTime}`).join(', ')}` : ''}
                                                             </Badge>
                                                         ))}
                                                     </div>
                                                 </div>
                                             )}
+                                            <div>
+                                                {(application.hourlyRate ?? 0) > 0 && (
+                                                    <>
+                                                        <p className="text-[10px] md:text-[11px] lg:text-xs font-semibold text-muted-foreground mb-1">Expected Rate</p>
+                                                        <p className="md:text-[13px] text-xs lg:text-sm">${application.hourlyRate}/hr</p>
+                                                    </>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-muted-foreground">Applied {new Date(application.createdAt).toLocaleDateString()}</p>
                                             {application.status === 'pending' && (
                                                 <div className="flex gap-2 pt-1">

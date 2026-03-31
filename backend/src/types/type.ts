@@ -36,7 +36,9 @@ export interface IUser extends Document {
     phone: string;
     relationship: string;
   };
+  isSelfManaged?: boolean;
   accountManagerName?: String;
+  isNdisProvider?: boolean;
   dateOfBirth: Date;
   isVerified: boolean;
   verificationToken: string | null;

@@ -83,7 +83,7 @@ export interface ClientProfile {
   receiveAgreementsEmails: boolean;
   receiveEventDeliveriesEmails: boolean;
   receivePlannedSessionReminderEmails: boolean;
-  isNdisManaged: boolean;
+  // isNdisManaged: boolean;
   emergencyContact?: {
     name?: string;
     phone?: string;

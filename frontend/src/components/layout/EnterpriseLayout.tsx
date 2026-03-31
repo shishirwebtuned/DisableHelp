@@ -8,11 +8,13 @@ import Link from 'next/link';
 import { NAV_ITEMS } from '@/lib/constants';
 import { UserButton } from './UserButton';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Menu, ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import NotificationsCenter from '@/components/common/NotificationsCenter';
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
 
 export default function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     const { user } = useSelector((state: RootState) => state.auth);
@@ -41,7 +43,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
 
                     </div>
                 )}
-                <Button
+                {/* <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -52,7 +54,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                     ) : (
                         <Menu className="h-4 w-4 text" />
                     )}
-                </Button>
+                </Button> */}
             </div>
 
             {/* Navigation Items */}
@@ -94,6 +96,11 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                                     </Button>
                                 </SheetTrigger>
                                 <SheetContent side="left" className="w-[280px] p-0">
+                                    <SheetHeader className='hidden'>
+                                        <VisuallyHidden>
+                                            <SheetTitle>Navigation Menu</SheetTitle>
+                                        </VisuallyHidden>
+                                    </SheetHeader>
                                     <ScrollArea className="h-full">
                                         <div className="flex flex-col py-4 h-full">
                                             <SidebarContent isOpen={true} />

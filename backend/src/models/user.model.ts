@@ -70,9 +70,11 @@ const userSchema = new Schema<IUser>(
     approved: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String, default: null },
+    isSelfManaged: { type: Boolean },
     accountManagerName: {
       type: String,
     },
+    isNdisProvider: { type: Boolean },
     verificationTokenExpiry: { type: Date, default: null },
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },

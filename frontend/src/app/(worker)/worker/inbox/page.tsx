@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Search, Check, CheckCheck, Mail } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getSocket } from "@/lib/socket";
+import { getSocket, setActiveSocketChat } from "@/lib/socket";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchMyChats, setActiveChat, updateLastMessage } from "@/redux/slices/chatSlice";
 import { fetchMessagesByChat, markMessagesRead, sendMessage, addMessage } from "@/redux/slices/messageSlice";
@@ -71,29 +71,44 @@ export default function WorkerInboxPage() {
         isFetching.current = false;
 
         dispatch(fetchMessagesByChat(chatId));
-        socket.emit("joinChat", chatId);
+        // socket.emit("joinChat", chatId);
         dispatch(markMessagesRead(chatId));
+
+        setActiveSocketChat(chatId);
+
+        if (socket.connected) {
+            socket.emit("joinChat", chatId);
+        } else {
+            socket.once("connect", () => {
+                socket.emit("joinChat", chatId);
+            });
+        }
 
         return () => {
             socket.emit("leaveChat", chatId);
+            setActiveSocketChat(null);
+
         };
-    }, [activeChat?._id]);
+    }, [activeChat?._id, dispatch]);
 
     // 3. Socket listener
     useEffect(() => {
         const socket = socketRef.current;
 
         const handleNewMessage = (msg: any) => {
-            if (activeChat && msg.chat === activeChat._id) {
+            if (activeChat && (msg.chat === activeChat._id || msg.chat?._id === activeChat._id)) {
                 dispatch(addMessage(msg));
                 dispatch(markMessagesRead(activeChat._id));
             }
-            dispatch(updateLastMessage({ chatId: msg.chat, lastMessage: msg }));
+            dispatch(updateLastMessage({
+                chatId: msg.chat?._id || msg.chat,
+                lastMessage: msg,
+            }));
         };
 
         socket.on("newMessage", handleNewMessage);
         return () => { socket.off("newMessage", handleNewMessage); };
-    }, [activeChat?._id]);
+    }, [activeChat?._id, dispatch]);
 
     // 4. Smart scroll behavior
     useEffect(() => {

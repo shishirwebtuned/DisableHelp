@@ -47,7 +47,7 @@ interface FormState {
     jobSessions: SessionDay[];
     preference: { gender: string; others: string[] };
     jobSessionByClient: boolean;
-    hourlyRate: number;
+    // hourlyRate: number;
 }
 
 const PREFERENCE_OPTIONS = ['non-smoker', 'experienced', 'has-car', 'pet-friendly', 'bilingual'];
@@ -71,7 +71,7 @@ export default function NewJobPage() {
         jobSessions: [],
         preference: { gender: '', others: [] },
         jobSessionByClient: false,
-        hourlyRate: 0
+        // hourlyRate: 0
     });
 
     // New: toggle for job sessions
@@ -160,18 +160,18 @@ export default function NewJobPage() {
         if (!form.startDate) { setSubmitError('Start date is required.'); return; }
         if (form.supportDetails.length === 0) { setSubmitError('Add at least one support service.'); return; }
         // Only require jobSessions if schedule is enabled
-        if (enableJobSessions && form.jobSessions.length === 0) {
+        if (form.jobSessions.length === 0) {
             setSubmitError('Add at least one job session day.');
             return;
         }
         const clientId = (user as any)?._id ?? (user as any)?.id ?? '';
 
         // Set jobSessionByClient to true if enabled, else false
-        const jobSessionByClient = enableJobSessions;
+        const jobSessionByClient = true;
 
         const payload = {
             title: form.title.trim(),
-            hourlyRate: form.hourlyRate,
+            // hourlyRate: form.hourlyRate,
             startDate: form.startDate.toISOString(),
             frequency: form.frequency,
             location: form.location,
@@ -181,7 +181,7 @@ export default function NewJobPage() {
                 name: s.name,
                 description: s.description
             })),
-            jobSessions: enableJobSessions ? form.jobSessions : [],
+            jobSessions: form.jobSessions,
             preference: {
                 gender: form.preference.gender || undefined,
                 others: form.preference.others,
@@ -229,7 +229,7 @@ export default function NewJobPage() {
                         />
                     </div>
                     {/* */}
-                    <div>
+                    {/* <div>
                         <Label>Hourly Rate ($)</Label>
                         <Input
                             type="number"
@@ -237,7 +237,7 @@ export default function NewJobPage() {
                             value={form.hourlyRate}
                             onChange={(e) => setField('hourlyRate', Number(e.target.value))}
                         />
-                    </div>
+                    </div> */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Start Date <span className="text-destructive">*</span></Label>
@@ -252,7 +252,7 @@ export default function NewJobPage() {
                             <Select value={form.frequency} onValueChange={(v) => setField('frequency', v)}>
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="daily">Daily</SelectItem>
+                                    {/* <SelectItem value="daily">Daily</SelectItem> */}
                                     <SelectItem value="weekly">Weekly</SelectItem>
                                     <SelectItem value="fortnightly">Fortnightly</SelectItem>
                                     <SelectItem value="monthly">Monthly</SelectItem>
@@ -355,7 +355,7 @@ export default function NewJobPage() {
                             <div key={svcIdx} className="border rounded p-3">
                                 {/* Service title + remove */}
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium">{svc.name}</span>
+                                    <span className="font-medium lg:text-base md:text-[15px] text-sm">{svc.name}</span>
                                     <button
                                         type="button"
                                         onClick={() => removeSupportDetail(svcIdx)}
@@ -370,6 +370,7 @@ export default function NewJobPage() {
                                     <Label className="text-xs text-muted-foreground mb-1">Description</Label>
                                     <Textarea
                                         placeholder="Describe this service…"
+                                        className='lg:text-sm md:text-[13px] text-xs'
                                         value={svc.description}
                                         onChange={(e) => {
                                             const updated = [...form.supportDetails];
@@ -387,98 +388,97 @@ export default function NewJobPage() {
 
             {/* ── 4. Schedule ── */}
             <Section icon={<CalendarDays className="h-4 w-4" />} title="Schedule" description="Pick days, then choose a time group or set custom times">
-                <div className="flex items-center gap-3 mb-4">
+                {/* <div className="flex items-center gap-3 mb-4">
                     <Switch checked={enableJobSessions} onCheckedChange={setEnableJobSessions} id="enable-job-sessions" />
                     <Label htmlFor="enable-job-sessions" className="text-sm">I want to specify job session times</Label>
+                </div> */}
+                {/* {enableJobSessions && (
+                    <> */}
+                <div className="flex flex-wrap gap-2 mb-5">
+                    {DAYS.map((day) => {
+                        const active = form.jobSessions.some((s) => s.day === day);
+                        return (
+                            <button
+                                key={day}
+                                type="button"
+                                onClick={() => toggleDay(day)}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer',
+                                    active
+                                        ? 'border-[#6cc5e8] bg-primary/10 text-[#6cc5e8] font-medium'
+                                        : 'border-2 border-gray-300 bg-muted/30 text-gray-400 hover:border-gray-400'
+                                )}
+                            >
+                                {day.slice(0, 3)}
+                            </button>
+                        );
+                    })}
                 </div>
-                {enableJobSessions && (
-                    <>
-                        {/* Day toggles */}
-                        <div className="flex flex-wrap gap-2 mb-5">
-                            {DAYS.map((day) => {
-                                const active = form.jobSessions.some((s) => s.day === day);
-                                return (
-                                    <button
-                                        key={day}
-                                        type="button"
-                                        onClick={() => toggleDay(day)}
-                                        className={cn(
-                                            'px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer',
-                                            active
-                                                ? 'border-primary bg-primary/10 text-primary font-medium'
-                                                : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/50'
-                                        )}
-                                    >
-                                        {day.slice(0, 3)}
-                                    </button>
-                                );
-                            })}
-                        </div>
 
-                        <div className="space-y-4">
-                            {form.jobSessions.map((session) => (
-                                <div key={session.day} className="pb-4 border-b last:border-b-0">
-                                    {/* Day header */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="font-medium capitalize text-sm flex items-center gap-1.5">
-                                            <Clock className="h-3.5 w-3.5 text-primary" />{session.day}
-                                        </span>
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => addPeriod(session.day)} className="gap-1 text-xs h-7 px-2">
-                                            <Plus className="h-3 w-3" /> Add Slot
-                                        </Button>
-                                    </div>
+                <div className="space-y-4">
+                    {form.jobSessions.map((session) => (
+                        <div key={session.day} className="pb-4 border-b last:border-b-0">
+                            {/* Day header */}
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="font-medium capitalize text-sm flex items-center gap-1.5">
+                                    <Clock className="h-3.5 w-3.5 text-primary" />{session.day}
+                                </span>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => addPeriod(session.day)} className="gap-1 text-xs h-7 px-2">
+                                    <Plus className="h-3 w-3" /> Add Slot
+                                </Button>
+                            </div>
 
-                                    {session.period.map((p, pIdx) => (
-                                        <div key={pIdx} className="mb-3">
-                                            {/* Quick time-group picker */}
-                                            <div className="flex flex-wrap gap-1.5 mb-2">
-                                                {TIME_GROUPS.map((tg) => {
-                                                    const active = p.startTime === tg.startTime && p.endTime === tg.endTime;
-                                                    return (
-                                                        <button
-                                                            key={tg.label}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                updatePeriod(session.day, pIdx, 'startTime', tg.startTime);
-                                                                updatePeriod(session.day, pIdx, 'endTime', tg.endTime);
-                                                            }}
-                                                            className={cn(
-                                                                'px-2.5 py-0.5 rounded text-xs border transition-all cursor-pointer',
-                                                                active
-                                                                    ? 'border-primary bg-primary/10 text-primary font-medium'
-                                                                    : 'border-border text-muted-foreground hover:border-primary/40'
-                                                            )}
-                                                        >
-                                                            {tg.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            {/* Custom from/to in 2 columns */}
-                                            <div className="grid grid-cols-2 gap-3 items-end">
-                                                <div>
-                                                    <Label className="text-xs text-muted-foreground">From</Label>
-                                                    <Input type="time" value={p.startTime} onChange={(e) => updatePeriod(session.day, pIdx, 'startTime', e.target.value)} className="mt-1 text-sm" />
-                                                </div>
-                                                <div className="flex gap-2 items-end">
-                                                    <div className="flex-1">
-                                                        <Label className="text-xs text-muted-foreground">To</Label>
-                                                        <Input type="time" value={p.endTime} onChange={(e) => updatePeriod(session.day, pIdx, 'endTime', e.target.value)} className="mt-1 text-sm" />
-                                                    </div>
-                                                    {session.period.length > 1 && (
-                                                        <button type="button" onClick={() => removePeriod(session.day, pIdx)} className="mb-0.5 text-destructive hover:opacity-70">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
+                            {session.period.map((p, pIdx) => (
+                                <div key={pIdx} className="mb-3">
+                                    {/* Quick time-group picker */}
+                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                        {TIME_GROUPS.map((tg) => {
+                                            const active = p.startTime === tg.startTime && p.endTime === tg.endTime;
+                                            return (
+                                                <button
+                                                    key={tg.label}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updatePeriod(session.day, pIdx, 'startTime', tg.startTime);
+                                                        updatePeriod(session.day, pIdx, 'endTime', tg.endTime);
+                                                    }}
+                                                    className={cn(
+                                                        'px-2.5 py-0.5 rounded text-xs border transition-all cursor-pointer',
+                                                        active
+                                                            ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                            : 'border-border text-muted-foreground hover:border-primary/40'
                                                     )}
-                                                </div>
-                                            </div>
+                                                >
+                                                    {tg.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Custom from/to in 2 columns */}
+                                    <div className="grid grid-cols-2 gap-3 items-end">
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">From</Label>
+                                            <Input type="time" value={p.startTime} onChange={(e) => updatePeriod(session.day, pIdx, 'startTime', e.target.value)} className="mt-1 text-sm" />
                                         </div>
-                                    ))}
+                                        <div className="flex gap-2 items-end">
+                                            <div className="flex-1">
+                                                <Label className="text-xs text-muted-foreground">To</Label>
+                                                <Input type="time" value={p.endTime} onChange={(e) => updatePeriod(session.day, pIdx, 'endTime', e.target.value)} className="mt-1 text-sm" />
+                                            </div>
+                                            {session.period.length > 1 && (
+                                                <button type="button" onClick={() => removePeriod(session.day, pIdx)} className="mb-0.5 text-destructive hover:opacity-70">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </>
-                )}
+                    ))}
+                </div>
+                {/* </>
+                )} */}
             </Section>
 
             {/* ── 5. Preferences ── */}
@@ -502,10 +502,10 @@ export default function NewJobPage() {
                             </Select>
                         </div>
                         <div>
-                            <Label>Add Custom Preference</Label>
+                            <Label>Add Preference (languages, religion, etc)</Label>
                             <div className="flex gap-2 mt-1.5">
                                 <Input
-                                    placeholder="e.g. speaks Mandarin"
+                                    placeholder="e.g. Mandarin, Buddhist, Hindi, "
                                     value={otherInput}
                                     onChange={(e) => setOtherInput(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomPreference(); } }}

@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
-import { fetchUsers } from '@/redux/slices/usersSlice';
+import { fetchWorkersWithProfile, fetchMyWorkers } from '@/redux/slices/usersSlice';
 
 import dynamic from 'next/dynamic';
 
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
 } from '@/components/ui/card';
 import {
     Tabs,
@@ -20,14 +17,13 @@ import {
     TabsList,
     TabsTrigger
 } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Avatar,
     AvatarFallback,
     AvatarImage
 } from '@/components/ui/avatar';
-import { Users, Map as MapIcon, List as ListIcon, MapPin } from 'lucide-react';
+import { Users, Map as MapIcon, List as ListIcon, BadgeCheck } from 'lucide-react';
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -43,17 +39,11 @@ const MarkerClusterGroup = dynamic(
 
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import WorkerCard from './WorkerCard';
 
-// Fix Leaflet default icon paths
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: '/marker-icon-2x.png',
-    iconUrl: '/marker-icon.png',
-    shadowUrl: '/marker-shadow.png',
-});
 
-// Haversine distance formula
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -72,7 +62,6 @@ function formatDistance(km: number): string {
     return `${Math.round(km)}km away`;
 }
 
-// Component to auto-fit map to all markers
 function FitBounds({ markers }: { markers: [number, number][] }) {
     const map = useMap();
     if (!markers || markers.length === 0) return null;
@@ -112,23 +101,81 @@ function FocusWorker({ worker }: { worker: any }) {
     return null;
 }
 
+// Defined outside component to avoid recreation on every render
+const MapLegend = () => (
+    <div className="absolute top-3 right-3 z-[1000] bg-white border rounded-lg shadow-md px-2 md:px-3 py-1.5 md:py-2 md:text-[11px] text-[10px] lg:text-xs">
+        <div className="font-semibold mb-1">Worker Type</div>
+        <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+            <img src="/marker-icon-2xa.png" className="h-5 md:h-6 lg:h-7 w-auto" />
+            <span>Individual Worker</span>
+        </div>
+        <div className="flex items-center gap-2">
+            <img src="/marker-icon-2xb.png" className="h-5 md:h-6 lg:h-7 w-auto" />
+            <span>NDIS Provider</span>
+        </div>
+    </div>
+);
+
+const WorkerPopup = ({
+    worker,
+    clientCoords,
+}: {
+    worker: any;
+    clientCoords: [number, number] | null;
+}) => (
+    <div className="flex flex-row items-center gap-2 md:gap-3">
+        <Avatar className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10">
+            <AvatarImage src={worker.avatar} />
+            <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
+        </Avatar>
+        <div>
+            <strong className="flex flex-row mb-0.5 items-center">
+                {worker.firstName} {worker.lastName}
+                {worker.approved ? <BadgeCheck className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1" /> : ""}
+            </strong>
+            <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">
+                {worker.address?.line1}, {worker.address?.state}, {worker.address?.postalCode}
+            </span>
+            {clientCoords && worker.coords && (
+                <div className="text-[10px] md:text-[11px] lg:text-xs text-blue-500 mt-0.5">
+                    {formatDistance(getDistanceKm(
+                        clientCoords[0], clientCoords[1],
+                        worker.coords[0], worker.coords[1]
+                    ))}
+                </div>
+            )}
+        </div>
+    </div>
+);
+
 export default function ClientWorkersPage() {
     const dispatch = useDispatch<AppDispatch>();
-    const { items: workers, loading } = useSelector((state: RootState) => state.users);
+    const { items: workers, myWorkers, loading } = useSelector((state: RootState) => state.users);
 
+    // Find Workers tab state
     const [view, setView] = useState<'map' | 'list'>('list');
+    const [workerType, setWorkerType] = useState("all");
+
+    // My Workers tab state
+    const [myView, setMyView] = useState<'map' | 'list'>('list');
+    const [myWorkerType, setMyWorkerType] = useState("all");
+
+    // Shared state
     const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
     const [focusedWorker, setFocusedWorker] = useState<any>(null);
+    const [isMobile, setIsMobile] = useState(false);
 
+    const searchParams = useSearchParams();
+    const focusWorkerParam = searchParams.get('focusWorker');
     const router = useRouter();
+
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    // Get client's location
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
             (pos) => setClientCoords([pos.coords.latitude, pos.coords.longitude]),
@@ -136,16 +183,20 @@ export default function ClientWorkersPage() {
         );
     }, []);
 
-    // Fetch workers
     useEffect(() => {
-        dispatch(fetchUsers({
-            role: 'worker',
+        dispatch(fetchWorkersWithProfile({
             page: 1,
             limit: 20
         }));
     }, [dispatch]);
 
-    // Fetch coordinates for workers
+    useEffect(() => {
+        dispatch(fetchMyWorkers({
+            page: 1,
+            limit: 20
+        }));
+    }, [dispatch]);
+
     useEffect(() => {
         const fetchCoords = async () => {
             const updatedWorkers = await Promise.all(
@@ -176,43 +227,137 @@ export default function ClientWorkersPage() {
         if (workers.length > 0) fetchCoords();
     }, [workers]);
 
+    useEffect(() => {
+        if (!focusWorkerParam || workersWithCoords.length === 0) return;
+
+        const target = workersWithCoords.find(w => w._id === focusWorkerParam);
+        if (target?.coords) {
+            setFocusedWorker(target);
+            // Open the correct tab's map depending on whether it's a "my worker"
+            const isMyWorker = myWorkers.some(w => w._id === target._id);
+            if (isMyWorker) {
+                setMyView('map');
+            } else {
+                setView('map');
+            }
+            // Clear the URL param so a page refresh doesn't re-trigger the focus
+            router.replace(window.location.pathname, { scroll: false });
+        }
+    }, [focusWorkerParam, workersWithCoords]);
+
+    useEffect(() => {
+        const checkScreen = () => {
+            setIsMobile(window.innerWidth < 900);
+        };
+
+        checkScreen();
+        window.addEventListener("resize", checkScreen);
+
+        return () => window.removeEventListener("resize", checkScreen);
+    }, []);
+
+    const workerIcon = useMemo(() => new L.Icon({
+        iconUrl: '/marker-icon-2xa.png',
+        iconRetinaUrl: '/marker-icon-2xa.png',
+        shadowUrl: '/marker-shadow.png',
+        iconSize: isMobile ? [22, 34] : [32, 48],
+        iconAnchor: isMobile ? [11, 34] : [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: isMobile ? [30, 30] : [41, 41],
+    }), [isMobile]);
+
+    const ndisIcon = useMemo(() => new L.Icon({
+        iconUrl: '/marker-icon-2xb.png',
+        iconRetinaUrl: '/marker-icon-2xb.png',
+        shadowUrl: '/marker-shadow.png',
+        iconSize: isMobile ? [22, 34] : [31, 50],
+        iconAnchor: isMobile ? [11, 34] : [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: isMobile ? [30, 30] : [41, 41],
+    }), [isMobile]);
+
+    // Find Workers filtered lists
+    const filteredWorkers = workers.filter(worker => {
+        if (workerType === "all") return true;
+        if (workerType === "ndis") return worker.isNdisProvider;
+        if (workerType === "individual") return !worker.isNdisProvider;
+        return true;
+    });
+
+    const filteredWorkersWithCoords = workersWithCoords.filter(worker => {
+        if (workerType === "all") return true;
+        if (workerType === "ndis") return worker.isNdisProvider;
+        if (workerType === "individual") return !worker.isNdisProvider;
+        return true;
+    });
+
+    // My Workers filtered lists
+    const filteredMyWorkers = myWorkers.filter(worker => {
+        if (myWorkerType === "all") return true;
+        if (myWorkerType === "ndis") return worker.isNdisProvider;
+        if (myWorkerType === "individual") return !worker.isNdisProvider;
+        return true;
+    });
+
+    const filteredMyWorkersWithCoords = workersWithCoords.filter(worker => {
+        if (!myWorkers.find(w => w._id === worker._id)) return false;
+        if (myWorkerType === "all") return true;
+        if (myWorkerType === "ndis") return worker.isNdisProvider;
+        if (myWorkerType === "individual") return !worker.isNdisProvider;
+        return true;
+    });
+
+    // Reusable map legend — defined above component
+
     return (
         <div className="space-y-5">
 
             <div>
-                <h1 className="text-xl font-bold tracking-tight">Support Workers</h1>
-                <p className="text-muted-foreground">View all the support workers.</p>
+                <h1 className="md:text-lg text-base lg:text-xl font-bold tracking-tight">Support Workers</h1>
+                <p className="text-muted-foreground lg:text-base md:text-sm text-xs">View all the support workers.</p>
             </div>
 
-            <Tabs defaultValue="find">
+            <Tabs defaultValue="find" onValueChange={() => setFocusedWorker(null)}>
                 <TabsList>
                     <TabsTrigger value="find">Find Workers</TabsTrigger>
-                    <TabsTrigger value="past">My Workers (0)</TabsTrigger>
+                    <TabsTrigger value="past">My Workers ({myWorkers.length})</TabsTrigger>
                 </TabsList>
 
-                {/* FIND WORKERS */}
+                {/* ─── FIND WORKERS TAB ─── */}
                 <TabsContent value="find">
                     <div className="space-y-3">
                         <div className="flex justify-end items-center">
-                            <div className="flex gap-2">
-                                <Button
-                                    variant={view === "list" ? "default" : "outline"}
-                                    onClick={() => { setView('list'); setFocusedWorker(null); }}
-                                    size="sm"
-                                >
-                                    <ListIcon className="h-4 w-4 mr-1" /> List
-                                </Button>
-                                <Button
-                                    variant={view === "map" ? "default" : "outline"}
-                                    onClick={() => { setView('map'); setFocusedWorker(null); }}
-                                    size="sm"
-                                >
-                                    <MapIcon className="h-4 w-4 mr-1" /> Map
-                                </Button>
+                            <div className="flex flex-wrap gap-4 md:gap-8 items-center">
+                                <Select value={workerType} onValueChange={(val) => { setWorkerType(val); setFocusedWorker(null); }}>
+                                    <SelectTrigger className="md:w-[150px] w-[115px] lg:w-[180px] h-8 text-xs">
+                                        <SelectValue placeholder="Filter workers" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Workers</SelectItem>
+                                        <SelectItem value="ndis">NDIS Providers</SelectItem>
+                                        <SelectItem value="individual">Individual Workers</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant={view === "list" ? "default" : "outline"}
+                                        onClick={() => { setView('list'); setFocusedWorker(null); }}
+                                        size="sm"
+                                    >
+                                        <ListIcon className="h-4 w-4 mr-1" /> List
+                                    </Button>
+                                    <Button
+                                        variant={view === "map" ? "default" : "outline"}
+                                        onClick={() => { setView('map'); setFocusedWorker(null); }}
+                                        size="sm"
+                                    >
+                                        <MapIcon className="h-4 w-4 mr-1" /> Map
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* MAP VIEW */}
+                        {/* Map View */}
                         {view === "map" && isClient && (
                             <Card>
                                 <CardContent className="p-0">
@@ -231,55 +376,35 @@ export default function ClientWorkersPage() {
                                             </Button>
                                         </div>
                                     )}
-                                    <div className="w-full h-[300px] md:h-[350px] lg:h-[400px]">
+                                    <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] relative">
+                                        <MapLegend />
                                         <MapContainer
                                             center={[-25.2744, 133.7751]}
                                             zoom={4}
                                             className="w-full h-full"
                                         >
                                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
                                             <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
-                                                {workersWithCoords
+                                                {filteredWorkersWithCoords
                                                     .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
                                                     .filter(w => focusedWorker ? w._id === focusedWorker._id : true)
                                                     .map(worker => (
                                                         <Marker
                                                             key={worker._id}
                                                             position={worker.coords as [number, number]}
+                                                            icon={worker.isNdisProvider ? ndisIcon : workerIcon}
                                                         >
                                                             <Popup>
-                                                                <div className='flex flex-row items-center gap-3'>
-                                                                    <Avatar className="h-10 w-10">
-                                                                        <AvatarImage src={worker.avatar} />
-                                                                        <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
-                                                                    </Avatar>
-                                                                    <div>
-                                                                        <strong>{worker.firstName} {worker.lastName}</strong>
-                                                                        <br />
-                                                                        <span className="text-xs text-gray-500">
-                                                                            {worker.address?.line1}, {worker.address?.state}, {worker.address?.postalCode}
-                                                                        </span>
-                                                                        {clientCoords && worker.coords && (
-                                                                            <div className="text-xs text-blue-500 mt-0.5">
-                                                                                {formatDistance(getDistanceKm(
-                                                                                    clientCoords[0], clientCoords[1],
-                                                                                    worker.coords[0], worker.coords[1]
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
+                                                                <WorkerPopup worker={worker} clientCoords={clientCoords} />
                                                             </Popup>
                                                         </Marker>
                                                     ))}
                                             </MarkerClusterGroup>
-
                                             {focusedWorker?.coords ? (
                                                 <FocusWorker worker={focusedWorker} />
                                             ) : (
                                                 <FitBounds
-                                                    markers={workersWithCoords
+                                                    markers={filteredWorkersWithCoords
                                                         .filter(w => w.coords)
                                                         .map(w => w.coords as [number, number])}
                                                 />
@@ -290,122 +415,26 @@ export default function ClientWorkersPage() {
                             </Card>
                         )}
 
-                        {/* LIST VIEW */}
+                        {/* List View */}
                         {view === "list" && (
                             <div className="grid md:grid-cols-2 gap-4">
                                 {loading && <div>Loading workers...</div>}
                                 {!loading && workers.length === 0 && (
                                     <div className="text-muted-foreground">No workers found</div>
                                 )}
-
-                                {workers.map(worker => {
-                                    const age = worker.dateOfBirth ? (() => {
-                                        const dob = new Date(worker.dateOfBirth);
-                                        const today = new Date();
-                                        let years = today.getFullYear() - dob.getFullYear();
-                                        const monthDiff = today.getMonth() - dob.getMonth();
-                                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) years--;
-                                        return years > 0 ? years : null;
-                                    })() : null;
-
-                                    const joinedDate = worker.createdAt
-                                        ? new Date(worker.createdAt).toLocaleDateString()
-                                        : null;
-
-                                    const location = worker.address?.state
-                                        || worker.address?.line1
-                                        || worker.timezone?.split('/')[1]
-                                        || null;
-
-                                    // Match worker to geocoded entry for distance
+                                {filteredWorkers.map(worker => {
                                     const workerWithCoord = workersWithCoords.find(w => w._id === worker._id);
-                                    const distance = clientCoords && workerWithCoord?.coords
-                                        ? formatDistance(getDistanceKm(
-                                            clientCoords[0], clientCoords[1],
-                                            workerWithCoord.coords[0], workerWithCoord.coords[1]
-                                        ))
-                                        : null;
-
                                     return (
-                                        <Card key={worker._id} className="hover:shadow-md transition-shadow">
-                                            <CardHeader className="py-1">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex gap-3 items-center">
-                                                        <Avatar className="h-10 w-10">
-                                                            <AvatarImage src={worker.avatar} />
-                                                            <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
-                                                        </Avatar>
-                                                        <div>
-                                                            <CardTitle className="text-sm font-semibold">
-                                                                {worker.firstName} {worker.lastName}
-                                                            </CardTitle>
-                                                            <CardDescription className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                {location && (
-                                                                    <>
-                                                                        <MapPin className="h-3 w-3" />
-                                                                        <span>{location}</span>
-                                                                    </>
-                                                                )}
-                                                                {distance && (
-                                                                    <span className="text-blue-500 font-medium">
-                                                                        {location ? ` · ${distance}` : distance}
-                                                                    </span>
-                                                                )}
-                                                                {!location && !distance && null}
-                                                            </CardDescription>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <Badge
-                                                            className={`text-xs font-semibold px-2 py-1 rounded-full ${worker.approved
-                                                                ? 'bg-green-100 text-green-600'
-                                                                : 'bg-yellow-100 text-yellow-600'
-                                                                }`}
-                                                        >
-                                                            {worker.approved ? "Approved" : "Pending"}
-                                                        </Badge>
-                                                        {worker.isVerified && (
-                                                            <Badge variant="outline" className="text-xs px-2 py-0.5 border-green-500 text-green-600">
-                                                                Verified
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </CardHeader>
-
-                                            <CardContent className="pt-0 pb-2 space-y-1 text-xs text-muted-foreground">
-                                                <div className="flex flex-wrap gap-x-3">
-                                                    <span>Role: <span className="text-foreground">{worker.role}</span></span>
-                                                    {age !== null && <span>Age: <span className="text-foreground">{age}</span></span>}
-                                                    {joinedDate && <span>Joined: <span className="text-foreground">{joinedDate}</span></span>}
-                                                </div>
-                                                {worker.phoneNumber && (
-                                                    <div className="mt-1">Phone: <span className="text-foreground">{worker.phoneNumber}</span></div>
-                                                )}
-                                                <div className="flex gap-2 pt-1 mt-2">
-                                                    <Button
-                                                        onClick={() => router.push(`/profile/${worker._id}`)}
-                                                        size="sm"
-                                                        className="h-8 text-xs flex-1"
-                                                    >
-                                                        View Profile
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => {
-                                                            const workerCoord = workersWithCoords.find(w => w._id === worker._id);
-                                                            setFocusedWorker(workerCoord ?? worker);
-                                                            setView('map');
-                                                        }}
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 text-xs flex-1"
-                                                    >
-                                                        View on Map
-                                                    </Button>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                        <WorkerCard
+                                            key={worker._id}
+                                            worker={worker}
+                                            clientCoords={clientCoords}
+                                            workerCoords={workerWithCoord}
+                                            onViewMap={(w) => {
+                                                setFocusedWorker(w);
+                                                setView("map");
+                                            }}
+                                        />
                                     );
                                 })}
                             </div>
@@ -413,12 +442,127 @@ export default function ClientWorkersPage() {
                     </div>
                 </TabsContent>
 
-                {/* PAST WORKERS */}
+                {/* ─── MY WORKERS TAB ─── */}
                 <TabsContent value="past">
-                    <div className="text-center py-12 text-muted-foreground">
-                        <Users className="h-10 w-10 mx-auto mb-3" />
-                        No workers yet
-                    </div>
+                    {myWorkers.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <Users className="h-10 w-10 mx-auto mb-3" />
+                            No workers yet
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Controls */}
+                            <div className="flex justify-end items-center">
+                                <div className="flex flex-wrap gap-4 md:gap-8 items-center">
+                                    <Select value={myWorkerType} onValueChange={(val) => { setMyWorkerType(val); setFocusedWorker(null); }}>
+                                        <SelectTrigger className="md:w-[150px] w-[115px] lg:w-[180px] h-8 text-xs">
+                                            <SelectValue placeholder="Filter workers" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Workers</SelectItem>
+                                            <SelectItem value="ndis">NDIS Providers</SelectItem>
+                                            <SelectItem value="individual">Individual Workers</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant={myView === "list" ? "default" : "outline"}
+                                            onClick={() => { setMyView('list'); setFocusedWorker(null); }}
+                                            size="sm"
+                                        >
+                                            <ListIcon className="h-4 w-4 mr-1" /> List
+                                        </Button>
+                                        <Button
+                                            variant={myView === "map" ? "default" : "outline"}
+                                            onClick={() => { setMyView('map'); setFocusedWorker(null); }}
+                                            size="sm"
+                                        >
+                                            <MapIcon className="h-4 w-4 mr-1" /> Map
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Map View */}
+                            {myView === "map" && isClient && (
+                                <Card>
+                                    <CardContent className="p-0">
+                                        {focusedWorker && (
+                                            <div className="px-3 py-2 border-b flex items-center justify-between">
+                                                <span className="text-xs text-muted-foreground">
+                                                    Showing: <span className="font-medium text-foreground">{focusedWorker.firstName} {focusedWorker.lastName}</span>
+                                                </span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-6 text-xs"
+                                                    onClick={() => setFocusedWorker(null)}
+                                                >
+                                                    Show All
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <div className="w-full h-[300px] md:h-[350px] lg:h-[400px] relative">
+                                            <MapLegend />
+                                            <MapContainer
+                                                center={[-25.2744, 133.7751]}
+                                                zoom={4}
+                                                className="w-full h-full"
+                                            >
+                                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                                <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
+                                                    {filteredMyWorkersWithCoords
+                                                        .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
+                                                        .filter(w => focusedWorker ? w._id === focusedWorker._id : true)
+                                                        .map(worker => (
+                                                            <Marker
+                                                                key={worker._id}
+                                                                position={worker.coords as [number, number]}
+                                                                icon={worker.isNdisProvider ? ndisIcon : workerIcon}
+                                                            >
+                                                                <Popup>
+                                                                    <WorkerPopup worker={worker} clientCoords={clientCoords} />
+                                                                </Popup>
+                                                            </Marker>
+                                                        ))}
+                                                </MarkerClusterGroup>
+                                                {focusedWorker?.coords ? (
+                                                    <FocusWorker worker={focusedWorker} />
+                                                ) : (
+                                                    <FitBounds
+                                                        markers={filteredMyWorkersWithCoords
+                                                            .filter(w => w.coords)
+                                                            .map(w => w.coords as [number, number])}
+                                                    />
+                                                )}
+                                            </MapContainer>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* List View */}
+                            {myView === "list" && (
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {filteredMyWorkers.map(worker => {
+                                        const workerWithCoord = workersWithCoords.find(w => w._id === worker._id);
+                                        return (
+                                            <WorkerCard
+                                                key={worker._id}
+                                                worker={worker}
+                                                clientCoords={clientCoords}
+                                                workerCoords={workerWithCoord}
+                                                onViewMap={(w) => {
+                                                    setFocusedWorker(w);
+                                                    setMyView("map");
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </TabsContent>
             </Tabs>
         </div>

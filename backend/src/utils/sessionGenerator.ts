@@ -16,7 +16,7 @@ export const generateSessionsFromSchedule = async (
 ) => {
   const availability: DaySlot[] = agreement.schedule || [];
 
-  if (availability.length === 0) return [];
+  if (!availability.length) return [];
 
   const dayMap: Record<string, number> = {
     sunday: 0,
@@ -28,54 +28,87 @@ export const generateSessionsFromSchedule = async (
     saturday: 6,
   };
 
-  const today = new Date();
+  const startDate = new Date(agreement.startDate);
+
   const sessions: any[] = [];
+
+  const frequencyInterval: Record<string, number> = {
+    weekly: 1,
+    fortnightly: 2,
+    monthly: 4,
+  };
+
+  const intervalWeeks = frequencyInterval[agreement.frequency] || 1;
 
   for (const slot of availability) {
     const targetDay = dayMap[slot.day.toLowerCase()];
+
     if (targetDay === undefined) continue;
 
-    for (let week = 0; week < weeksToGenerate; week++) {
-      const base = new Date(today);
-      base.setDate(today.getDate() + week * 7);
+    for (let i = 0; i < weeksToGenerate; i++) {
+      const base = new Date(startDate);
 
-      const diff = (targetDay + 7 - base.getDay()) % 7;
+      base.setDate(startDate.getDate() + i * intervalWeeks * 7);
+
+      const diff = (targetDay - base.getDay() + 7) % 7;
 
       const sessionDate = new Date(base);
+
       sessionDate.setDate(base.getDate() + diff);
+
+      if (sessionDate < startDate) continue;
 
       for (const period of slot.period) {
         const [startHour, startMin] = period.startTime.split(":");
+
         const [endHour, endMin] = period.endTime.split(":");
 
-        const startTime = new Date(sessionDate);
-        startTime.setHours(Number(startHour), Number(startMin), 0);
+        const startMinutes = Number(startHour) * 60 + Number(startMin);
 
-        const endTime = new Date(sessionDate);
-        endTime.setHours(Number(endHour), Number(endMin), 0);
+        const endMinutes = Number(endHour) * 60 + Number(endMin);
 
-        const durationMinutes =
-          (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+        const durationMinutes = endMinutes - startMinutes;
+
+        if (durationMinutes <= 0) continue;
+
         const totalAmount = (durationMinutes / 60) * agreement.hourlyRate;
 
         sessions.push({
           agreement: agreement._id,
+
           job: agreement.job,
+
           client: agreement.client,
+
           worker: agreement.worker,
+
           date: sessionDate,
-          startTime,
-          endTime,
+
+          startTime: period.startTime,
+
+          endTime: period.endTime,
+
           durationMinutes,
+
           hourlyRate: agreement.hourlyRate,
+
           totalAmount,
+
+          status: "scheduled",
         });
       }
     }
   }
 
-  if (sessions.length > 0) {
-    await Session.insertMany(sessions);
+  if (sessions.length) {
+    try {
+      await Session.insertMany(sessions);
+    } catch (error) {
+      console.error("SESSION INSERT ERROR:");
+      console.error(error);
+
+      throw error;
+    }
   }
 
   return sessions;

@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
@@ -14,16 +14,32 @@ import { Separator } from '@/components/ui/separator';
 import { NAV_ITEMS } from '@/lib/constants';
 import { UserButton } from './UserButton';
 import NotificationsCenter from '@/components/common/NotificationsCenter';
-import { cn } from "@/lib/utils"; // Standard shadcn helper
+import { cn } from "@/lib/utils";
+import { fetchUnreadCount } from '@/redux/slices/messageSlice';
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
 
 export default function ClassicLayout({ children }: { children: React.ReactNode }) {
     const { user } = useSelector((state: RootState) => state.auth);
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const dispatch = useDispatch<AppDispatch>();
 
     const navItems = user?.role && NAV_ITEMS[user.role as keyof typeof NAV_ITEMS]
         ? NAV_ITEMS[user.role as keyof typeof NAV_ITEMS]
         : NAV_ITEMS.worker;
+
+
+    const messageUnreadCount = useSelector(
+        (state: RootState) =>
+            state.notifications.items.filter(
+                (n) => n.type === 'message' && !n.read
+            ).length
+    );
+
+    useEffect(() => {
+        dispatch(fetchUnreadCount());
+    }, [dispatch]);
 
     const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => (
         <div className="flex flex-col h-full py-3">
@@ -48,6 +64,11 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
             <div className="px-2 space-y-0.5">
                 {navItems.map((item: any) => {
                     const isActive = pathname === item.href;
+
+                    const badgeCount = item.href.includes('/inbox')
+                        ? messageUnreadCount
+                        : item.badge;
+
                     return (
                         <Link key={item.href} href={item.href} title={collapsed ? item.label : ""}>
                             <Button
@@ -63,10 +84,10 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                                 <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-[#042a2d]")} />
                                 {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
 
-                                {!collapsed && item.badge && (
-                                    <Badge className="  text-[10px] h-5 px-1.5  text-[#042a2d]">
-                                        {item.badge}
-                                    </Badge>
+                                {!collapsed && badgeCount > 0 && (
+                                    <div className="text-[10px] h-5 px-1.5 py-1 w-5 rounded-full bg-[red] text-white">
+                                        {badgeCount > 9 ? '9+' : badgeCount}
+                                    </div>
                                 )}
 
                                 {/* Active Indicator Bar */}
@@ -120,6 +141,11 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="p-0 w-72">
+                                <SheetHeader className='hidden'>
+                                    <VisuallyHidden>
+                                        <SheetTitle>Navigation Menu</SheetTitle>
+                                    </VisuallyHidden>
+                                </SheetHeader>
                                 <NavContent />
                             </SheetContent>
                         </Sheet>

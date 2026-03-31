@@ -60,7 +60,11 @@ export const fetchMessageById = createAsyncThunk(
 export const sendMessage = createAsyncThunk(
   "message/send",
   async ({ chatId, message }: { chatId: string; message: string }) => {
-    const res = await api.post(`/message/${chatId}`, { message });
+    const res = await api.post(
+      `/message/${chatId}`,
+      { message },
+      { silent: true },
+    );
     return res.data.data;
   },
 );
@@ -87,7 +91,7 @@ export const deleteMessage = createAsyncThunk(
 export const markMessagesRead = createAsyncThunk(
   "message/read",
   async (chatId: string) => {
-    await api.patch(`/message/mark-read/${chatId}`);
+    await api.patch(`/message/mark-read/${chatId}`, {}, { silent: true });
     return chatId;
   },
 );
@@ -110,6 +114,9 @@ const messageSlice = createSlice({
       const exists = state.items.find((m) => m._id === action.payload._id);
       if (!exists) {
         state.items.push(action.payload);
+        // if (!action.payload.read) {
+        //   state.unreadCount += 1;
+        // }
       }
     },
 
@@ -128,10 +135,9 @@ const messageSlice = createSlice({
 
     // Socket.IO: mark all messages read locally
     markReadLocal: (state) => {
-      state.items = state.items.map((m) => ({
-        ...m,
-        read: true,
-      }));
+      const unreadBefore = state.items.filter((m) => !m.read).length;
+      state.items = state.items.map((m) => ({ ...m, read: true }));
+      state.unreadCount = Math.max(0, state.unreadCount - unreadBefore);
     },
   },
   extraReducers: (builder) => {
@@ -194,11 +200,10 @@ const messageSlice = createSlice({
       })
 
       // Mark messages read
-      .addCase(markMessagesRead.fulfilled, (state, action) => {
-        state.items = state.items.map((m) => ({
-          ...m,
-          read: true,
-        }));
+      .addCase(markMessagesRead.fulfilled, (state) => {
+        const unreadBefore = state.items.filter((m) => !m.read).length;
+        state.items = state.items.map((m) => ({ ...m, read: true }));
+        state.unreadCount = Math.max(0, state.unreadCount - unreadBefore);
       })
 
       // Fetch unread count

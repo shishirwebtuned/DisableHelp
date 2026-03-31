@@ -27,8 +27,9 @@ import {
     Dialog, DialogContent, DialogHeader,
     DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
-export default function AdminAgreementsPage() {
+export default function WorkerAgreementsPage() {
     const dispatch = useAppDispatch();
     const { items: agreements, loading, total, totalPages, page: currentPageFromStore } = useAppSelector((state) => state.agreements);
 
@@ -295,8 +296,14 @@ export default function AdminAgreementsPage() {
             </div>
 
             {/* Terms & Conditions Dialog */}
+            <PayPalScriptProvider
+ options={{
+   "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+   currency: "USD"
+ }}
+>
             <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>Terms & Conditions</DialogTitle>
                         <DialogDescription>
@@ -304,44 +311,128 @@ export default function AdminAgreementsPage() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="max-h-64 overflow-y-auto rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
-                        <p className="font-semibold text-foreground">Service Agreement Terms</p>
-                        <p>
-                            By accepting these terms, you agree to provide support services as outlined
-                            in this agreement in a professional and timely manner.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">1. Confidentiality.</span>{' '}
-                            You agree to keep all client information strictly confidential and not
-                            disclose any personal details to third parties.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">2. Code of Conduct.</span>{' '}
-                            You agree to treat all clients with respect, dignity, and compassion at all
-                            times during service delivery.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">3. Compliance.</span>{' '}
-                            You agree to comply with all relevant legislation including the NDIS Code of
-                            Conduct, Work Health and Safety laws, and any applicable state regulations.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">4. Invoicing.</span>{' '}
-                            Invoices must be submitted accurately and within the agreed timeframe.
-                            Falsification of hours or services rendered may result in immediate
-                            termination of this agreement.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">5. Termination.</span>{' '}
-                            Either party may terminate this agreement with reasonable notice as specified
-                            in the service schedule.
-                        </p>
-                        <p>
-                            <span className="font-medium text-foreground">6. Insurance.</span>{' '}
-                            You confirm that you hold valid and current professional indemnity and public
-                            liability insurance as required.
-                        </p>
-                    </div>
+                    <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground space-y-4">
+
+    <p className="font-semibold text-foreground text-base">
+        Service Agreement Terms
+    </p>
+
+    <p>
+        By accepting these terms, you agree to provide support services professionally
+        and according to this agreement.
+    </p>
+
+    {/* PAYMENT PRIORITY SECTION */}
+    <div className="rounded-lg border-2 border-green-500 bg-green-50 p-5 space-y-4 shadow-sm">
+
+        <div className="text-center space-y-1">
+
+            <h3 className="text-xl font-bold text-foreground">
+                Agreement Activation Fee
+            </h3>
+
+            <p className="text-muted-foreground">
+                Payment is required to activate this agreement
+            </p>
+
+            <div className="text-4xl font-extrabold text-green-600">
+                $100
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+                Secure payment via PayPal (Sandbox)
+            </p>
+
+        </div>
+
+        <PayPalButtons
+
+            createOrder={(data, actions) => {
+
+                return actions.order.create({
+
+                    purchase_units: [
+                        {
+                            amount: {
+                                value: "100.00"
+                            }
+                        }
+                    ]
+
+                });
+
+            }}
+
+            onApprove={async (data, actions) => {
+
+                const details = await actions.order?.capture();
+
+                await axios.post("/payments/paypal-success", {
+
+                    agreementId: selectedTermsAgreementId,
+
+                    orderId: data.orderID,
+
+                    details
+
+                });
+
+                await dispatch(
+                    updateAgreementStatus({
+                        id: selectedTermsAgreementId,
+                        status: "active"
+                    })
+                );
+
+                setTermsDialogOpen(false);
+
+            }}
+
+            onError={(err)=>{
+                console.log(err);
+            }}
+
+            style={{
+                layout:"vertical",
+                color:"blue",
+                shape:"rect",
+                label:"pay"
+            }}
+
+        />
+
+    </div>
+
+    {/* IMPORTANT TERMS ONLY */}
+    <div className="space-y-2 text-xs border-t pt-3">
+
+        <p className="font-medium text-foreground">
+            Key Conditions:
+        </p>
+
+        <p>
+            <span className="font-medium text-foreground">Confidentiality:</span>
+            {" "}Client data must remain private.
+        </p>
+
+        <p>
+            <span className="font-medium text-foreground">Conduct:</span>
+            {" "}Professional behaviour is required.
+        </p>
+
+        <p>
+            <span className="font-medium text-foreground">Compliance:</span>
+            {" "}NDIS and safety regulations must be followed.
+        </p>
+
+        <p>
+            <span className="font-medium text-foreground">Insurance:</span>
+            {" "}Valid liability insurance required.
+        </p>
+
+    </div>
+
+</div>
 
                     <DialogFooter className="gap-2 pt-1">
                         <Button
@@ -359,12 +450,13 @@ export default function AdminAgreementsPage() {
                                 disabled={acceptingTerms}
                             >
                                 <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                {acceptingTerms ? 'Accepting...' : 'Accept Terms'}
+                                {acceptingTerms ? 'Accepting...' : 'Pay & Accept'}
                             </Button>
                         )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            </PayPalScriptProvider>
         </>
     );
 }

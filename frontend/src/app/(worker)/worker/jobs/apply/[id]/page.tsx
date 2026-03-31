@@ -63,6 +63,8 @@ export default function Page() {
   const [introduction, setIntroduction] = useState('');
   const [skills, setSkills] = useState('');
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
+  const [hourlyRate, setHourlyRate] = useState('');
+
   // tracks which client-provided session slots the worker selects (key = `${session._id}_${periodIdx}`)
   const [selectedSessionKeys, setSelectedSessionKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -137,6 +139,9 @@ export default function Page() {
     if (step === 'about' && !introduction.trim()) e.introduction = 'Introduction is required';
     if (step === 'skills' && !skills.trim()) e.skills = 'Skills are required';
     if (step === 'availability') {
+      if (!hourlyRate || Number(hourlyRate) <= 0) {
+        e.hourlyRate = 'Hourly rate required';
+      }
       if (selectedJob?.jobSessions?.length > 0) {
         if (selectedSessionKeys.size === 0) e.availability = 'Select at least one session';
       } else {
@@ -179,7 +184,7 @@ export default function Page() {
       finalAvailability = Object.entries(map).map(([day, period]) => ({ day: day as Day, period }));
     }
     const result = await dispatch(
-      applyToJobThunk({ job: id as string, introduction, skills, availability: finalAvailability })
+      applyToJobThunk({ job: id as string, introduction, skills, hourlyRate: Number(hourlyRate), availability: finalAvailability })
     );
     if (applyToJobThunk.fulfilled.match(result)) router.back();
   };
@@ -187,7 +192,7 @@ export default function Page() {
 
   if (!selectedJob) return null;
 
-  const {  jobSessions,  } = selectedJob;
+  const { jobSessions, } = selectedJob;
 
 
 
@@ -202,7 +207,7 @@ export default function Page() {
       <Button onClick={() => router.back()} className=" w-30 cursor-pointer ml-4 mt-4">
         <ArrowBigLeft className="h-4 w-4 mr-2" />
         Back
-      </Button> 
+      </Button>
       <div className=" px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Job Application</h1>
       </div>
@@ -308,7 +313,7 @@ export default function Page() {
             {/* Step: Availability */}
             {step === 'availability' && (
               <div className="space-y-5">
-                <h2 className="text-2xl font-bold">Availability</h2>
+                <h2 className="text-2xl font-bold">Availability and Rates</h2>
 
                 {/* Session frequency info box */}
                 <div className="flex gap-3 bg-muted rounded-lg p-4 text-sm">
@@ -321,6 +326,40 @@ export default function Page() {
                       Starting {new Date(selectedJob.startDate).toLocaleDateString()}.
                     </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hourlyRate">Your hourly rate</Label>
+
+                  <div className="relative w-60">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      $
+                    </span>
+
+                    <input
+                      id="hourlyRate"
+                      type="number"
+                      min="1"
+                      placeholder="Enter rate"
+                      value={hourlyRate}
+                      onChange={(e) => {
+                        setHourlyRate(e.target.value);
+                        setErrors((p) => ({ ...p, hourlyRate: '' }));
+                      }}
+                      className={`w-full pl-7 pr-3 py-2 border rounded-md text-sm bg-background 
+      ${errors.hourlyRate ? 'border-destructive' : 'border-input'}`}
+                    />
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Enter the amount you charge per hour.
+                  </p>
+
+                  {errors.hourlyRate && (
+                    <p className="text-xs text-destructive">
+                      {errors.hourlyRate}
+                    </p>
+                  )}
                 </div>
 
                 {jobSessions?.length > 0 ? (
@@ -416,8 +455,8 @@ export default function Page() {
                                       >
                                         <SelectTrigger
                                           className={`w-50 ${errors[`${day}_${idx}_start`]
-                                              ? 'border-destructive'
-                                              : ''
+                                            ? 'border-destructive'
+                                            : ''
                                             }`}
                                         >
                                           <SelectValue placeholder="Select" />
@@ -459,8 +498,8 @@ export default function Page() {
                                       >
                                         <SelectTrigger
                                           className={`w-50 ${errors[`${day}_${idx}_end`]
-                                              ? 'border-destructive'
-                                              : ''
+                                            ? 'border-destructive'
+                                            : ''
                                             }`}
                                         >
                                           <SelectValue placeholder="Select" />
@@ -534,6 +573,19 @@ export default function Page() {
                       </button>
                     </div>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{skills}</p>
+                  </div>
+
+                  <div className="p-4 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-sm">Hourly Rate</p>
+                      <button
+                        onClick={() => setStep('availability')}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">$ {hourlyRate}</p>
                   </div>
 
                   <div className="p-4 space-y-2">

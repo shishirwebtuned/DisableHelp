@@ -16,7 +16,7 @@ export const createJob = catchAsync(async (req, res) => {
     supportDetails,
     jobSessions,
     preference,
-    hourlyRate,
+    // hourlyRate,
     jobSessionByClient,
   } = req.body;
 
@@ -30,7 +30,7 @@ export const createJob = catchAsync(async (req, res) => {
     !duration ||
     !client ||
     !title ||
-    !hourlyRate ||
+    // !hourlyRate ||
     !supportDetails ||
     !preference
   ) {
@@ -56,7 +56,7 @@ export const createJob = catchAsync(async (req, res) => {
     client,
     title,
     supportDetails,
-    hourlyRate,
+    // hourlyRate,
     jobSessions: jobSessions || [], // default empty array if false
     jobSessionByClient: !!jobSessionByClient, // ensure boolean
     preference,

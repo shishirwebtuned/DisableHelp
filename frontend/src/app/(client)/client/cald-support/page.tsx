@@ -3,27 +3,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
-import { fetchUsers, fetchWorkersWithProfile } from '@/redux/slices/usersSlice';
+import { fetchWorkersWithProfile } from '@/redux/slices/usersSlice';
 
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger
-} from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     Avatar,
     AvatarFallback,
-    AvatarImage
+    AvatarImage,
 } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -33,10 +26,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Users, MapPin, Languages, X, ChevronDown } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Languages, ChevronDown, BadgeCheck, MapPin } from 'lucide-react';
+import WorkerCard from '../workers/WorkerCard';
 
-// Haversine distance formula
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -55,6 +54,56 @@ function formatDistance(km: number): string {
     return `${Math.round(km)}km away`;
 }
 
+// ─── map sub-components ───────────────────────────────────────────────────────
+
+function FocusWorker({ worker }: { worker: any }) {
+    const map = useMap();
+    useEffect(() => {
+        if (worker?.coords) {
+            map.flyTo(worker.coords as [number, number], 14, { duration: 1.2 });
+        }
+    }, [worker, map]);
+    return null;
+}
+
+// ─── static pieces (outside component) ───────────────────────────────────────
+
+const WorkerPopup = ({
+    worker,
+    clientCoords,
+}: {
+    worker: any;
+    clientCoords: [number, number] | null;
+}) => (
+    <div className="flex flex-row items-center gap-2 md:gap-3">
+        <Avatar className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10">
+            <AvatarImage src={worker.avatar} />
+            <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
+        </Avatar>
+        <div>
+            <strong className="flex flex-row mb-0.5 items-center">
+                {worker.firstName} {worker.lastName}
+                {worker.approved && (
+                    <BadgeCheck className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1" />
+                )}
+            </strong>
+            <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">
+                {worker.address?.line1}, {worker.address?.state}, {worker.address?.postalCode}
+            </span>
+            {clientCoords && worker.coords && (
+                <div className="text-[10px] md:text-[11px] lg:text-xs text-blue-500 mt-0.5">
+                    {formatDistance(getDistanceKm(
+                        clientCoords[0], clientCoords[1],
+                        worker.coords[0], worker.coords[1]
+                    ))}
+                </div>
+            )}
+        </div>
+    </div>
+);
+
+// ─── constants ────────────────────────────────────────────────────────────────
+
 const LANGUAGE_OPTIONS = [
     'English', 'Mandarin', 'Arabic', 'Vietnamese', 'Cantonese',
     'Greek', 'Italian', 'Hindi', 'Punjabi', 'Spanish',
@@ -62,28 +111,105 @@ const LANGUAGE_OPTIONS = [
     'Nepali', 'Tamil', 'Sinhalese', 'French', 'Portuguese',
 ];
 
+// ─── main component ───────────────────────────────────────────────────────────
+
 export default function CALDSupportPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: workers, loading } = useSelector((state: RootState) => state.users);
 
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+    const [workerType, setWorkerType] = useState('all');
+    const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
+    const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
+    const [isClient, setIsClient] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
-    const router = useRouter();
+    // null = dialog closed; worker object = dialog open, focused on that worker
+    const [mapDialogWorker, setMapDialogWorker] = useState<any>(null);
 
+    useEffect(() => { setIsClient(true); }, []);
 
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 900);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    useEffect(() => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => setClientCoords([pos.coords.latitude, pos.coords.longitude]),
+            () => setClientCoords(null)
+        );
+    }, []);
 
     useEffect(() => {
         dispatch(fetchWorkersWithProfile({
             page: 1,
             limit: 50,
-            ...(selectedLanguages.length > 0 && {
-                languages: selectedLanguages.join(","),
-            }),
+            ...(selectedLanguages.length > 0 && { languages: selectedLanguages.join(',') }),
         }));
     }, [dispatch, selectedLanguages]);
 
-    // Geocode worker addresses
+    // Geocode all worker addresses
+    useEffect(() => {
+        if (workers.length === 0) return;
+        const fetchCoords = async () => {
+            const updatedWorkers = await Promise.all(
+                workers.map(async (worker) => {
+                    if (!worker.address) return worker;
+                    const fullAddress = `${worker.address.line1}, ${worker.address.line2 || ''}, ${worker.address.state} ${worker.address.postalCode}, Australia`;
+                    const normalizedAddress = fullAddress.replace(/\s+/g, ' ').trim();
+                    try {
+                        const res = await fetch(
+                            `${process.env.NEXT_PUBLIC_API_URL}location/geocode?address=${encodeURIComponent(normalizedAddress)}`
+                        );
+                        const coords = await res.json();
+                        return {
+                            ...worker,
+                            coords: coords?.lat && coords?.lon
+                                ? [Number(coords.lat), Number(coords.lon)]
+                                : undefined,
+                        };
+                    } catch {
+                        return worker;
+                    }
+                })
+            );
+            setWorkersWithCoords(updatedWorkers);
+        };
+        fetchCoords();
+    }, [workers]);
 
+    // If the dialog is open but geocoding wasn't done yet when it opened,
+    // update the focused worker object once coords arrive
+    useEffect(() => {
+        if (!mapDialogWorker) return;
+        const updated = workersWithCoords.find(w => w._id === mapDialogWorker._id);
+        if (updated?.coords && !mapDialogWorker.coords) {
+            setMapDialogWorker(updated);
+        }
+    }, [workersWithCoords]);
+
+    const workerIcon = useMemo(() => new L.Icon({
+        iconUrl: '/marker-icon-2xa.png',
+        iconRetinaUrl: '/marker-icon-2xa.png',
+        shadowUrl: '/marker-shadow.png',
+        iconSize: isMobile ? [22, 34] : [32, 48],
+        iconAnchor: isMobile ? [11, 34] : [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: isMobile ? [30, 30] : [41, 41],
+    }), [isMobile]);
+
+    const ndisIcon = useMemo(() => new L.Icon({
+        iconUrl: '/marker-icon-2xb.png',
+        iconRetinaUrl: '/marker-icon-2xb.png',
+        shadowUrl: '/marker-shadow.png',
+        iconSize: isMobile ? [22, 34] : [31, 50],
+        iconAnchor: isMobile ? [11, 34] : [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: isMobile ? [30, 30] : [41, 41],
+    }), [isMobile]);
 
     const toggleLanguage = (lang: string) => {
         setSelectedLanguages(prev =>
@@ -91,191 +217,196 @@ export default function CALDSupportPage() {
         );
     };
 
-    const clearLanguages = () => setSelectedLanguages([]);
+    const filteredWorkers = workers.filter(worker => {
+        if (workerType === 'ndis') return worker.isNdisProvider;
+        if (workerType === 'individual') return !worker.isNdisProvider;
+        return true;
+    });
 
+    // Always use the geocoded version for the dialog (has coords)
+    const dialogWorker = mapDialogWorker
+        ? (workersWithCoords.find(w => w._id === mapDialogWorker._id) ?? mapDialogWorker)
+        : null;
+
+    const handleViewMap = (worker: any) => {
+        // Prefer the geocoded version immediately if available
+        const geocoded = workersWithCoords.find(w => w._id === worker._id);
+        setMapDialogWorker(geocoded ?? worker);
+    };
 
     return (
         <div className="space-y-5">
             <div>
-                <h1 className="text-xl font-bold tracking-tight">CALD Support Workers</h1>
-                <p className="text-muted-foreground">
+                <h1 className="md:text-lg text-base lg:text-xl font-bold tracking-tight">CALD Support Workers</h1>
+                <p className="text-muted-foreground lg:text-base md:text-sm text-xs">
                     Find support workers from culturally and linguistically diverse backgrounds.
                 </p>
             </div>
 
-
-
             <div className="space-y-3">
 
-                {/* Language filter toolbar */}
+                {/* Toolbar */}
                 <div className="flex items-center justify-between gap-2">
-                    <div className='font-semibold text-black'>Support Workers List</div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1">
-                                <Languages className="h-4 w-4" />
-                                Languages
-                                {selectedLanguages.length > 0 && (
-                                    <Badge className="ml-1 h-5 px-1.5 text-xs bg-primary text-primary-foreground">
-                                        {selectedLanguages.length}
-                                    </Badge>
-                                )}
-                                <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52 max-h-72 overflow-y-auto">
-                            <DropdownMenuLabel>Filter by language</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {LANGUAGE_OPTIONS.map(lang => (
-                                <DropdownMenuCheckboxItem
-                                    key={lang}
-                                    checked={selectedLanguages.includes(lang)}
-                                    onCheckedChange={() => toggleLanguage(lang)}
-                                >
-                                    {lang}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="font-semibold text-black">Support Workers List</div>
+                    <div className="flex flex-row gap-4">
+                        <Select value={workerType} onValueChange={setWorkerType}>
+                            <SelectTrigger className="md:w-[150px] w-[115px] lg:w-[180px] h-8 text-xs">
+                                <SelectValue placeholder="Filter workers" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Workers</SelectItem>
+                                <SelectItem value="ndis">NDIS Providers</SelectItem>
+                                <SelectItem value="individual">Individual Workers</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-1">
+                                    <Languages className="h-4 w-4" />
+                                    Languages
+                                    {selectedLanguages.length > 0 && (
+                                        <Badge className="ml-1 h-5 px-1.5 text-xs bg-primary text-primary-foreground">
+                                            {selectedLanguages.length}
+                                        </Badge>
+                                    )}
+                                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52 max-h-72 overflow-y-auto">
+                                <DropdownMenuLabel>Filter by language</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {LANGUAGE_OPTIONS.map(lang => (
+                                    <DropdownMenuCheckboxItem
+                                        key={lang}
+                                        checked={selectedLanguages.includes(lang)}
+                                        onCheckedChange={() => toggleLanguage(lang)}
+                                    >
+                                        {lang}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
 
                 {/* Result count */}
                 {!loading && (
                     <p className="text-xs text-muted-foreground">
-                        Showing {workers.length} worker{workers.length !== 1 ? 's' : ''}
+                        Showing {filteredWorkers.length} worker{filteredWorkers.length !== 1 ? 's' : ''}
                         {selectedLanguages.length > 0 && ` speaking ${selectedLanguages.join(', ')}`}
                     </p>
                 )}
 
-                {/* List */}
+                {/* Worker cards */}
                 <div className="grid md:grid-cols-2 gap-4">
                     {loading && <div>Loading workers...</div>}
 
-                    {!loading && workers.length === 0 && (
+                    {!loading && filteredWorkers.length === 0 && (
                         <div className="col-span-2 text-center py-10 text-muted-foreground">
                             <Languages className="h-8 w-8 mx-auto mb-2 opacity-40" />
                             <p>No workers found{selectedLanguages.length > 0 && ` speaking ${selectedLanguages.join(', ')}`}</p>
                         </div>
                     )}
 
-                    {workers.map(worker => {
-                        const age = worker.dateOfBirth ? (() => {
-                            const dob = new Date(worker.dateOfBirth);
-                            const today = new Date();
-                            let years = today.getFullYear() - dob.getFullYear();
-                            const m = today.getMonth() - dob.getMonth();
-                            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) years--;
-                            return years > 0 ? years : null;
-                        })() : null;
-
-                        const joinedDate = worker.createdAt
-                            ? new Date(worker.createdAt).toLocaleDateString()
-                            : null;
-
-                        const location = worker.address?.state
-                            || worker.address?.line1
-                            || worker.timezone?.split('/')[1]
-                            || null;
-
-
-
+                    {filteredWorkers.map(worker => {
+                        const workerWithCoord = workersWithCoords.find(w => w._id === worker._id);
                         return (
-                            <Card key={worker._id} className="hover:shadow-md transition-shadow">
-                                <CardHeader className="py-1">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex gap-3 items-center">
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarImage src={worker.avatar} />
-                                                <AvatarFallback>
-                                                    {worker.firstName?.[0]}{worker.lastName?.[0]}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <CardTitle className="text-sm font-semibold">
-                                                    {worker.firstName} {worker.lastName}
-                                                </CardTitle>
-                                                <CardDescription className="text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
-                                                    {location && (
-                                                        <>
-                                                            <MapPin className="h-3 w-3 shrink-0" />
-                                                            <span>{location}</span>
-                                                        </>
-                                                    )}
-
-                                                </CardDescription>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-end gap-1.5">
-                                            <Badge
-                                                className={`text-xs font-semibold px-2 py-1 rounded-full ${worker.approved
-                                                    ? 'bg-green-100 text-green-600'
-                                                    : 'bg-yellow-100 text-yellow-600'
-                                                    }`}
-                                            >
-                                                {worker.approved ? 'Approved' : 'Pending'}
-                                            </Badge>
-                                            {worker.isVerified && (
-                                                <Badge variant="outline" className="text-xs px-2 py-0.5 border-green-500 text-green-600">
-                                                    Verified
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent className="pt-0 pb-2 space-y-1 text-xs text-muted-foreground">
-                                    <div className="flex flex-wrap gap-x-3">
-                                        <span>Role: <span className="text-foreground">{worker.role}</span></span>
-                                        {age !== null && <span>Age: <span className="text-foreground">{age}</span></span>}
-                                        {joinedDate && <span>Joined: <span className="text-foreground">{joinedDate}</span></span>}
-                                    </div>
-
-                                    {/* Languages spoken */}
-                                    {Array.isArray(worker.languages) && worker.languages.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 pt-1">
-                                            {worker.languages.map((lang: string) => (
-                                                <Badge
-                                                    key={lang}
-                                                    variant="secondary"
-                                                    className={`text-xs px-2 py-0 ${selectedLanguages.includes(lang)
-                                                        ? 'bg-primary/10 text-primary border border-primary/20'
-                                                        : ''
-                                                        }`}
-                                                >
-                                                    {lang}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {worker.phoneNumber && (
-                                        <div className="mt-1">
-                                            Phone: <span className="text-foreground">{worker.phoneNumber}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="flex gap-2 pt-1 mt-2">
-                                        <Button
-                                            onClick={() => router.push(`/profile/${worker._id}`)}
-                                            size="sm"
-                                            className="h-8 text-xs flex-1"
-                                        >
-                                            View Profile
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <WorkerCard
+                                key={worker._id}
+                                worker={worker}
+                                clientCoords={clientCoords}
+                                workerCoords={workerWithCoord}
+                                onViewMap={() => handleViewMap(worker)}
+                            />
                         );
                     })}
                 </div>
             </div>
 
-            {/* <div className="text-center py-12 text-muted-foreground">
-                        <Users className="h-10 w-10 mx-auto mb-3" />
-                        No workers yet
-                    </div> */}
+            {/* ─── Map Dialog ───────────────────────────────────────────────── */}
+            <Dialog
+                open={!!mapDialogWorker}
+                onOpenChange={(open) => { if (!open) setMapDialogWorker(null); }}
+            >
+                <DialogContent className="max-w-2xl w-full p-0 overflow-hidden gap-0">
 
+                    {/* Header */}
+                    <DialogHeader className="px-4 pt-4 pb-3 border-b">
+                        <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
+                            <Avatar className="h-7 w-7 md:h-8 md:w-8">
+                                <AvatarImage src={dialogWorker?.avatar} />
+                                <AvatarFallback>
+                                    {dialogWorker?.firstName?.[0]}{dialogWorker?.lastName?.[0]}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span>{dialogWorker?.firstName} {dialogWorker?.lastName}</span>
+                            {dialogWorker?.approved && (
+                                <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
+                            )}
+                            {dialogWorker?.address && (
+                                <span className="text-xs text-muted-foreground font-normal flex items-center gap-1 ml-1">
+                                    <MapPin className="h-3 w-3 shrink-0" />
+                                    {dialogWorker.address.state}, {dialogWorker.address.postalCode}
+                                </span>
+                            )}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {/* Map body */}
+                    <div className="w-full h-[320px] md:h-[420px] relative">
+                        {isClient && (
+                            !dialogWorker?.coords ? (
+                                // Geocoding still in progress
+                                <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-sm">
+                                    <div className="text-center space-y-1">
+                                        <MapPin className="h-6 w-6 mx-auto animate-pulse" />
+                                        <p>Locating worker on map…</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <MapContainer
+                                    center={dialogWorker.coords as [number, number]}
+                                    zoom={13}
+                                    className="w-full h-full"
+                                    // key forces a full remount when switching between workers
+                                    key={dialogWorker._id}
+                                >
+                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                                    <Marker
+                                        position={dialogWorker.coords as [number, number]}
+                                        icon={dialogWorker.isNdisProvider ? ndisIcon : workerIcon}
+                                        ref={(ref) => { if (ref) ref.openPopup(); }}
+                                    >
+                                        <Popup>
+                                            <WorkerPopup worker={dialogWorker} clientCoords={clientCoords} />
+                                        </Popup>
+                                    </Marker>
+
+                                    {/* Fly to the focused worker */}
+                                    <FocusWorker worker={dialogWorker} />
+                                </MapContainer>
+                            )
+                        )}
+                    </div>
+
+                    {/* Footer distance strip */}
+                    {dialogWorker?.coords && clientCoords && (
+                        <div className="px-4 py-2 border-t bg-muted/40 text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-blue-500 shrink-0" />
+                            <span className="text-blue-500 font-medium">
+                                {formatDistance(getDistanceKm(
+                                    clientCoords[0], clientCoords[1],
+                                    dialogWorker.coords[0], dialogWorker.coords[1]
+                                ))}
+                            </span>
+                            <span className="ml-1">from your location</span>
+                        </div>
+                    )}
+
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

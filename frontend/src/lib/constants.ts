@@ -56,7 +56,11 @@ export const NAV_ITEMS = {
     { label: "Users", href: "/admin/users", icon: Users },
     { label: "Agreements", href: "/admin/agreements", icon: Shield },
     { label: "Invoices", href: "/admin/invoices", icon: FileText },
-    { label: "Messages", href: "/admin/messages", icon: MessageSquare },
+    {
+      label: "Messages",
+      href: "/admin/messages",
+      icon: MessageSquare,
+    },
     { label: "Settings", href: "/admin/settings", icon: Settings },
     // {label :' Services', href:'/admin/services', icon:Briefcase},
   ],

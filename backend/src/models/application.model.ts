@@ -41,6 +41,10 @@ const applicationSchema = new Schema(
       type: String,
       required: true,
     },
+    hourlyRate: {
+      type: String,
+      required: true,
+    },
     availability: [sessionSchema],
   },
   { timestamps: true },

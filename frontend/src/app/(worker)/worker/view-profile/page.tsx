@@ -14,6 +14,9 @@ import {
     ShieldCheck,
     Activity,
     Globe,
+    Mail,
+    Phone,
+    MapPinCheckInside,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -43,6 +46,51 @@ export default function PublicProfilePage() {
     };
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    const firstName =
+        user?.firstName ?? '';
+
+    const lastName =
+        user?.lastName ?? '';
+
+    const fullName =
+        `${firstName} ${lastName}`.trim() ||
+        'Unknown user';
+
+    const bio =
+        profile?.personalDetails?.bio ?? '';
+
+    const services =
+        profile?.services ?? [];
+
+    const rates =
+        profile?.rates ?? [];
+
+    const availability =
+        profile?.availability ?? {};
+
+    const workHistory =
+        profile?.workHistory ?? [];
+
+    const education =
+        profile?.educationAndTraining ?? [];
+
+    const experience =
+        profile?.experienceSummary ?? {};
+
+    const address = user?.address
+        ? `${user?.address?.line1}, ${user?.address?.line2 ? `${user?.address?.line2}, ` : ''}${user?.address?.state}, ${user?.address?.postalCode}`
+        : 'No address provided';
+
+    const languages = [
+        ...(profile?.languages?.firstLanguages ?? []),
+        ...(profile?.languages?.secondLanguages ?? [])
+    ];
+
+    const aboutMe = profile?.aboutMe ?? {};
+
+    const interests = profile?.interests ?? [];
+
 
     return (
         <div className="min-h-screen bg-background">
@@ -75,20 +123,48 @@ export default function PublicProfilePage() {
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                             <h1 className="md:text-2xl text-[22px] lg:text-3xl font-bold text-foreground">{user.firstName} {user.lastName}</h1>
                             <div className="flex gap-2">
+
+
+                                {user?.approved && (
+
+                                    <Badge className="bg-green-100 border-2 border-green-100 text-green-700">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Approved
+                                    </Badge>
+
+                                )}
+
+
                                 {user.isVerified && (
                                     <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200  dark:text-green-400 dark:border-green-800">
                                         <CheckCircle className="h-3 w-3 mr-1" />
                                         Verified
                                     </Badge>
                                 )}
-                                <Badge variant="outline">Worker</Badge>
                             </div>
                         </div>
-                        {profile?.experienceSummary?.disability?.description ? (
-                            <p className="text-[15px] md:text-base lg:text-lg text-muted-foreground">
-                                {profile.experienceSummary.disability.description}
+                        <div className='flex items-center gap-2 md:text-[13px] text-xs lg:text-sm text-muted-foreground'>
+                            <Mail className='h-3.5 w-3.5 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5' />
+                            {user?.email}
+                        </div>
+                        <div className='flex items-center gap-2 md:text-[13px] text-xs lg:text-sm text-muted-foreground'>
+                            <Phone className='h-3.5 w-3.5 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5' />
+                            {user?.phoneNumber ? user?.phoneNumber : 'No phone number provided'}
+                        </div>
+
+                        <div className='flex flex-row items-center gap-1 md:text-[13px] text-xs lg:text-sm text-muted-foreground'>
+                            <h2>Gender :</h2>
+                            <p className="text-gray-600 capitalize">
+                                {profile?.gender}
                             </p>
-                        ) : null}
+                        </div>
+                        <div className='flex flex-row items-center gap-3'>
+                            <p className='border-2 border-indigo-400 text-indigo-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>Worker</p>
+
+
+                            <p className='border-2 border-blue-400 text-blue-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>{user.isNdisProvider ? "NDIS Provider" : "Individual Suport Worker"}</p>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -96,16 +172,178 @@ export default function PublicProfilePage() {
             {/* Page Body */}
             <div className="max-w-7xl mx-auto">
                 {/* About */}
-                <div className="p-6 md:p-8 border-b border-border">
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-semibold text-foreground">About {user.firstName}</h2>
-                        {profile?.personalDetails?.bio ? (
-                            <p className="text-sm text-muted-foreground leading-relaxed max-w-4xl">
-                                {profile.personalDetails.bio}
+                <div className="p-6 border-b">
+
+                    <h2 className="md:text-[17px] lg:text-xl font-semibold mb-2">
+
+                        About {firstName || 'worker'}
+
+                    </h2>
+
+                    {bio && (
+
+                        <p className="lg:text-sm md:text-[13px] text-xs text-muted-foreground">
+                            {bio}
+                        </p>
+
+                    )}
+                    {address && (
+                        <div className="flex items-center gap-2 mt-1">
+                            <MapPinCheckInside className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4.5 lg:w-4.5 text-green-500" />
+                            <p className="lg:text-sm md:text-[13px] text-xs text-gray-600">
+
+                                {address}
                             </p>
+                        </div>
+                    )}
+
+
+                    <div className="mt-4">
+                        <h3 className="md:text-[15px] text-sm lg:text-base font-semibold mb-2">
+                            Languages
+                        </h3>
+
+                        {languages?.length ? (
+
+                            <div className="flex flex-wrap gap-2">
+
+                                {languages?.map((lang: string, i: number) => (
+                                    <Badge key={i} className='border-2 border-blue-500 text-blue-500'>
+
+                                        {lang}
+
+                                    </Badge>
+                                ))}
+
+                            </div>
+
                         ) : (
-                            <p className="text-sm text-muted-foreground">No bio provided.</p>
+
+                            <p className="text-muted-foreground">
+
+                                No languages listed
+
+                            </p>
+
                         )}
+
+                    </div>
+
+                    <section className="mt-4">
+
+                        <h3 className="md:text-[15px] text-sm lg:text-base font-semibold mb-2">
+
+                            About Me
+
+                        </h3>
+
+                        {aboutMe?.nonSmoker ||
+                            aboutMe?.petFriendly ||
+                            aboutMe?.personality ? (
+
+                            <div className="flex flex-wrap gap-2">
+
+                                {aboutMe?.nonSmoker && (
+                                    <Badge className='border-2 border-red-500 text-red-600'>
+                                        Non-smoker
+                                    </Badge>
+                                )}
+
+                                {aboutMe?.petFriendly && (
+
+                                    <Badge className='border-2 border-green-500 text-green-600'>
+
+                                        Pet friendly
+
+                                    </Badge>
+
+                                )}
+
+                                {aboutMe?.personality && (
+
+                                    <Badge className='border-2 border-cyan-500 text-cyan-600'>
+
+                                        {aboutMe?.personality
+                                            ?.replace(/^./,
+                                                (c: any) => c.toUpperCase()
+                                            )}
+
+                                    </Badge>
+
+                                )}
+
+                            </div>
+
+                        ) : (
+
+                            <p className="text-muted-foreground">
+
+                                No details provided
+
+                            </p>
+
+                        )}
+
+                    </section>
+
+                    <div className="mt-4">
+                        <h3 className="md:text-[15px] text-sm lg:text-base font-semibold mb-2">
+                            Services
+                        </h3>
+                        {services?.length ? (
+
+                            <div className="flex flex-wrap gap-2">
+
+                                {services?.map((service: string, i: number) => (
+                                    <Badge key={i} className=' bg-gray-200 py-1 px-2 rounded-sm sahdow-md text-gray-700'>
+
+                                        {service}
+
+                                    </Badge>
+                                ))}
+
+                            </div>
+
+                        ) : (
+
+                            <p className="text-muted-foreground">
+
+                                No languages listed
+
+                            </p>
+
+                        )}
+
+                    </div>
+
+                    <div className="mt-4">
+                        <h3 className="md:text-[15px] text-sm lg:text-base font-semibold mb-2">
+                            Interests
+                        </h3>
+                        {interests?.length ? (
+
+                            <div className="flex flex-wrap gap-2">
+
+                                {interests?.map((interest: string, i: number) => (
+                                    <Badge key={i} className=' bg-gray-200 py-1 px-2 rounded-sm sahdow-md text-gray-700'>
+
+                                        {interest}
+
+                                    </Badge>
+                                ))}
+
+                            </div>
+
+                        ) : (
+
+                            <p className="text-muted-foreground">
+
+                                No languages listed
+
+                            </p>
+
+                        )}
+
                     </div>
                 </div>
 
@@ -115,9 +353,9 @@ export default function PublicProfilePage() {
                         {/* Preferred Hours */}
                         <section>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-foreground">Preferred hours</h3>
+                                <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground">Preferred hours</h3>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                            <p className="lg:text-sm md:text-[13px] text-xs text-muted-foreground mb-4 leading-relaxed">
                                 Support sessions do not need to fill each time slot completely.
                             </p>
                             {profile?.updatedAt && (
@@ -152,21 +390,21 @@ export default function PublicProfilePage() {
                         </section>
 
                         {/* Indicative Rates */}
-                        <section className="space-y-4 mt-8">
-                            <h3 className="text-lg font-semibold text-foreground">Indicative rates</h3>
+                        <section className="space-y-4 mt-6">
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground">Indicative rates</h3>
                             <div className="space-y-4">
                                 {profile?.freeMeetAndGreet ? (
                                     <div className="flex items-center justify-between py-2">
-                                        <span className="text-sm font-medium text-foreground">Meet and greet</span>
-                                        <span className="text-lg font-semibold text-green-600 dark:text-green-400">Free</span>
+                                        <span className="lg:text-sm md:text-[13px] text-xs font-medium text-foreground">Meet and greet</span>
+                                        <span className="lg:text-lg md:text-[16px] text-sm font-semibold text-green-600 dark:text-green-400">Free</span>
                                     </div>
                                 ) : null}
                                 {profile?.rates && profile.rates.length > 0 ? (
                                     <div className="grid grid-cols-1 gap-2">
                                         {profile.rates.map((r: any, i: number) => (
-                                            <div key={r._id ?? i} className="flex items-center justify-between rounded-md p-3 border border-border bg-muted">
-                                                <div className="text-sm font-medium text-foreground">{r.name}</div>
-                                                <div className="text-base font-semibold text-foreground">${r.rate}</div>
+                                            <div key={r._id ?? i} className="flex items-center justify-between rounded-md md:p-2.5 p-2 lg:p-3 border border-border lg:text-base md:text-[13px] text-xs bg-muted">
+                                                <div className=" font-medium text-foreground">{r.name}</div>
+                                                <div className=" font-semibold text-foreground">${r.rate}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -178,8 +416,8 @@ export default function PublicProfilePage() {
 
                         {/* Verification and Safeguards */}
                         <section className="mt-8">
-                            <h3 className="text-lg font-semibold text-foreground mb-3">Verification and safeguards</h3>
-                            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground mb-2">Verification and safeguards</h3>
+                            <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground mb-5 leading-relaxed">
                                 We ensure every support worker is checked and verified to provide a trusted and safe experience.
                             </p>
                             <div className="space-y-4">
@@ -210,7 +448,7 @@ export default function PublicProfilePage() {
                                         fileUrl: undefined,
                                     },
                                 ].map((item, i) => (
-                                    <div key={i} className="flex items-start gap-3 p-3 rounded-md border border-border">
+                                    <div key={i} className="flex items-start gap-3 md:p-2.5 p-2 lg:p-3 rounded-md border border-border">
                                         <div className="mt-1">
                                             {item.status === 'check' ? (
                                                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -221,7 +459,7 @@ export default function PublicProfilePage() {
                                         <div className="space-y-1 w-full">
                                             <div className="flex items-center gap-3">
                                                 <item.icon className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-sm font-medium text-foreground">{item.label}</span>
+                                                <span className="lg:text-sm md:text-xs text-xs font-medium text-foreground">{item.label}</span>
                                                 {item.fileUrl && (
                                                     <div className="ml-auto">
                                                         {item.fileUrl.endsWith('.pdf') ? (
@@ -244,13 +482,13 @@ export default function PublicProfilePage() {
                     <div className="p-6 md:p-8 space-y-8">
                         {/* Services */}
                         <section>
-                            <h3 className="text-lg font-semibold text-foreground mb-4">Services offered</h3>
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground mb-4">Services offered</h3>
                             {profile?.services && profile.services.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {profile.services.map((service: string, i: number) => (
                                         <div key={i} className="flex items-center gap-2 p-3 border border-border rounded-md bg-muted">
                                             <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
-                                            <span className="text-sm font-medium text-foreground">{service}</span>
+                                            <span className="lg:text-sm md:text-[13px] text-xs font-medium text-foreground">{service}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -261,23 +499,23 @@ export default function PublicProfilePage() {
 
                         {/* Immunisation */}
                         <section>
-                            <h3 className="text-lg font-semibold text-foreground mb-3">Immunisation</h3>
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground mb-3">Immunisation</h3>
                             <div className="space-y-1 p-3 border border-border rounded-md bg-muted">
-                                <p className="text-sm font-medium text-foreground">COVID-19 vaccine - Self-declared</p>
+                                <p className="lg:text-sm md:text-[13px] text-xs font-medium text-foreground">COVID-19 vaccine - Self-declared</p>
                                 {profile?.immunisation?.statusConfirmed ? (
-                                    <p className="text-xs text-muted-foreground">{profile.immunisation.covidVaccineStatus || 'Declared'}</p>
+                                    <p className="lg:text-xs md:text-[11px] text-[10px] text-muted-foreground">{profile.immunisation.covidVaccineStatus || 'Declared'}</p>
                                 ) : null}
                             </div>
                         </section>
 
                         {/* Experience */}
                         <section>
-                            <h3 className="text-lg font-semibold text-foreground mb-4">Experience</h3>
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground mb-4">Experience</h3>
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Self-declared</p>
                                     {(profile?.experienceSummary?.disability?.experience?.length || profile?.experienceSummary?.disability?.description) && (
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                        <p className="md:text-[13px] text-xs lg:text-sm text-muted-foreground leading-relaxed">
                                             {user.firstName}
                                             {profile.experienceSummary.disability.experience?.length
                                                 ? ' has experience: ' + profile.experienceSummary.disability.experience.join(', ')
@@ -309,7 +547,7 @@ export default function PublicProfilePage() {
 
                         {/* Work and Education History */}
                         <section>
-                            <h3 className="text-lg font-semibold text-foreground mb-4">Work and education history</h3>
+                            <h3 className="lg:text-lg md:text-[17px] text-base font-semibold text-foreground mb-4">Work and education history</h3>
                             <div className="space-y-6">
                                 <div>
                                     <h4 className="text-sm font-semibold text-foreground mb-3">Work History</h4>

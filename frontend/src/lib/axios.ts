@@ -1,17 +1,20 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-// Create an Axios instance
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    silent?: boolean;
+  }
+}
+
 const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1/en/",
   timeout: 10000,
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    // In a real app, you would get the token from localStorage or Redux state
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (token) {
@@ -24,25 +27,21 @@ api.interceptors.request.use(
   },
 );
 
-// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toLowerCase() || "";
-    const url = response.config.url || "";
+    // const url = response.config.url || "";
 
-    console.log("axios url:", response.config.url); // ✅ add here temporarily
+    // console.log("axios url:", response.config.url);
 
-    // URLs that should never show a toast
-    const silentUrls = [
-      "/message/mark-read",
-      "/message/", // sending messages — socket handles the feedback
-    ];
+    // const silentUrls = ["/message/mark-read", "/message/", "/notifications/mark-read"];
 
-    const isSilent = silentUrls.some((u) => url.includes(u));
+    // const isSilent = silentUrls.some((u) => url.includes(u));
 
-    // Show success toast for successful mutations (POST, PUT, DELETE)
-
-    if (["post", "put", "patch", "delete"].includes(method) && !isSilent) {
+    if (
+      ["post", "put", "patch", "delete"].includes(method) &&
+      !response.config.silent
+    ) {
       const successMessage =
         response.data?.message || "Operation completed successfully";
       toast.success(successMessage);
@@ -50,10 +49,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Global error handling with toast notifications
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       const status = error.response.status;
       const errorMessage =
         error.response.data?.message ||
@@ -65,7 +61,6 @@ api.interceptors.response.use(
           toast.error(errorMessage || "Bad request");
           break;
         case 401: {
-          //show the dynamic message
           toast.error(errorMessage);
           // Avoid forcing a full-page redirect if we're already on the login page
           // or if the failing request is the login endpoint itself. In those cases,
@@ -106,11 +101,9 @@ api.interceptors.response.use(
           toast.error(errorMessage);
       }
     } else if (error.request) {
-      // The request was made but no response was received
       console.error("Network Error:", error.request);
       toast.error("Network error. Please check your connection.");
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error("Error:", error.message);
       toast.error(error.message || "An unexpected error occurred");
     }

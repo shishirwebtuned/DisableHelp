@@ -34,7 +34,7 @@ app.use(`${baseApi}/profile`, profileRoutes);
 // app.use(`${baseApi}/service`, serviceRoutes);
 app.use(`${baseApi}/admin`, adminRoutes);
 app.use(`${baseApi}/job`, jobRoutes);
-app.use(`${baseApi}/application`, applicationRoutes);
+// app.use(`${baseApi}/application`, applicationRoutes);
 app.use(`${baseApi}/agreement`, agreementRoutes);
 app.use(`${baseApi}/session`, sessionRoutes);
 // app.use(`${baseApi}/chat`, chatRoutes);

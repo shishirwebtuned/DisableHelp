@@ -69,7 +69,11 @@ const agreementSchema = new mongoose.Schema(
     },
 
     schedule: [scheduleSchema],
-
+    frequency: {
+      type: String,
+      required: true,
+      enum: ["weekly", "fortnightly", "monthly"],
+    },
     terminatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

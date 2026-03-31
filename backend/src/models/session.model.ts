@@ -25,12 +25,12 @@ const sessionSchema = new mongoose.Schema(
     date: { type: Date, required: true, index: true },
 
     startTime: {
-      type: Date,
+      type: String,
       required: true,
     },
 
     endTime: {
-      type: Date,
+      type: String,
       required: true,
     },
 
@@ -81,7 +81,7 @@ const sessionSchema = new mongoose.Schema(
 sessionSchema.index({ worker: 1, date: 1 });
 sessionSchema.index({ client: 1, date: 1 });
 sessionSchema.index({ agreement: 1 });
-sessionSchema.index({ worker: 1, startTime: 1 });
+// sessionSchema.index({ worker: 1, startTime: 1 });
 
 export const Session = mongoose.model("Session", sessionSchema);
 export type SessionDocument = mongoose.InferSchemaType<typeof sessionSchema>;

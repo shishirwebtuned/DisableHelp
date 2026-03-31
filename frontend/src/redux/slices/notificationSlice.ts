@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
+import { RootState } from "../store";
 
 export interface Notification {
   _id: string;
@@ -51,7 +52,11 @@ export const fetchUnreadCount = createAsyncThunk(
 export const markNotificationRead = createAsyncThunk(
   "notifications/markRead",
   async (notificationId: string) => {
-    const res = await api.patch(`/notifications/${notificationId}/read`);
+    const res = await api.patch(
+      `/notifications/${notificationId}/read`,
+      {},
+      { silent: true },
+    );
     return res.data.data.notification;
   },
 );
@@ -77,7 +82,9 @@ const notificationSlice = createSlice({
   reducers: {
     addNotification: (state, action) => {
       state.items.unshift(action.payload);
+      // if (!action.payload.read) {
       state.unreadCount += 1;
+      // }
     },
   },
   extraReducers: (builder) => {
@@ -120,3 +127,10 @@ const notificationSlice = createSlice({
 
 export const { addNotification } = notificationSlice.actions;
 export default notificationSlice.reducer;
+
+export const selectAllUnreadCount = (state: RootState) =>
+  state.notifications.items.filter((n) => !n.read).length;
+
+export const selectMessageUnreadCount = (state: RootState) =>
+  state.notifications.items.filter((n) => n.type === "message" && !n.read)
+    .length;

@@ -11,6 +11,7 @@ import {
     UserCheck, Briefcase, Timer, Layers, Search,
     CalendarDays, Send, CheckCircle2, Loader2,
     ArrowLeft, X,
+    UserRoundCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -207,6 +208,20 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     {/* Support Details */}
+
+                    <div className=''>
+                        <h3 className="text-base font-bold mb-3">Client Details</h3>
+                        <div className="flex flex-row justify-between items-center rounded-xl border p-4 space-y-1 font-medium lg:text-sm md:text-[13px] text-xs">
+                            <div>
+                                <p> Name: {job.client.firstName} {job.client.lastName} </p>
+                                <p> Email: {job.client.email} </p>
+                            </div>
+                            <div className='flex flex-col items-center'>
+                                <UserRoundCheck className='text-[#27b3eb]' /><Link href={`/profile/${job.client._id}`} className="text-[#27b3eb] hover:underline">View Profile</Link>
+                            </div>
+
+                        </div>
+                    </div>
                     <div>
                         <h3 className="text-base font-bold mb-3">Support Details</h3>
                         <div className="rounded-xl border p-4 space-y-4">

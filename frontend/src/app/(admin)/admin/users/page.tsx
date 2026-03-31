@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchUsers, updateUserStatus } from '@/redux/slices/usersSlice';
+import { fetchUsers } from '@/redux/slices/usersSlice';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ import {
 import Link from 'next/link';
 import Loading from '@/components/ui/loading';
 import Pagination from '@/components/ui/pagination';
+import { useRouter } from 'next/navigation';
 export default function AdminUsersPage() {
     const dispatch = useAppDispatch();
     const { items: users, loading, pagination } = useAppSelector((state) => state.users);
@@ -51,7 +52,7 @@ export default function AdminUsersPage() {
     const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-
+    const router = useRouter();
     // Reset to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -62,7 +63,7 @@ export default function AdminUsersPage() {
         const params: any = { page: currentPage, limit: 10 };
         if (searchTerm) params.search = searchTerm;
         if (roleFilter && roleFilter !== 'all') params.role = roleFilter;
-        if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
+        if (statusFilter && statusFilter !== 'all') params.approved = statusFilter;
 
         const t = setTimeout(() => {
             dispatch(fetchUsers(params));
@@ -71,9 +72,7 @@ export default function AdminUsersPage() {
         return () => clearTimeout(t);
     }, [dispatch, searchTerm, roleFilter, statusFilter, currentPage]);
 
-    const handleUpdateStatus = async (userId: string, newStatus: boolean) => {
-        await dispatch(updateUserStatus({ userId, status: newStatus }));
-    };
+
 
     // Normalize incoming user objects so the UI can handle different API shapes
     const normalizedUsers = users.map((u: any) => {
@@ -98,9 +97,8 @@ export default function AdminUsersPage() {
             lastName,
             email: u.email ?? '',
             role: u.role ?? 'unknown',
-            status: u.status ?? 'active',
             approved: typeof u.approved !== 'undefined' ? u.approved : (u.isVerified ?? false),
-            verification: u.verification ?? 'verified',
+            isVerified: typeof u.isVerified !== 'undefined' ? u.isVerified : (u.approved ?? false),
             joinedDate: joinedDate ?? new Date().toISOString(),
             avatar: u.avatar ?? null,
             raw: u,
@@ -198,10 +196,8 @@ export default function AdminUsersPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="true">Active</SelectItem>
+                                    <SelectItem value="true">Approved</SelectItem>
                                     <SelectItem value="false">Pending</SelectItem>
-                                    <SelectItem value="suspended">Suspended</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -218,7 +214,8 @@ export default function AdminUsersPage() {
                             <TableHead></TableHead>
                             <TableHead>Contact Info</TableHead>
                             <TableHead>Role</TableHead>
-                            <TableHead>Verification</TableHead>
+                            <TableHead>Approved</TableHead>
+                            <TableHead>Verified</TableHead>
                             <TableHead>Joined Date</TableHead>
                             <TableCell> View Details</TableCell>
                             <TableHead className="text-right">Actions</TableHead>
@@ -244,9 +241,15 @@ export default function AdminUsersPage() {
                                     <TableCell>
                                         <div className="flex items-center text-xs font-medium">
                                             {getVerificationIcon(user.approved)}
-                                            <span className="capitalize">{user.approved ? 'Verified' : 'Pending'}</span>
+                                            <span className="capitalize">{user.approved ? 'Approved' : 'Pending'}</span>
                                         </div>
                                     </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center text-xs font-medium">
+                                            <span className="capitalize">{user.isVerified ? 'Verified' : 'Not Verified'}</span>
+                                        </div>
+                                    </TableCell>
+
                                     <TableCell className="text-sm text-muted-foreground">
                                         {new Date(user.joinedDate).toLocaleDateString()}
                                     </TableCell>
@@ -266,33 +269,33 @@ export default function AdminUsersPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-[160px]">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <Link href={`/admin/profile/${user.id}`}>
+                                                <Link href={`/admin/users/${user.id}`}>
                                                     <DropdownMenuItem className="cursor-pointer">
 
                                                         <UserCheck className="mr-2 h-4 w-4" />
                                                         View Details
                                                     </DropdownMenuItem>
                                                 </Link>
-                                                <DropdownMenuItem className="cursor-pointer">
+                                                {/* <DropdownMenuItem className="cursor-pointer">
                                                     <Mail className="mr-2 h-4 w-4" />
                                                     Send Email
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> */}
                                                 <DropdownMenuSeparator />
-                                                {user.status === 'active' ? (
+                                                {user.approved ? (
                                                     <DropdownMenuItem
                                                         className="text-destructive cursor-pointer"
-                                                        onClick={() => handleUpdateStatus(user.id, true)}
+                                                        onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
                                                         <UserX className="mr-2 h-4 w-4" />
-                                                        Suspend User
+                                                        Remove Approval
                                                     </DropdownMenuItem>
                                                 ) : (
                                                     <DropdownMenuItem
                                                         className="text-green-600 cursor-pointer"
-                                                        onClick={() => handleUpdateStatus(user.id, false)}
+                                                        onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
                                                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                        Activate User
+                                                        Approve User
                                                     </DropdownMenuItem>
                                                 )}
                                             </DropdownMenuContent>

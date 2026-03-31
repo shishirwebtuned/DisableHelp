@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Trash2, Briefcase, DollarSign, MessageSquare, UserCheck, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,8 @@ import {
 } from '@/redux/slices/notificationSlice';
 import { getSocket } from '@/lib/socket';
 import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { Dropdown } from 'react-day-picker';
 
 const getIcon = (type: string) => {
     switch (type) {
@@ -51,13 +53,15 @@ export default function NotificationsCenter() {
         (s: RootState) => s.notifications
     );
 
-    // Fetch on mount
+    const [open, setOpen] = useState(false);
+
     useEffect(() => {
         dispatch(fetchNotifications());
     }, [dispatch]);
 
+    const router = useRouter();
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
@@ -115,6 +119,10 @@ export default function NotificationsCenter() {
                                         if (!notification.read) {
                                             dispatch(markNotificationRead(notification._id));
                                         }
+                                        if (notification.actionUrl) {
+                                            router.push(notification.actionUrl);
+                                        }
+                                        setOpen(false);
                                     }}
                                 >
                                     <div className="flex items-start gap-3">
@@ -157,12 +165,12 @@ export default function NotificationsCenter() {
                     )}
                 </ScrollArea>
 
-                <DropdownMenuSeparator />
-                <div className="px-4 py-2">
+                {/* <DropdownMenuSeparator /> */}
+                {/* <div className="px-4 py-2">
                     <Button variant="ghost" className="w-full text-sm" size="sm">
                         View All Notifications
                     </Button>
-                </div>
+                </div> */}
             </DropdownMenuContent>
         </DropdownMenu>
     );

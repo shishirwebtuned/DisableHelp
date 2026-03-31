@@ -13,7 +13,7 @@ export interface IClientProfile {
   receiveEventDeliveriesEmails: boolean;
   receivePlannedSessionReminderEmails: boolean;
 
-  isNdisManaged: boolean;
+  // isNdisManaged: boolean;
   emergencyContact?: {
     name?: string;
     phone?: string;
@@ -65,10 +65,10 @@ const clientProfileSchema = new Schema<IClientProfile>(
       default: true,
     },
 
-    isNdisManaged: {
-      type: Boolean,
-      default: false,
-    },
+    // isNdisManaged: {
+    //   type: Boolean,
+    //   default: false,
+    // },
     emergencyContact: {
       name: String,
       phone: String,

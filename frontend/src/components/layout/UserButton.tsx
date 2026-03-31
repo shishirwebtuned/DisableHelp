@@ -110,10 +110,10 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
                         <UserIcon className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
+                    {/* <DropdownMenuItem className="cursor-pointer">
                         <CreditCard className="mr-2 h-4 w-4" />
                         <span>Billing</span>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/${user.role}/settings`)}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
