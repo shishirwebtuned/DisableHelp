@@ -7,6 +7,7 @@ import {
   getApplicationById,
   getApplicationsByApplicantId,
   getApplicationsByJobId,
+  getMyApplications,
   rejectApplication,
 } from "../controllers/application.controller.js";
 
@@ -31,6 +32,8 @@ export const initApplicationRoutes = (io: any) => {
     clientOnly,
     rejectApplication(io),
   );
+  router.get("/my-application", protect, getMyApplications);
+
   router.get("/:applicationId", protect, getApplicationById);
 
   return router;

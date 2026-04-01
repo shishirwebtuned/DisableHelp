@@ -17,6 +17,7 @@ import chatReducer from "./slices/chatSlice";
 import messageReducer from "./slices/messageSlice";
 import activeConnectionsReducer from "./slices/activeConnectionsSlice";
 import notificationReducer from "./slices/notificationSlice";
+import paymentReducer from "./slices/paymentSlice";
 import { socketMiddleware } from "@/lib/socketMiddleware";
 
 export const store = configureStore({
@@ -39,6 +40,7 @@ export const store = configureStore({
     message: messageReducer,
     activeConnections: activeConnectionsReducer,
     notifications: notificationReducer,
+    payments: paymentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

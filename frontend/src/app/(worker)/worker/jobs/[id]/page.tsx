@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchJobs,applyToJobThunk } from '@/redux/slices/jobsSlice';
+import { fetchJobs, applyToJobThunk } from '@/redux/slices/jobsSlice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +77,7 @@ export default function JobDetailPage() {
             introduction: coverLetter,
             skills: '',
             availability: [],
+            hourlyRate: 0,
         }));
 
         setIsApplyDialogOpen(false);

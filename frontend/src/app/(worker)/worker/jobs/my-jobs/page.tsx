@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchMyApplications } from '@/redux/slices/applicationsSlice';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { fetchApplicationsByApplicantId } from '@/redux/slices/applicationsSlice';
 
 const APP_STATUS: Record<string, { label: string; icon: any; badge: string; card: string }> = {
     pending: {
@@ -53,12 +54,12 @@ export default function MyJobsPage() {
         myTotalAccepted,
         myTotalRejected,
     } = useAppSelector((state) => state.applications);
-const mee = useAppSelector((state) => state.auth.mee.user);
-console.log(mee._id)
+    const mee = useAppSelector((state) => state.auth.mee.user);
+    console.log(mee._id)
     const [page, setPage] = useState(1);
 
     useEffect(() => {
-        dispatch(fetchMyApplications({ userID: mee?._id, page, limit: LIMIT }));
+        dispatch(fetchApplicationsByApplicantId({ userID: mee?._id, page, limit: LIMIT }));
     }, [dispatch, page, mee]);
 
     return (

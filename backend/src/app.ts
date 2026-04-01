@@ -17,6 +17,7 @@ import messageRoutes from "./routes/message.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 
 import locationRoutes from "./routes/location.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use(`${baseApi}/session`, sessionRoutes);
 app.use(`${baseApi}/location`, locationRoutes);
 app.use(`${baseApi}/invoice`, invoiceRoutes);
 app.use(`${baseApi}/notifications`, notificationRoutes);
+app.use(`${baseApi}/payments`, paymentRoutes);
 
 // Error handler
 app.use(errorHandler);

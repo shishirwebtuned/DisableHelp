@@ -466,3 +466,50 @@ export const rejectApplication = (io: any) =>
       data: application,
     });
   });
+
+export const getMyApplications = catchAsync(async (req, res) => {
+  const applicantId = req.user.id;
+  const applicantRole = req.user.role;
+
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
+
+  if (applicantRole !== "worker") {
+    throw new AppError("Only workers can view their applications", 403);
+  }
+
+  const query = {
+    applicant: applicantId,
+    ...filter,
+  };
+
+  const applications = await Application.find(query)
+    .populate("job", "title startDate frequency")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  const total = await Application.countDocuments(query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: applications.length
+      ? "Applications retrieved successfully"
+      : "No applications found",
+
+    data: {
+      applications,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+  });
+});

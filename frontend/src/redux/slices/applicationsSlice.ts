@@ -24,7 +24,12 @@ export interface ApplicationSession {
 
 export interface Application {
   _id: string;
-  job: { _id: string; title: string };
+  job: {
+    _id: string;
+    title: string;
+    startDate?: string;
+    frequency?: string;
+  };
   applicant: ApplicationApplicant;
   status: "pending" | "accepted" | "rejected";
   introduction: string;
@@ -38,6 +43,13 @@ interface ApplicationsState {
   items: Application[];
   myItems: Application[];
   myLoading: boolean;
+
+  mySelfItems: Application[];
+  mySelfLoading: boolean;
+  mySelfTotal: number;
+  mySelfLimit: number;
+  mySelfTotalPages: number;
+
   loading: boolean;
   error: string | null;
   total: number;
@@ -54,6 +66,13 @@ const initialState: ApplicationsState = {
   items: [],
   myItems: [],
   myLoading: false,
+
+  mySelfItems: [],
+  mySelfLoading: false,
+  mySelfTotal: 0,
+  mySelfLimit: 0,
+  mySelfTotalPages: 1,
+
   loading: false,
   error: null,
   total: 0,
@@ -66,9 +85,8 @@ const initialState: ApplicationsState = {
   myTotalRejected: 0,
 };
 
-// Fetch the logged-in worker's own applications
-export const fetchMyApplications = createAsyncThunk(
-  "applications/fetchMyApplications",
+export const fetchApplicationsByApplicantId = createAsyncThunk(
+  "applications/fetchApplicationsByApplicantId",
   async (
     params?: { page?: number; limit?: number; userID?: string },
     { rejectWithValue }: any = {},
@@ -76,14 +94,19 @@ export const fetchMyApplications = createAsyncThunk(
     try {
       const page = params?.page ?? 1;
       const limit = params?.limit ?? 10;
+
       const response = await api.get(
         `application/applicant/${params?.userID}?page=${page}&limit=${limit}`,
       );
+
       const d = response.data.data;
+
       const items: Application[] = Array.isArray(d)
         ? d
         : (d?.applications ?? d ?? []);
+
       const pg = d?.pagination ?? {};
+
       return {
         items,
         total: pg.total ?? 0,
@@ -101,20 +124,57 @@ export const fetchMyApplications = createAsyncThunk(
   },
 );
 
-// Fetch all applications for a specific job
+export const fetchMyApplication = createAsyncThunk(
+  "applications/fetchMyApplication",
+  async (
+    params?: { page?: number; limit?: number; status?: string },
+    { rejectWithValue }: any = {},
+  ) => {
+    try {
+      const page = params?.page ?? 1;
+      const limit = params?.limit ?? 10;
+
+      let url = `application/my-application?page=${page}&limit=${limit}`;
+
+      if (params?.status) {
+        url += `&status=${params.status}`;
+      }
+
+      const response = await api.get(url);
+
+      const d = response.data.data;
+
+      return {
+        items: d?.applications ?? [],
+        total: d?.pagination?.total ?? 0,
+        limit: d?.pagination?.limit ?? limit,
+        totalPages: d?.pagination?.totalPages ?? 1,
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to fetch my applications",
+      );
+    }
+  },
+);
+
 export const fetchApplications = createAsyncThunk(
   "applications/fetchApplications",
   async (jobId?: string, { rejectWithValue }: any = {}) => {
     try {
       const url = jobId ? `application/job/${jobId}` : "application";
+
       const response = await api.get(url);
+
       const d = response.data.data;
-      // API returns { applications: [...], pagination: { total, limit, ... } }
+
       const items: Application[] = Array.isArray(d)
         ? d
         : (d?.applications ?? d ?? []);
+
       const total: number = d?.pagination?.total ?? d?.total ?? 0;
       const limit: number = d?.pagination?.limit ?? d?.limit ?? 0;
+
       return { items, total, limit };
     } catch (error: any) {
       return rejectWithValue(
@@ -131,6 +191,7 @@ export const acceptApplication = createAsyncThunk(
       await api.patch(`application/${applicationId}/accept`, {
         status: "accepted",
       });
+
       return applicationId;
     } catch (error: any) {
       return rejectWithValue(
@@ -147,6 +208,7 @@ export const rejectApplication = createAsyncThunk(
       await api.patch(`application/${applicationId}/reject`, {
         status: "rejected",
       });
+
       return applicationId;
     } catch (error: any) {
       return rejectWithValue(
@@ -162,29 +224,52 @@ const applicationsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+
       .addCase(fetchApplications.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchApplications.fulfilled, (state, action) => {
         state.loading = false;
         state.items = action.payload.items;
         state.total = action.payload.total;
         state.limit = action.payload.limit;
       })
+
       .addCase(fetchApplications.rejected, (state, action) => {
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to fetch applications";
       })
+
       .addCase(acceptApplication.fulfilled, (state, action) => {
-        const app = state.items.find((a) => a._id === action.payload);
-        if (app) app.status = "accepted";
+        const updateStatus = (list: Application[]) => {
+          const app = list.find((a) => a._id === action.payload);
+          if (app) app.status = "accepted";
+        };
+
+        updateStatus(state.items);
+        updateStatus(state.myItems);
+        updateStatus(state.mySelfItems);
       })
-      .addCase(fetchMyApplications.pending, (state) => {
+
+      .addCase(rejectApplication.fulfilled, (state, action) => {
+        const updateStatus = (list: Application[]) => {
+          const app = list.find((a) => a._id === action.payload);
+          if (app) app.status = "rejected";
+        };
+
+        updateStatus(state.items);
+        updateStatus(state.myItems);
+        updateStatus(state.mySelfItems);
+      })
+
+      .addCase(fetchApplicationsByApplicantId.pending, (state) => {
         state.myLoading = true;
       })
-      .addCase(fetchMyApplications.fulfilled, (state, action) => {
+
+      .addCase(fetchApplicationsByApplicantId.fulfilled, (state, action) => {
         state.myLoading = false;
         state.myItems = action.payload.items;
         state.myTotal = action.payload.total;
@@ -194,12 +279,27 @@ const applicationsSlice = createSlice({
         state.myTotalAccepted = action.payload.totalAccepted;
         state.myTotalRejected = action.payload.totalRejected;
       })
-      .addCase(fetchMyApplications.rejected, (state) => {
+
+      .addCase(fetchApplicationsByApplicantId.rejected, (state) => {
         state.myLoading = false;
       })
-      .addCase(rejectApplication.fulfilled, (state, action) => {
-        const app = state.items.find((a) => a._id === action.payload);
-        if (app) app.status = "rejected";
+
+      .addCase(fetchMyApplication.pending, (state) => {
+        state.mySelfLoading = true;
+        state.error = null;
+      })
+
+      .addCase(fetchMyApplication.fulfilled, (state, action) => {
+        state.mySelfLoading = false;
+        state.mySelfItems = action.payload.items;
+        state.mySelfTotal = action.payload.total;
+        state.mySelfLimit = action.payload.limit;
+        state.mySelfTotalPages = action.payload.totalPages;
+      })
+
+      .addCase(fetchMyApplication.rejected, (state, action) => {
+        state.mySelfLoading = false;
+        state.error = action.payload as string;
       });
   },
 });

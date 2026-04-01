@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchJobs } from '@/redux/slices/jobsSlice';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import type { Job } from '@/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-
+import { fetchMyApplication } from '@/redux/slices/applicationsSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DatePicker } from '@/components/ui/date-picker';
 /* ──────────────────────── helpers ──────────────────────── */
@@ -296,18 +296,29 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                     </div>
 
                     {/* Apply Button */}
+                    // Replace the Apply Button section:
                     <div className="pt-2">
-                        <Link href={`/worker/jobs/apply/${job._id}`}>
+                        {hasApplied ? (
                             <Button
-                                onClick={() => onApply(job._id)}
-                                className="w-full gap-2 bg-[#8ac6dd] hover:bg-[#72b5ce] text-white cursor-pointer"
+                                disabled
+                                className="w-full gap-2 bg-muted text-muted-foreground cursor-not-allowed"
                                 size="lg"
                             >
-                                <Send className="h-4.5 w-4.5" />
-                                Apply for this Job
+                                <CheckCircle2 className="h-4.5 w-4.5 text-green-500" />
+                                Already Applied
                             </Button>
-                        </Link>
-
+                        ) : (
+                            <Link href={`/worker/jobs/apply/${job._id}`}>
+                                <Button
+                                    onClick={() => onApply(job._id)}
+                                    className="w-full gap-2 bg-[#8ac6dd] hover:bg-[#72b5ce] text-white cursor-pointer"
+                                    size="lg"
+                                >
+                                    <Send className="h-4.5 w-4.5" />
+                                    Apply for this Job
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>
@@ -321,6 +332,9 @@ export default function WorkerJobsPage() {
     const dispatch = useAppDispatch();
     const myJobs = useAppSelector((state) => state.jobs.jobs);
     const jobsLoading = useAppSelector((state) => state.jobs.loading);
+
+    const mySelfItems = useAppSelector((state) => state.applications.mySelfItems);
+    const mySelfLoading = useAppSelector((state) => state.applications.mySelfLoading);
 
     const [selectedJob, setSelectedJob] = useState<any>(null);
     const [search, setSearch] = useState('');
@@ -405,6 +419,17 @@ export default function WorkerJobsPage() {
 
     const hasActiveFilters = statusFilter !== 'all' || !!hourlyRate || !!startDateFilter;
 
+    const appliedJobIds = useMemo(
+        () => new Set(mySelfItems.map((app) => app.job._id)),
+        [mySelfItems]
+    );
+
+    // Fetch on mount
+    useEffect(() => {
+        dispatch(fetchMyApplication({ page: 1, limit: 100 }));
+    }, [dispatch]);
+
+
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)]">
             {/* ── Row 1: Title + CTA ── */}
@@ -443,7 +468,7 @@ export default function WorkerJobsPage() {
                 </div>
 
                 {/* Hourly Rate */}
-                <div className="relative">
+                {/* <div className="relative">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">$</span>
                     <Input
                         type="number"
@@ -453,7 +478,7 @@ export default function WorkerJobsPage() {
                         onChange={(e) => setHourlyRate(e.target.value)}
                         className="h-9 w-[110px] text-sm pl-6"
                     />
-                </div>
+                </div> */}
 
                 {/* Start Date */}
                 <DatePicker
@@ -507,7 +532,7 @@ export default function WorkerJobsPage() {
                                         <JobCard
                                             key={job._id}
                                             job={job}
-                                            hasApplied={appliedJobs.has(job._id)}
+                                            hasApplied={appliedJobIds.has(job._id)}
                                             onClick={() => setSelectedJob(job)}
                                         />
                                     ))}
@@ -557,8 +582,9 @@ export default function WorkerJobsPage() {
                                             )}
                                         >
                                             <JobCard
+                                                key={job._id}
                                                 job={job}
-                                                hasApplied={appliedJobs.has(job._id)}
+                                                hasApplied={appliedJobIds.has(job._id)}
                                                 onClick={() => setSelectedJob(job)}
                                             />
                                         </div>
@@ -578,7 +604,7 @@ export default function WorkerJobsPage() {
                                         job={selectedJob}
                                         onBack={() => setSelectedJob(null)}
                                         onApply={openApplyDialog}
-                                        appliedJobs={appliedJobs}
+                                        appliedJobs={appliedJobIds}
                                         applyingJobId={applyingJobId}
                                     />
                                 </div>

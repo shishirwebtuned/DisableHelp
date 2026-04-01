@@ -28,11 +28,19 @@ import {
     DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import {
+    createPaymentOrder,
+    capturePayment,
+    fetchPaymentDue
+} from '@/redux/slices/paymentSlice';
+
 
 export default function WorkerAgreementsPage() {
     const dispatch = useAppDispatch();
     const { items: agreements, loading, total, totalPages, page: currentPageFromStore } = useAppSelector((state) => state.agreements);
+    const { paymentDue, approveLink, orderId } = useAppSelector((state) => state.payments);
 
+    const [paymentCompleted, setPaymentCompleted] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'expired' | 'rejected'>('all');
     const [currentPage, setCurrentPage] = useState<number>(currentPageFromStore || 1);
@@ -66,8 +74,17 @@ export default function WorkerAgreementsPage() {
 
     const handleAcceptTerms = async () => {
         if (!selectedTermsAgreementId) return;
+
+        if (!paymentCompleted && (paymentDue?.amountDue ?? 0) > 0) {
+            return;
+        }
         setAcceptingTerms(true);
-        await dispatch(updateAgreementStatus({ id: selectedTermsAgreementId, status: 'accepted' }));
+
+        await dispatch(updateAgreementStatus({
+            id: selectedTermsAgreementId,
+            status: 'accepted'
+        }));
+
         setAcceptingTerms(false);
         setTermsDialogOpen(false);
         setSelectedTermsAgreementId(null);
@@ -267,6 +284,13 @@ export default function WorkerAgreementsPage() {
 
                                                         setTermsDialogOpen(true);
 
+                                                        dispatch(fetchPaymentDue({
+                                                            workerId: typeof agreement.worker === "string"
+                                                                ? agreement.worker
+                                                                : agreement.worker._id,
+                                                            clientId: agreement.client._id
+                                                        }));
+
                                                     }}
                                                 >
                                                     <FileText className="w-3 h-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 mr-1.5" />
@@ -295,167 +319,179 @@ export default function WorkerAgreementsPage() {
                 />
             </div>
 
-            {/* Terms & Conditions Dialog */}
             <PayPalScriptProvider
- options={{
-   "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
-   currency: "USD"
- }}
->
-            <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
-                <DialogContent className="sm:max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>Terms & Conditions</DialogTitle>
-                        <DialogDescription>
-                            Please read the terms and conditions carefully before accepting.
-                        </DialogDescription>
-                    </DialogHeader>
+                options={{
+                    "clientId": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+                    currency: "AUD",
+                    intent: "capture"
+                }}
+            >
+                <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
+                    <DialogContent className="sm:max-w-3xl">
+                        <DialogHeader>
+                            <DialogTitle>Terms & Conditions</DialogTitle>
+                            <DialogDescription>
+                                Please read the terms and conditions carefully before accepting.
+                            </DialogDescription>
+                        </DialogHeader>
 
-                    <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground space-y-4">
+                        <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 px-4 py-3 md:text-[13px] text-xs lg:text-sm text-muted-foreground md:space-y-2.5 space-y-2 lg:space-y-3">
 
-    <p className="font-semibold text-foreground text-base">
-        Service Agreement Terms
-    </p>
+                            <p className="font-semibold text-foreground md:text-[15px] text-sm lg:text-base">
+                                Service Agreement Terms
+                            </p>
 
-    <p>
-        By accepting these terms, you agree to provide support services professionally
-        and according to this agreement.
-    </p>
+                            <p>
+                                By accepting these terms, you agree to provide support services professionally
+                                and according to this agreement.
+                            </p>
 
-    {/* PAYMENT PRIORITY SECTION */}
-    <div className="rounded-lg border-2 border-green-500 bg-green-50 p-5 space-y-4 shadow-sm">
+                            {/* PAYMENT PRIORITY SECTION */}
+                            <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4 space-y-3 shadow-sm">
 
-        <div className="text-center space-y-1">
+                                <div className="text-center space-y-1">
 
-            <h3 className="text-xl font-bold text-foreground">
-                Agreement Activation Fee
-            </h3>
+                                    <h3 className="lg:text-xl md:text-[19px] text-lg font-bold text-foreground">
+                                        Agreement Activation Fee
+                                    </h3>
 
-            <p className="text-muted-foreground">
-                Payment is required to activate this agreement
-            </p>
+                                    <p className="text-muted-foreground">
+                                        Payment is required to activate this agreement
+                                    </p>
 
-            <div className="text-4xl font-extrabold text-green-600">
-                $100
-            </div>
+                                    <div className="md:text-3xl text-2xl lg:text-4xl font-extrabold text-green-600">
+                                        $100
+                                    </div>
 
-            <p className="text-xs text-muted-foreground">
-                Secure payment via PayPal (Sandbox)
-            </p>
+                                    <p className="md:text-[11px] text-[10px] lg:text-xs text-muted-foreground">
+                                        Secure payment via PayPal (Sandbox)
+                                    </p>
 
-        </div>
+                                </div>
+                                {(paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted && (
+                                    <PayPalButtons
 
-        <PayPalButtons
+                                        createOrder={async () => {
 
-            createOrder={(data, actions) => {
+                                            const agreement = agreements.find(
+                                                a => a._id === selectedTermsAgreementId
+                                            );
 
-                return actions.order.create({
+                                            if (!agreement) return "";
 
-                    purchase_units: [
-                        {
-                            amount: {
-                                value: "100.00"
-                            }
-                        }
-                    ]
+                                            const workerId =
+                                                typeof agreement.worker === "string"
+                                                    ? agreement.worker
+                                                    : agreement.worker._id;
 
-                });
+                                            const res = await dispatch(
+                                                createPaymentOrder({
+                                                    workerId,
+                                                    clientId: agreement.client._id,
+                                                    paymentMethod: "paypal"
+                                                })
+                                            ).unwrap();
 
-            }}
+                                            return res.orderId;
 
-            onApprove={async (data, actions) => {
+                                        }}
 
-                const details = await actions.order?.capture();
+                                        onApprove={async (data) => {
 
-                await axios.post("/payments/paypal-success", {
+                                            const agreement = agreements.find(
+                                                a => a._id === selectedTermsAgreementId
+                                            );
 
-                    agreementId: selectedTermsAgreementId,
+                                            if (!agreement) return;
 
-                    orderId: data.orderID,
+                                            const workerId =
+                                                typeof agreement.worker === "string"
+                                                    ? agreement.worker
+                                                    : agreement.worker._id;
 
-                    details
+                                            await dispatch(
+                                                capturePayment({
+                                                    orderId: data.orderID,
+                                                    workerId,
+                                                    clientId: agreement.client._id,
+                                                    paymentMethod: "paypal"
+                                                })
+                                            );
 
-                });
+                                            setPaymentCompleted(true);
 
-                await dispatch(
-                    updateAgreementStatus({
-                        id: selectedTermsAgreementId,
-                        status: "active"
-                    })
-                );
+                                        }}
 
-                setTermsDialogOpen(false);
+                                        onError={(err) => {
+                                            console.log(err);
+                                        }}
 
-            }}
+                                        style={{
+                                            layout: "vertical",
+                                            color: "blue",
+                                            shape: "rect",
+                                            label: "pay"
+                                        }}
+                                    />
+                                )}
+                            </div>
 
-            onError={(err)=>{
-                console.log(err);
-            }}
+                            {/* IMPORTANT TERMS ONLY */}
+                            <div className="space-y-2 text-xs border-t pt-3">
 
-            style={{
-                layout:"vertical",
-                color:"blue",
-                shape:"rect",
-                label:"pay"
-            }}
+                                <p className="font-medium text-foreground">
+                                    Key Conditions:
+                                </p>
 
-        />
+                                <p>
+                                    <span className="font-medium text-foreground">Confidentiality:</span>
+                                    {" "}Client data must remain private.
+                                </p>
 
-    </div>
+                                <p>
+                                    <span className="font-medium text-foreground">Conduct:</span>
+                                    {" "}Professional behaviour is required.
+                                </p>
 
-    {/* IMPORTANT TERMS ONLY */}
-    <div className="space-y-2 text-xs border-t pt-3">
+                                <p>
+                                    <span className="font-medium text-foreground">Compliance:</span>
+                                    {" "}NDIS and safety regulations must be followed.
+                                </p>
 
-        <p className="font-medium text-foreground">
-            Key Conditions:
-        </p>
+                                {/* <p>
+                                    <span className="font-medium text-foreground">Insurance:</span>
+                                    {" "}Valid liability insurance required.
+                                </p> */}
 
-        <p>
-            <span className="font-medium text-foreground">Confidentiality:</span>
-            {" "}Client data must remain private.
-        </p>
+                            </div>
 
-        <p>
-            <span className="font-medium text-foreground">Conduct:</span>
-            {" "}Professional behaviour is required.
-        </p>
-
-        <p>
-            <span className="font-medium text-foreground">Compliance:</span>
-            {" "}NDIS and safety regulations must be followed.
-        </p>
-
-        <p>
-            <span className="font-medium text-foreground">Insurance:</span>
-            {" "}Valid liability insurance required.
-        </p>
-
-    </div>
-
-</div>
-
-                    <DialogFooter className="gap-2 pt-1">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setTermsDialogOpen(false)}
-                            disabled={acceptingTerms}
-                        >
-                            {viewOnlyTerms ? 'Close' : 'Cancel'}
-                        </Button>
-                        {!viewOnlyTerms && (
+                        </div>
+                        <DialogFooter className="gap-2 pt-1">
                             <Button
+                                variant="outline"
                                 size="sm"
-                                onClick={handleAcceptTerms}
-                                disabled={acceptingTerms}
-                            >
-                                <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                                {acceptingTerms ? 'Accepting...' : 'Pay & Accept'}
+                                onClick={() => setTermsDialogOpen(false)}
+                                disabled={
+                                    acceptingTerms ||
+
+                                    ((paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted)
+                                }                            >
+                                {viewOnlyTerms ? 'Close' : 'Cancel'}
                             </Button>
-                        )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            {!viewOnlyTerms && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleAcceptTerms}
+                                    disabled={acceptingTerms}
+                                    className={`${acceptingTerms ? 'cursor-not-allowed opacity-60' : ''}`}
+                                >
+                                    <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                                    {acceptingTerms ? 'Accepting...' : 'Accept'}
+                                </Button>
+                            )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </PayPalScriptProvider>
         </>
     );

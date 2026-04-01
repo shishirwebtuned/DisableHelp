@@ -132,8 +132,7 @@ export const getAllJobs = catchAsync(async (req, res) => {
 
   const filter = buildFilter(req.query, {
     searchFields: ["title", "frequency"],
-    exact: ["status"],
-    range: ["hourlyRate", "startDate"],
+    exact: ["status", "startDate"],
   });
 
   const jobs = await Job.find(filter)
