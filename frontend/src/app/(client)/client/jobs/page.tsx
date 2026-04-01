@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { deleteJobThunk, getJobByClient } from '@/redux/slices/jobsSlice';
@@ -8,6 +8,9 @@ import { fetchApplications, acceptApplication, rejectApplication } from '@/redux
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import {
@@ -60,6 +63,34 @@ function StatusBadge({ status }: { status: string }) {
             {s.label}
         </span>
     );
+}
+
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(km: number): string {
+    if (km < 1) return `${Math.round(km * 1000)}m away`;
+    if (km < 10) return `${km.toFixed(1)}km away`;
+    return `${Math.round(km)}km away`;
+}
+
+function FocusWorker({ worker }: { worker: any }) {
+    const map = useMap();
+    useEffect(() => {
+        if (worker?.coords) {
+            map.flyTo(worker.coords as [number, number], 14, { duration: 1.2 });
+        }
+    }, [worker, map]);
+    return null;
 }
 
 function JobDetailPanel({ job, onEdit, onApplicants }: {
@@ -200,6 +231,11 @@ export default function ClientJobsPage() {
     });
     const [workerType, setWorkerType] = useState("all");
 
+    const [mapDialogWorker, setMapDialogWorker] = useState<any>(null);
+    const [applicantCoords, setApplicantCoords] = useState<Record<string, [number, number]>>({});
+    const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
+    const [isClient, setIsClient] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         dispatch(getJobByClient({ page: 1, limit: 10 }));
@@ -249,6 +285,54 @@ export default function ClientJobsPage() {
         rejected: 'bg-red-100 text-red-700 border border-red-200',
     };
 
+    useEffect(() => { setIsClient(true); }, []);
+
+    useEffect(() => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => setClientCoords([pos.coords.latitude, pos.coords.longitude]),
+            () => setClientCoords(null)
+        );
+    }, []);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 900);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    const workerIcon = useMemo(() => new L.Icon({
+        iconUrl: '/marker-icon-2xa.png',
+        iconRetinaUrl: '/marker-icon-2xa.png',
+        shadowUrl: '/marker-shadow.png',
+        iconSize: isMobile ? [22, 34] : [32, 48],
+        iconAnchor: isMobile ? [11, 34] : [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: isMobile ? [30, 30] : [41, 41],
+    }), [isMobile]);
+
+    const handleViewOnMap = async (applicant: any) => {
+        setMapDialogWorker({ ...applicant, coords: applicantCoords[applicant._id] ?? undefined });
+
+        if (applicantCoords[applicant._id]) return;
+
+        if (!applicant.address) return;
+        const fullAddress = `${applicant.address.line1}, ${applicant.address.line2 || ''}, ${applicant.address.state} ${applicant.address.postalCode}, Australia`;
+        const normalizedAddress = fullAddress.replace(/\s+/g, ' ').trim();
+
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}location/geocode?address=${encodeURIComponent(normalizedAddress)}`
+            );
+            const coords = await res.json();
+            if (coords?.lat && coords?.lon) {
+                const c: [number, number] = [Number(coords.lat), Number(coords.lon)];
+                setApplicantCoords(prev => ({ ...prev, [applicant._id]: c }));
+                setMapDialogWorker((prev: any) => prev?._id === applicant._id ? { ...prev, coords: c } : prev);
+            }
+        } catch {
+        }
+    };
 
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)]">
@@ -514,10 +598,8 @@ export default function ClientJobsPage() {
                                                 </Link>
 
                                                 <button
-                                                    onClick={() => {
-                                                        setIsApplicantsDrawerOpen(false);
-                                                        router.push(`/client/workers?focusWorker=${application.applicant?._id}`);
-                                                    }}
+                                                    onClick={() => handleViewOnMap(application.applicant)}
+
                                                     className="flex items-center justify-center rounded-md border border-gray-300 bg-gray-100 text-gray-800 text-[10px] md:text-[11px] lg:text-xs font-medium px-3 py-1.5 hover:bg-gray-200 transition-colors cursor-pointer"
                                                 >
                                                     View on Map
@@ -577,6 +659,108 @@ export default function ClientJobsPage() {
                     </DrawerFooter>
                 </DrawerContent>
             </Drawer>
+
+            {/* ─── Applicant Map Dialog ─── */}
+            <Dialog
+                open={!!mapDialogWorker}
+                onOpenChange={(open) => { if (!open) setMapDialogWorker(null); }}
+            >
+                <DialogContent className="max-w-2xl w-full p-0 overflow-hidden gap-0">
+
+                    {/* Header */}
+                    <DialogHeader className="px-4 pt-4 pb-3 border-b">
+                        <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
+                            <Avatar className="h-7 w-7 md:h-8 md:w-8">
+                                <AvatarFallback>
+                                    {mapDialogWorker?.firstName?.[0]}{mapDialogWorker?.lastName?.[0]}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span>{mapDialogWorker?.firstName} {mapDialogWorker?.lastName}</span>
+                            {mapDialogWorker?.approved && (
+                                <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
+                            )}
+                            {mapDialogWorker?.address && (
+                                <span className="text-xs text-muted-foreground font-normal flex items-center gap-1 ml-1">
+                                    <MapPin className="h-3 w-3 shrink-0" />
+                                    {mapDialogWorker.address.state}, {mapDialogWorker.address.postalCode}
+                                </span>
+                            )}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {/* Map body */}
+                    <div className="w-full h-[320px] md:h-[420px] relative">
+                        {isClient && (
+                            !mapDialogWorker?.coords ? (
+                                <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-sm">
+                                    <div className="text-center space-y-1">
+                                        <MapPin className="h-6 w-6 mx-auto animate-pulse" />
+                                        <p>Locating worker on map…</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <MapContainer
+                                    center={mapDialogWorker.coords as [number, number]}
+                                    zoom={13}
+                                    className="w-full h-full"
+                                    key={mapDialogWorker._id}
+                                >
+                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <Marker
+                                        position={mapDialogWorker.coords as [number, number]}
+                                        icon={workerIcon}
+                                        ref={(ref) => { if (ref) ref.openPopup(); }}
+                                    >
+                                        <Popup>
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarFallback>
+                                                        {mapDialogWorker.firstName?.[0]}{mapDialogWorker.lastName?.[0]}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <strong className="flex items-center text-sm">
+                                                        {mapDialogWorker.firstName} {mapDialogWorker.lastName}
+                                                        {mapDialogWorker.approved && (
+                                                            <BadgeCheck className="h-3 w-3 text-green-500 ml-1" />
+                                                        )}
+                                                    </strong>
+                                                    <span className="text-[11px] text-gray-500">
+                                                        {mapDialogWorker.address?.line1}, {mapDialogWorker.address?.state}
+                                                    </span>
+                                                    {clientCoords && mapDialogWorker.coords && (
+                                                        <div className="text-[11px] text-blue-500 mt-0.5">
+                                                            {formatDistance(getDistanceKm(
+                                                                clientCoords[0], clientCoords[1],
+                                                                mapDialogWorker.coords[0], mapDialogWorker.coords[1]
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+                                    <FocusWorker worker={mapDialogWorker} />
+                                </MapContainer>
+                            )
+                        )}
+                    </div>
+
+                    {/* Footer distance strip */}
+                    {mapDialogWorker?.coords && clientCoords && (
+                        <div className="px-4 py-2 border-t bg-muted/40 text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-blue-500 shrink-0" />
+                            <span className="text-blue-500 font-medium">
+                                {formatDistance(getDistanceKm(
+                                    clientCoords[0], clientCoords[1],
+                                    mapDialogWorker.coords[0], mapDialogWorker.coords[1]
+                                ))}
+                            </span>
+                            <span className="ml-1">from your location</span>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <DeleteConfirmation
                 isOpen={deleteConfirmation.isOpen}
