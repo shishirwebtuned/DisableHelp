@@ -65,6 +65,7 @@ export const sendMessage = (io: any) =>
       title: "New Message",
       actionUrl: actionUrl,
       message: `${senderName} sent you a message`,
+      chat: chat._id,
     });
 
     const populatedNotification = await notification.populate(

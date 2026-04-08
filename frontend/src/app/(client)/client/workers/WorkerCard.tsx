@@ -306,7 +306,7 @@ ${worker.approved
 
                 <div className="flex flex-wrap gap-x-3">
 
-                    <span>
+                    {/* <span>
 
                         Role:
 
@@ -316,7 +316,7 @@ ${worker.approved
 
                         </span>
 
-                    </span>
+                    </span> */}
 
                     {age !== null && (
 
@@ -352,7 +352,7 @@ ${worker.approved
 
                 </div>
 
-                {worker.phoneNumber && (
+                {/* {worker.phoneNumber && (
 
                     <div className="mt-1">
 
@@ -366,7 +366,7 @@ ${worker.approved
 
                     </div>
 
-                )}
+                )} */}
 
                 {worker?.profile?.gender && (
 
@@ -445,7 +445,7 @@ ${badgeColors[
 
                 )}
 
-                {worker.address && (
+                {/* {worker.address && (
 
                     <div className="mt-1">
 
@@ -459,7 +459,7 @@ ${badgeColors[
 
                     </div>
 
-                )}
+                )} */}
 
                 {services.length > 0 && (
 
@@ -493,7 +493,7 @@ ${badgeColors[
 
                 <div className="w-full flex text-[10px] md:text-[11px] lg:text-xs justify-start md:justify-start items-center">
 
-                    Type:
+                    Role:
 
                     <p className="border-2 border-blue-300 text-blue-400 rounded-full px-2 py-[1px] md:py-0.5 ml-2">
 
@@ -501,7 +501,7 @@ ${badgeColors[
 
                             ? "NDIS Provider"
 
-                            : "Individual Support Worker"}
+                            : "Individual Worker"}
 
                     </p>
 

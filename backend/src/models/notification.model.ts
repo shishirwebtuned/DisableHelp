@@ -22,6 +22,8 @@ const notificationSchema = new Schema(
     read: { type: Boolean, default: false },
     readAt: { type: Date },
     actionUrl: { type: String },
+    chat: { type: Schema.Types.ObjectId, ref: "Chat" },
+    job: { type: Schema.Types.ObjectId, ref: "Job" },
   },
   { timestamps: true },
 );

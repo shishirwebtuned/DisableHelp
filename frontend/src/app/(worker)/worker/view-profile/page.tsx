@@ -17,6 +17,7 @@ import {
     Mail,
     Phone,
     MapPinCheckInside,
+    FileText,
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -159,7 +160,7 @@ export default function PublicProfilePage() {
                             </p>
                         </div>
                         <div className='flex flex-row items-center gap-3'>
-                            <p className='border-2 border-indigo-400 text-indigo-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>Worker</p>
+                            {/* <p className='border-2 border-indigo-400 text-indigo-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>Worker</p> */}
 
 
                             <p className='border-2 border-blue-400 text-blue-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>{user.isNdisProvider ? "NDIS Provider" : "Individual Suport Worker"}</p>
@@ -447,6 +448,13 @@ export default function PublicProfilePage() {
                                         status: profile?.ndisWorkerScreening?.status === 'active' ? 'check' : 'pending',
                                         fileUrl: undefined,
                                     },
+                                    ...(profile?.personalDetails?.additionalDocuments?.map((doc: any) => ({
+                                        label: doc.name,
+                                        icon: FileText,
+                                        status: doc.file?.url ? 'check' : 'pending',
+                                        sub: doc.expiryDate ? 'Expires on ' + new Date(doc.expiryDate).toLocaleDateString() : undefined,
+                                        fileUrl: doc.file?.url,
+                                    })) ?? []),
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-start gap-3 md:p-2.5 p-2 lg:p-3 rounded-md border border-border">
                                         <div className="mt-1">

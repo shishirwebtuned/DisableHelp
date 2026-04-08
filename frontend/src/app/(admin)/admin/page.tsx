@@ -1,42 +1,48 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Users,
     UserCheck,
     FileText,
-    MessageSquare,
     Shield,
     TrendingUp,
     AlertCircle,
-    CheckCircle2
+    MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { fetchUsers } from '@/redux/slices/usersSlice';
+import { fetchAgreements } from '@/redux/slices/agreementsSlice';
+import { fetchAllInvoices } from '@/redux/slices/invoiceSlice';
+import { fetchAllPayments } from '@/redux/slices/paymentSlice';
 
 export default function AdminDashboard() {
-    const platformMetrics = {
-        totalWorkers: 156,
-        totalClients: 89,
-        activeAgreements: 124,
-        pendingInvoices: 23,
-        totalRevenue: 45680,
-        credentialIssues: 8,
-    };
+    const dispatch = useAppDispatch();
+    const { items: users } = useAppSelector((state) => state.users);
+    const { items: agreements } = useAppSelector((state) => state.agreements);
+    const { items: invoices } = useAppSelector((state) => state.invoices);
+    const { items: payments } = useAppSelector((state) => state.payments);
 
-    const credentialStatus = {
-        valid: 142,
-        expiringSoon: 8,
-        expired: 6,
-    };
+    useEffect(() => {
+        dispatch(fetchUsers());
+        dispatch(fetchAgreements({}));
+        dispatch(fetchAllInvoices());
+        dispatch(fetchAllPayments({}));
+    }, [dispatch]);
 
-    const recentActivity = [
-        { id: 1, type: 'invoice', message: 'New invoice submitted by Sarah Worker', time: '5 min ago' },
-        { id: 2, type: 'agreement', message: 'Agreement activated: Alice Freeman & John Support', time: '1 hour ago' },
-        { id: 3, type: 'credential', message: 'WWCC expiring soon for 3 workers', time: '2 hours ago' },
-        { id: 4, type: 'user', message: 'New worker registration: Emma Care', time: '3 hours ago' },
-    ];
+    const totalWorkers = users.filter((u) => u.role === 'worker').length;
+    const ndisProviders = users.filter((u) => u.role === 'worker' && u.isNdisProvider).length;
+    const individualWorkers = totalWorkers - ndisProviders;
+    const totalClients = users.filter((u) => u.role === 'client').length;
+    const activeAgreements = agreements.filter((a) => a.status === 'active').length;
+    const pendingInvoices = invoices.filter((inv) => inv.status === 'pending').length;
+    const totalRevenue = payments.reduce((sum, p) => sum + (p.status === 'successful' ? p.totalAmount : 0), 0);
+    // Placeholder for credential issues: count users with verification not 'verified'
+    const credentialIssues = users.filter((u) => u.role === 'worker' && u.approved !== true).length;
 
     return (
         <div className="space-y-6">
@@ -46,8 +52,8 @@ export default function AdminDashboard() {
                     <p className="text-muted-foreground">Monitor and manage the Disable Help Platform</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Export Report</Button>
-                    <Button>Platform Settings</Button>
+                    {/* <Button variant="outline">Export Report</Button>
+                    <Button>Platform Settings</Button> */}
                 </div>
             </div>
 
@@ -59,7 +65,7 @@ export default function AdminDashboard() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{platformMetrics.totalWorkers}</div>
+                        <div className="text-2xl font-bold">{totalWorkers}</div>
                         <p className="text-xs text-muted-foreground">+12 this month</p>
                     </CardContent>
                 </Card>
@@ -69,7 +75,7 @@ export default function AdminDashboard() {
                         <UserCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{platformMetrics.totalClients}</div>
+                        <div className="text-2xl font-bold">{totalClients}</div>
                         <p className="text-xs text-muted-foreground">+8 this month</p>
                     </CardContent>
                 </Card>
@@ -79,7 +85,7 @@ export default function AdminDashboard() {
                         <FileText className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{platformMetrics.activeAgreements}</div>
+                        <div className="text-2xl font-bold">{activeAgreements}</div>
                         <p className="text-xs text-muted-foreground">Worker-Client pairs</p>
                     </CardContent>
                 </Card>
@@ -89,7 +95,7 @@ export default function AdminDashboard() {
                         <FileText className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{platformMetrics.pendingInvoices}</div>
+                        <div className="text-2xl font-bold">{pendingInvoices}</div>
                         <p className="text-xs text-muted-foreground">Awaiting approval</p>
                     </CardContent>
                 </Card>
@@ -99,7 +105,7 @@ export default function AdminDashboard() {
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${platformMetrics.totalRevenue.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">This month</p>
                     </CardContent>
                 </Card>
@@ -109,17 +115,16 @@ export default function AdminDashboard() {
                         <AlertCircle className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{platformMetrics.credentialIssues}</div>
+                        <div className="text-2xl font-bold text-destructive">{credentialIssues}</div>
                         <p className="text-xs text-muted-foreground">Require attention</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Credential Status */}
-   
 
-            {/* Recent Activity */}
-            <Card>
+
+            {/* <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -150,7 +155,7 @@ export default function AdminDashboard() {
                         ))}
                     </div>
                 </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-4">
@@ -163,7 +168,7 @@ export default function AdminDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Badge variant="secondary">{platformMetrics.pendingInvoices} pending</Badge>
+                            <Badge variant="secondary">{pendingInvoices} pending</Badge>
                         </CardContent>
                     </Card>
                 </Link>
@@ -176,7 +181,7 @@ export default function AdminDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Badge variant="secondary">{platformMetrics.activeAgreements} active</Badge>
+                            <Badge variant="secondary">{activeAgreements} active</Badge>
                         </CardContent>
                     </Card>
                 </Link>
@@ -189,7 +194,33 @@ export default function AdminDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Badge variant="secondary">{platformMetrics.totalWorkers + platformMetrics.totalClients} total</Badge>
+                            <Badge variant="secondary">{totalWorkers + totalClients} total</Badge>
+                        </CardContent>
+                    </Card>
+                </Link>
+                <Link href="/admin/users">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Ndis Providers
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Badge variant="secondary">{ndisProviders} total</Badge>
+                        </CardContent>
+                    </Card>
+                </Link>
+                <Link href="/admin/users">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Individual Workers
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Badge variant="secondary">{individualWorkers} total</Badge>
                         </CardContent>
                     </Card>
                 </Link>

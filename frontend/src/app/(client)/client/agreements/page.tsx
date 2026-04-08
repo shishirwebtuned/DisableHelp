@@ -18,6 +18,7 @@ import {
     CheckCircle,
     XCircle,
     AlertTriangle,
+    Eye,
 } from 'lucide-react';
 import Pagination from '@/components/ui/pagination';
 import Loading from '@/components/ui/loading';
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { set } from 'date-fns';
 
 export default function ClientAgreementsPage() {
     const dispatch = useAppDispatch();
@@ -43,7 +45,8 @@ export default function ClientAgreementsPage() {
     const [terminateReason, setTerminateReason] = useState('');
     const [terminateReasonError, setTerminateReasonError] = useState(false);
     const [terminating, setTerminating] = useState(false);
-
+    const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const pageSize = 10;
 
     useEffect(() => {
@@ -295,6 +298,26 @@ export default function ClientAgreementsPage() {
                                             </button>
                                         )}
                                     </div>
+                                    <div className='border-t pt-3 flex flex-row-reverse items-center justify-between'>
+                                        <button className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                            onClick={() => {
+
+                                                setDetailsDialogOpen(true);
+                                            }}>
+                                            View Details
+                                        </button>
+                                        <button
+                                            className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground border px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                            onClick={() => {
+
+                                                setTermsDialogOpen(true);
+                                            }}
+                                        >
+                                            <Eye className="w-3 h-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 mr-1.5" />
+                                            View Terms
+
+                                        </button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))
@@ -367,6 +390,78 @@ export default function ClientAgreementsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
+                <DialogContent className="sm:max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Terms & Conditions</DialogTitle>
+                        <DialogDescription>
+                            Please read the terms and conditions carefully before accepting.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 px-4 py-3 md:text-[13px] text-xs lg:text-sm text-muted-foreground md:space-y-2.5 space-y-2 lg:space-y-3">
+
+                        <p className="font-semibold text-foreground md:text-[15px] text-sm lg:text-base">
+                            Service Agreement Terms
+                        </p>
+
+                        <p>
+                            By accepting these terms, worker agrees to provide support services professionally
+                            and according to this agreement.
+                        </p>
+
+
+
+                        <div className="space-y-2 text-xs border-t pt-3">
+
+                            <p className="font-medium text-foreground">
+                                Key Conditions:
+                            </p>
+
+                            <p>
+                                <span className="font-medium text-foreground">Confidentiality:</span>
+                                {" "}Client data must remain private.
+                            </p>
+
+                            <p>
+                                <span className="font-medium text-foreground">Conduct:</span>
+                                {" "}Professional behaviour is required.
+                            </p>
+
+                            <p>
+                                <span className="font-medium text-foreground">Compliance:</span>
+                                {" "}NDIS and safety regulations must be followed.
+                            </p>
+
+
+
+                        </div>
+
+                    </div>
+                    <DialogFooter className="gap-2 pt-1">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTermsDialogOpen(false)}
+                        >
+                            Close
+                        </Button>
+
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+                <DialogContent className="sm:max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>AgreementDialog</DialogTitle>
+                        <DialogDescription>
+                            Please read the terms and conditions carefully before accepting.
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent >
+            </Dialog >
         </>
     );
 }

@@ -59,6 +59,10 @@ const jobSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    preferredWorkerType: {
+      type: String,
+      enum: ["ndisProvider", "individualSupportWorker"],
+    },
     // hourlyRate: {
     //   type: Number,
     //   required: true,

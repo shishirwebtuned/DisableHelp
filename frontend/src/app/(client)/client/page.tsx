@@ -5,26 +5,71 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Briefcase, Calendar, MessageSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { fetchMyWorkers } from '@/redux/slices/usersSlice';
+import { fetchApplicationsByApplicantId } from '@/redux/slices/applicationsSlice';
+import { fetchSessionsByUser } from '@/redux/slices/sessionsSlice';
+import { getAgreementsByClient } from '@/redux/slices/agreementsSlice';
+import { fetchMyInvoicesAsClient } from '@/redux/slices/invoiceSlice';
 
 export default function ClientDashboard() {
-    const stats = {
-        activeWorkers: 2,
-        pendingApplications: 3,
-        upcomingSessions: 5,
-        unreadMessages: 4,
-    };
+    const dispatch = useAppDispatch();
+    const user = useAppSelector((state) => state.auth.user);
+    const userId = user?._id;
 
-    const upcomingSessions = [
-        { id: 1, worker: 'Sarah Worker', date: 'Today, 2:00 PM', type: 'Personal Care' },
-        { id: 2, worker: 'John Support', date: 'Tomorrow, 10:00 AM', type: 'Community Access' },
-        { id: 3, worker: 'Sarah Worker', date: 'Wed, 2:00 PM', type: 'Personal Care' },
-    ];
+    // Agreements
+    const { items: agreements } = useAppSelector((state) => state.agreements);
+
+    // Sessions
+    const sessions = useAppSelector((state) => state.sessions.items);
+    const sessionsLoading = useAppSelector((state) => state.sessions.loading);
+
+    // Invoices
+    const { items: invoices } = useAppSelector((state) => state.invoices);
+
+    // Counts
+    const activeWorkers = useAppSelector((state) => state.users.myWorkers.length);
+
+    const pendingApplications = agreements?.length || 0;
+
+    const pendingInvoices = invoices?.filter(
+        (inv: any) => inv.status === 'pending'
+    ).length;
+
+
+    const upcomingSessions = sessions
+        .filter((s) => s.status === 'scheduled')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3)
+        .map((s) => ({
+            id: s._id,
+            worker: s.worker?.firstName ? `${s.worker.firstName} ${s.worker.lastName || ''}` : 'Worker',
+            date: `${new Date(s.date).toLocaleDateString()} ${s.startTime || ''}`,
+            status: s.status,
+            type: s.job?.title || 'Session',
+        }));
+
+    useEffect(() => {
+        dispatch(fetchMyWorkers());
+        dispatch(getAgreementsByClient({}));
+        dispatch(fetchSessionsByUser());
+        dispatch(fetchMyInvoicesAsClient({}));
+
+    }, [dispatch]);
+
+    const stats = {
+        activeWorkers,
+        pendingApplications,
+        upcomingSessions: sessions.filter((s) => s.status === 'scheduled').length,
+        pendingInvoices,
+    };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Welcome back, John!</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.firstName || 'Client'}!</h1>
                     <p className="text-muted-foreground">Manage your support services and workers</p>
                 </div>
                 <div className="flex gap-2">
@@ -37,7 +82,7 @@ export default function ClientDashboard() {
                     <Link href="/client/sessions">
                         <Button variant="outline">
                             <Calendar className="h-4 w-4 mr-2" />
-                            Schedule Session
+                            View Sessions
                         </Button>
                     </Link>
                 </div>
@@ -57,12 +102,12 @@ export default function ClientDashboard() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Applications</CardTitle>
+                        <CardTitle className="text-sm font-medium">Active Agreements</CardTitle>
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.pendingApplications}</div>
-                        <p className="text-xs text-muted-foreground">Awaiting review</p>
+                        <p className="text-xs text-muted-foreground">Ongoing </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -77,15 +122,16 @@ export default function ClientDashboard() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Messages</CardTitle>
+                        <CardTitle className="text-sm font-medium">Invoices</CardTitle>
                         <MessageSquare className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.unreadMessages}</div>
-                        <p className="text-xs text-muted-foreground">Unread</p>
+                        <div className="text-2xl font-bold">{stats.pendingInvoices}</div>
+                        <p className="text-xs text-muted-foreground">Pending</p>
                     </CardContent>
                 </Card>
             </div>
+
 
             {/* Upcoming Sessions */}
             <Card>
@@ -102,26 +148,32 @@ export default function ClientDashboard() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {upcomingSessions.map((session) => (
-                            <div
-                                key={session.id}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <Calendar className="h-5 w-5 text-primary" />
+                        {sessionsLoading ? (
+                            <div>Loading...</div>
+                        ) : upcomingSessions.length === 0 ? (
+                            <div className="text-muted-foreground">No upcoming sessions.</div>
+                        ) : (
+                            upcomingSessions.map((session) => (
+                                <div
+                                    key={session.id}
+                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <Calendar className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">{session.worker}</div>
+                                            <div className="text-sm text-muted-foreground">{session.type}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-medium">{session.worker}</div>
-                                        <div className="text-sm text-muted-foreground">{session.type}</div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-medium">{session.date}</div>
+                                        <Badge variant="outline" className="mt-1">{session?.status}</Badge>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-medium">{session.date}</div>
-                                    <Badge variant="outline" className="mt-1">Confirmed</Badge>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>

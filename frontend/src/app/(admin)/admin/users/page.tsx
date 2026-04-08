@@ -45,18 +45,29 @@ import Link from 'next/link';
 import Loading from '@/components/ui/loading';
 import Pagination from '@/components/ui/pagination';
 import { useRouter } from 'next/navigation';
+
+type UserRole = 'worker' | 'client' | 'admin' | 'unknown';
+
+const roleStyles: Record<UserRole, string> = {
+    worker: "bg-blue-100 text-blue-700 border-blue-300",
+    client: "bg-purple-100 text-purple-700 border-purple-300",
+    admin: "bg-red-100 text-red-700 border-red-300",
+    unknown: "bg-muted/50",
+};
+
 export default function AdminUsersPage() {
     const dispatch = useAppDispatch();
     const { items: users, loading, pagination } = useAppSelector((state) => state.users);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [workerTypeFilter, setWorkerTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const router = useRouter();
     // Reset to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, roleFilter, statusFilter]);
+    }, [searchTerm, roleFilter, statusFilter, workerTypeFilter]);
 
     // Fetch users from server whenever filters or page change (debounced)
     useEffect(() => {
@@ -64,13 +75,17 @@ export default function AdminUsersPage() {
         if (searchTerm) params.search = searchTerm;
         if (roleFilter && roleFilter !== 'all') params.role = roleFilter;
         if (statusFilter && statusFilter !== 'all') params.approved = statusFilter;
+        // Add worker type filter for NDIS Provider/Individual Worker
+        if (roleFilter === 'worker' && workerTypeFilter !== 'all') {
+            params.isNdisProvider = workerTypeFilter === 'ndis-provider';
+        }
 
         const t = setTimeout(() => {
             dispatch(fetchUsers(params));
         }, 300);
 
         return () => clearTimeout(t);
-    }, [dispatch, searchTerm, roleFilter, statusFilter, currentPage]);
+    }, [dispatch, searchTerm, roleFilter, statusFilter, workerTypeFilter, currentPage]);
 
 
 
@@ -81,11 +96,10 @@ export default function AdminUsersPage() {
         const fullName = ((u.name) ? u.name : `${firstName} ${lastName}`).trim();
 
         // createdAt may be unix seconds or milliseconds or string
-        let joinedDate = u.joinedDate ?? u.joinedAt ?? null;
+        let joinedDate = u.createdAt ?? u.createdAt ?? null;
         if (!joinedDate && u.createdAt) {
             const n = Number(u.createdAt);
             if (!Number.isNaN(n)) {
-                // assume seconds if value looks like seconds (<= 1e12)
                 joinedDate = new Date(n < 1e12 ? n * 1000 : n).toISOString();
             }
         }
@@ -96,18 +110,25 @@ export default function AdminUsersPage() {
             firstName,
             lastName,
             email: u.email ?? '',
-            role: u.role ?? 'unknown',
+            role: (u.role ?? 'unknown') as UserRole,
             approved: typeof u.approved !== 'undefined' ? u.approved : (u.isVerified ?? false),
             isVerified: typeof u.isVerified !== 'undefined' ? u.isVerified : (u.approved ?? false),
-            joinedDate: joinedDate ?? new Date().toISOString(),
+            joinedDate: u.createdAt ?? new Date().toISOString(),
             avatar: u.avatar ?? null,
             raw: u,
+            isNdisProvider: typeof u.isNdisProvider !== 'undefined' ? u.isNdisProvider : false,
         };
     });
 
 
     // When filtering is done server-side, normalizedUsers already reflects active filters
-    const displayedUsers = normalizedUsers;
+    // Apply frontend filter for worker type if needed (for extra safety)
+    let displayedUsers = normalizedUsers;
+    if (roleFilter === 'worker' && workerTypeFilter !== 'all') {
+        displayedUsers = displayedUsers.filter(u =>
+            workerTypeFilter === 'ndis-provider' ? u.isNdisProvider : !u.isNdisProvider
+        );
+    }
 
 
 
@@ -118,6 +139,7 @@ export default function AdminUsersPage() {
             default: return null;
         }
     };
+
 
     return (
         <div className="space-y-6">
@@ -136,31 +158,31 @@ export default function AdminUsersPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20">
                     <CardHeader className="pb-2">
-                        <CardDescription className="text-blue-600 dark:text-blue-400">Total Users</CardDescription>
-                        <CardTitle className="text-2xl font-bold text-blue-700 dark:text-blue-300">{pagination?.total ?? users.length}</CardTitle>
+                        <CardDescription className="text-blue-600 ">Total Users</CardDescription>
+                        <CardTitle className="text-2xl font-bold text-blue-600 ">{pagination?.total ?? users.length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card className="bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/20">
                     <CardHeader className="pb-2">
-                        <CardDescription className="text-green-600 dark:text-green-400">Workers</CardDescription>
-                        <CardTitle className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        <CardDescription className="text-green-600">Workers</CardDescription>
+                        <CardTitle className="text-2xl font-bold text-green-600">
                             {users.filter(u => u.role === 'worker').length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
                 <Card className="bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/20">
                     <CardHeader className="pb-2">
-                        <CardDescription className="text-purple-600 dark:text-purple-400">Clients</CardDescription>
-                        <CardTitle className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        <CardDescription className="text-purple-600">Clients</CardDescription>
+                        <CardTitle className="text-2xl font-bold text-purple-600 ">
                             {users.filter(u => u.role === 'client').length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
                 <Card className="bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20">
                     <CardHeader className="pb-2">
-                        <CardDescription className="text-amber-600 dark:text-amber-400">Pending Review</CardDescription>
-                        <CardTitle className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-                            {users.filter(u => u.verification === 'under_review').length}
+                        <CardDescription className="text-amber-600 ">Pending Review</CardDescription>
+                        <CardTitle className="text-2xl font-bold text-amber-600 ">
+                            {users.filter(u => u.approved === false).length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -180,8 +202,11 @@ export default function AdminUsersPage() {
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Select value={roleFilter} onValueChange={setRoleFilter}>
-                                <SelectTrigger className="w-[130px]">
+                            <Select value={roleFilter} onValueChange={value => {
+                                setRoleFilter(value);
+                                setWorkerTypeFilter('all'); // Reset worker type filter when role changes
+                            }}>
+                                <SelectTrigger className="w-32.5">
                                     <SelectValue placeholder="Role" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -190,8 +215,21 @@ export default function AdminUsersPage() {
                                     <SelectItem value="client">Clients</SelectItem>
                                 </SelectContent>
                             </Select>
+                            {/* Show worker type filter only if role is worker */}
+                            {roleFilter === 'worker' && (
+                                <Select value={workerTypeFilter} onValueChange={setWorkerTypeFilter}>
+                                    <SelectTrigger className="w-42.5">
+                                        <SelectValue placeholder="Worker Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Workers</SelectItem>
+                                        <SelectItem value="ndis-provider">Ndis Provider</SelectItem>
+                                        <SelectItem value="individual-worker">Individual Worker</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[130px]">
+                                <SelectTrigger className="w-32.5">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -200,7 +238,6 @@ export default function AdminUsersPage() {
                                     <SelectItem value="false">Pending</SelectItem>
                                 </SelectContent>
                             </Select>
-
                         </div>
                     </div>
                 </div>
@@ -215,7 +252,9 @@ export default function AdminUsersPage() {
                             <TableHead>Contact Info</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Approved</TableHead>
-                            <TableHead>Verified</TableHead>
+                            <TableHead>Verified (Email)</TableHead>
+                            <TableHead>Type</TableHead>
+
                             <TableHead>Joined Date</TableHead>
                             <TableCell> View Details</TableCell>
                             <TableHead className="text-right">Actions</TableHead>
@@ -234,10 +273,14 @@ export default function AdminUsersPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className="capitalize bg-muted/50">
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${roleStyles[user.role as UserRole] || "bg-muted/50"}`}
+                                        >
                                             {user.role}
                                         </Badge>
                                     </TableCell>
+
                                     <TableCell>
                                         <div className="flex items-center text-xs font-medium">
                                             {getVerificationIcon(user.approved)}
@@ -249,7 +292,13 @@ export default function AdminUsersPage() {
                                             <span className="capitalize">{user.isVerified ? 'Verified' : 'Not Verified'}</span>
                                         </div>
                                     </TableCell>
-
+                                    <TableCell>
+                                        {user.role === "worker" ? (
+                                            <Badge variant="outline">
+                                                {user.isNdisProvider ? "NDIS Provider" : "Individual Worker"}
+                                            </Badge>
+                                        ) : ("—")}
+                                    </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
                                         {new Date(user.joinedDate).toLocaleDateString()}
                                     </TableCell>
@@ -267,7 +316,7 @@ export default function AdminUsersPage() {
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-[160px]">
+                                            <DropdownMenuContent align="end" className="w-40">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                 <Link href={`/admin/users/${user.id}`}>
                                                     <DropdownMenuItem className="cursor-pointer">

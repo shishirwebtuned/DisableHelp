@@ -349,9 +349,14 @@ export const getAllUsers = catchAsync(async (req, res) => {
   const filter = buildFilter(req.query, {
     searchFields: ["firstName", "lastName", "email"],
     exact: ["role"],
-    boolean: ["approved"],
+    boolean: ["approved", "isNdisProvider"],
   });
 
+  filter.role = req.query.role ? req.query.role : { $ne: "admin" };
+
+  if (filter.role === "admin") {
+    filter.role = { $ne: "admin" };
+  }
   const users = await User.find(filter)
     .select("-password -otp -otpExpiry")
     .sort({ createdAt: -1 })

@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Check, MapPinCheckInside } from 'lucide-react';
+import { Activity, Car, Check, CheckCircle, FileText, MapPinCheckInside, ShieldCheck, Users } from 'lucide-react';
 
 interface WorkerProfileProps {
     user: any;
@@ -40,9 +40,9 @@ export default function WorkerProfile({ user, profile }: WorkerProfileProps) {
     const aboutMe = profile?.aboutMe ?? {};
     const interests = profile?.interests ?? [];
 
-    const address = user?.address
-        ? `${user.address.line1}, ${user.address.line2 ? `${user.address.line2}, ` : ''}${user.address.state}, ${user.address.postalCode}`
-        : null;
+    // const address = user?.address
+    //     ? `${user.address.line1}, ${user.address.line2 ? `${user.address.line2}, ` : ''}${user.address.state}, ${user.address.postalCode}`
+    //     : null;
 
     return (
         <>
@@ -58,12 +58,12 @@ export default function WorkerProfile({ user, profile }: WorkerProfileProps) {
                     </p>
                 )}
 
-                {address && (
+                {/* {address && (
                     <div className="flex items-center gap-2 mt-1">
                         <MapPinCheckInside className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4.5 lg:w-4.5 text-green-500" />
                         <p className="lg:text-sm md:text-[13px] text-xs text-gray-600">{address}</p>
                     </div>
-                )}
+                )} */}
 
                 {/* Languages */}
                 <div className="mt-4">
@@ -196,30 +196,62 @@ export default function WorkerProfile({ user, profile }: WorkerProfileProps) {
                         <div className="space-y-3">
                             {[
                                 {
-                                    label: 'First aid',
-                                    file: profile?.personalDetails?.additionalTraining?.firstAid?.file?.url,
+                                    label: 'Working with Children Check (WA)',
+                                    icon: Users,
+                                    status: profile?.personalDetails?.wwcc?.file?.url ? 'check' : 'pending',
+                                    sub: profile?.personalDetails?.wwcc?.expiryDate ? 'Expires on ' + new Date(profile.personalDetails.wwcc.expiryDate).toLocaleDateString() : undefined,
+                                    fileUrl: profile?.personalDetails?.wwcc?.file?.url,
                                 },
                                 {
-                                    label: 'Driver license',
-                                    file: profile?.personalDetails?.additionalTraining?.driverLicense?.file?.url,
+                                    label: 'First aid certificate',
+                                    icon: Activity,
+                                    status: profile?.personalDetails?.additionalTraining?.firstAid?.file?.url ? 'check' : 'pending',
+                                    fileUrl: profile?.personalDetails?.additionalTraining?.firstAid?.file?.url,
                                 },
                                 {
-                                    label: 'WWCC',
-                                    file: profile?.personalDetails?.wwcc?.file?.url,
+                                    label: "Driver's license (Australia)",
+                                    icon: Car,
+                                    status: profile?.personalDetails?.additionalTraining?.driverLicense?.file?.url ? 'check' : 'pending',
+                                    fileUrl: profile?.personalDetails?.additionalTraining?.driverLicense?.file?.url,
                                 },
+                                {
+                                    label: 'NDIS Worker Screening',
+                                    icon: ShieldCheck,
+                                    status: profile?.ndisWorkerScreening?.status === 'active' ? 'check' : 'pending',
+                                    fileUrl: undefined,
+                                },
+                                ...(profile?.personalDetails?.additionalDocuments?.map((doc: any) => ({
+                                    label: doc.name,
+                                    icon: FileText,
+                                    status: doc.file?.url ? 'check' : 'pending',
+                                    sub: doc.expiryDate ? 'Expires on ' + new Date(doc.expiryDate).toLocaleDateString() : undefined,
+                                    fileUrl: doc.file?.url,
+                                })) ?? []),
                             ].map((item, i) => (
-                                <div
-                                    key={i}
-                                    className="flex justify-between border lg:text-base md:text-[13px] text-xs md:p-2.5 p-2 lg:p-3 rounded"
-                                >
-                                    <span>{item.label}</span>
-                                    {item.file ? (
-                                        <a href={item.file} target="_blank" className="text-blue-600 text-xs">
-                                            View
-                                        </a>
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground">Missing</span>
-                                    )}
+                                <div key={i} className="flex items-start gap-3 md:p-2.5 p-2 lg:p-3 rounded-md border border-border">
+                                    <div className="mt-1">
+                                        {item.status === 'check' ? (
+                                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                        ) : (
+                                            <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                                        )}
+                                    </div>
+                                    <div className="space-y-1 w-full">
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className="h-4 w-4 text-muted-foreground" />
+                                            <span className="lg:text-sm md:text-xs text-xs font-medium text-foreground">{item.label}</span>
+                                            {item.fileUrl && (
+                                                <div className="ml-auto">
+                                                    {item.fileUrl.endsWith('.pdf') ? (
+                                                        <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">View PDF</a>
+                                                    ) : (
+                                                        <img src={item.fileUrl} alt={item.label} className="h-12 w-12 rounded object-cover border" />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {item.sub && <p className="text-xs text-muted-foreground ml-7">{item.sub}</p>}
+                                    </div>
                                 </div>
                             ))}
                         </div>

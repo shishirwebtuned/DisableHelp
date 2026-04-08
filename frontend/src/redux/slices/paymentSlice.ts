@@ -1,10 +1,16 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
 
+interface UserBasic {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+}
 export interface Payment {
   _id: string;
-  worker: string;
-  client: string;
+  worker: string | UserBasic;
+  client: string | UserBasic;
   amount: number;
   lateFee: number;
   totalAmount: number;
@@ -21,8 +27,8 @@ interface PaymentDue {
   baseAmount: number;
   lateFee: number;
   amountDue: number;
-  isLate: boolean;
-  daysLate: number;
+  lastPaymentDate: string | null;
+  nextPaymentDate: string;
 }
 
 interface PaymentsState {
@@ -32,6 +38,12 @@ interface PaymentsState {
   approveLink: string | null;
   loading: boolean;
   error: string | null;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  } | null;
 }
 
 const initialState: PaymentsState = {
@@ -41,6 +53,7 @@ const initialState: PaymentsState = {
   approveLink: null,
   loading: false,
   error: null,
+  pagination: null,
 };
 
 export const createPaymentOrder = createAsyncThunk(
@@ -68,6 +81,14 @@ export const capturePayment = createAsyncThunk(
   },
 );
 
+export const fetchAllPayments = createAsyncThunk(
+  "payments/fetchAllPayments",
+  async (params?: any) => {
+    const response = await api.get(`payments/all`, { params });
+    return response.data.data;
+  },
+);
+
 export const fetchPaymentDue = createAsyncThunk(
   "payments/fetchPaymentDue",
   async (payload: { workerId: string; clientId: string }) => {
@@ -90,6 +111,14 @@ export const fetchClientPayments = createAsyncThunk(
   "payments/fetchClientPayments",
   async (clientId: string) => {
     const response = await api.get(`payments/client/${clientId}`);
+    return response.data.data;
+  },
+);
+
+export const fetchMyPayments = createAsyncThunk(
+  "payments/fetchMyPayments",
+  async (params?: any) => {
+    const response = await api.get(`payments/me`, { params });
     return response.data.data;
   },
 );
@@ -143,11 +172,54 @@ export const paymentsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch payment due";
       })
+      .addCase(fetchWorkerPayments.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchWorkerPayments.fulfilled, (state, action) => {
+        state.loading = false;
         state.items = action.payload;
       })
+      .addCase(fetchWorkerPayments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch worker payments";
+      })
+      .addCase(fetchClientPayments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchClientPayments.fulfilled, (state, action) => {
+        state.loading = false;
         state.items = action.payload;
+      })
+      .addCase(fetchClientPayments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch client payments";
+      })
+      .addCase(fetchAllPayments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllPayments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.payments;
+        state.pagination = action.payload.pagination;
+      })
+      .addCase(fetchAllPayments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch payments";
+      })
+      .addCase(fetchMyPayments.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyPayments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.payments;
+        state.pagination = action.payload.pagination;
+      })
+      .addCase(fetchMyPayments.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch your payments";
       });
   },
 });

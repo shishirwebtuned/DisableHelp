@@ -64,7 +64,7 @@ export const createSession = createAsyncThunk(
     startDate: string;
     endDate: string;
   }) => {
-    const response = await api.post("/api/sessions", sessionData);
+    const response = await api.post("/session", sessionData);
     return response.data.data;
   },
 );
@@ -72,7 +72,7 @@ export const createSession = createAsyncThunk(
 export const updateSession = createAsyncThunk(
   "sessions/updateSession",
   async ({ id, updates }: { id: string; updates: Partial<Session> }) => {
-    const response = await api.put(`/api/sessions/${id}`, updates);
+    const response = await api.put(`/session/${id}`, updates);
     return response.data.data;
   },
 );
@@ -80,7 +80,7 @@ export const updateSession = createAsyncThunk(
 export const rescheduleSession = createAsyncThunk(
   "sessions/rescheduleSession",
   async ({ id, date }: { id: string; date: string }) => {
-    const response = await api.patch(`/api/sessions/${id}/reschedule`, {
+    const response = await api.patch(`/session/${id}/reschedule`, {
       date,
     });
     return response.data.data;
@@ -96,7 +96,7 @@ export const cancelSession = createAsyncThunk(
     sessionId: string;
     cancelledReason: string;
   }) => {
-    const response = await api.patch(`/api/session/${sessionId}/terminate`, {
+    const response = await api.patch(`/session/${sessionId}/terminate`, {
       cancelledReason: cancelledReason,
     });
     return response.data.data;
@@ -191,13 +191,21 @@ const sessionsSlice = createSlice({
         }
       })
       // Cancel session
+      .addCase(cancelSession.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(cancelSession.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.items.findIndex(
           (s) => s._id === action.payload._id,
         );
         if (index !== -1) {
           state.items[index] = action.payload;
         }
+      })
+      .addCase(cancelSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to cancel session";
       });
   },
 });

@@ -282,6 +282,8 @@ export default function WorkerAgreementsPage() {
                                                         setSelectedTermsAgreementId(agreement._id);
                                                         setViewOnlyTerms(false);
 
+                                                        setPaymentCompleted(false);
+
                                                         setTermsDialogOpen(true);
 
                                                         dispatch(fetchPaymentDue({
@@ -346,29 +348,28 @@ export default function WorkerAgreementsPage() {
                                 and according to this agreement.
                             </p>
 
-                            {/* PAYMENT PRIORITY SECTION */}
-                            <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4 space-y-3 shadow-sm">
+                            {(paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted && (
+                                <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4 space-y-3 shadow-sm">
 
-                                <div className="text-center space-y-1">
+                                    <div className="text-center space-y-1">
 
-                                    <h3 className="lg:text-xl md:text-[19px] text-lg font-bold text-foreground">
-                                        Agreement Activation Fee
-                                    </h3>
+                                        <h3 className="lg:text-xl md:text-[19px] text-lg font-bold text-foreground">
+                                            Agreement Activation Fee
+                                        </h3>
 
-                                    <p className="text-muted-foreground">
-                                        Payment is required to activate this agreement
-                                    </p>
+                                        <p className="text-muted-foreground">
+                                            Payment is required to accept this agreement
+                                        </p>
 
-                                    <div className="md:text-3xl text-2xl lg:text-4xl font-extrabold text-green-600">
-                                        $100
+                                        <div className="md:text-3xl text-2xl lg:text-4xl font-extrabold text-green-600">
+                                            $100
+                                        </div>
+
+                                        <p className="md:text-[11px] text-[10px] lg:text-xs text-muted-foreground">
+                                            Secure payment via PayPal (Sandbox)
+                                        </p>
+
                                     </div>
-
-                                    <p className="md:text-[11px] text-[10px] lg:text-xs text-muted-foreground">
-                                        Secure payment via PayPal (Sandbox)
-                                    </p>
-
-                                </div>
-                                {(paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted && (
                                     <PayPalButtons
 
                                         createOrder={async () => {
@@ -426,16 +427,30 @@ export default function WorkerAgreementsPage() {
                                             console.log(err);
                                         }}
 
+                                        // style={{
+                                        //     layout: "horizontal",
+                                        //     height: 35,
+                                        //     shape: "pill",
+                                        //     color: "gold",
+                                        //     label: "pay",
+                                        //     tagline: false
+                                        // }}
                                         style={{
-                                            layout: "vertical",
-                                            color: "blue",
+                                            layout: "horizontal",   // ✅ smaller
+                                            height: 38,             // ✅ smaller height
                                             shape: "rect",
-                                            label: "pay"
+                                            color: "blue",
+                                            label: "pay",
+                                            tagline: false          // ✅ removes extra text
                                         }}
                                     />
-                                )}
-                            </div>
-
+                                </div>
+                            )}
+                            {paymentCompleted && (
+                                <div className="text-green-600 text-sm text-center font-medium">
+                                    ✅ Payment completed. You can now accept terms.
+                                </div>
+                            )}
                             {/* IMPORTANT TERMS ONLY */}
                             <div className="space-y-2 text-xs border-t pt-3">
 
@@ -471,19 +486,15 @@ export default function WorkerAgreementsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setTermsDialogOpen(false)}
-                                disabled={
-                                    acceptingTerms ||
-
-                                    ((paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted)
-                                }                            >
+                            >
                                 {viewOnlyTerms ? 'Close' : 'Cancel'}
                             </Button>
                             {!viewOnlyTerms && (
                                 <Button
                                     size="sm"
                                     onClick={handleAcceptTerms}
-                                    disabled={acceptingTerms}
-                                    className={`${acceptingTerms ? 'cursor-not-allowed opacity-60' : ''}`}
+                                    disabled={acceptingTerms || ((paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted)}
+                                    className={`${acceptingTerms ? 'cursor-not-allowed opacity-60 bg-muted' : ''}`}
                                 >
                                     <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                                     {acceptingTerms ? 'Accepting...' : 'Accept'}

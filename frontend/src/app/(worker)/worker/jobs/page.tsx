@@ -12,6 +12,7 @@ import {
     CalendarDays, Send, CheckCircle2, Loader2,
     ArrowLeft, X,
     UserRoundCheck,
+    BadgeCheck,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -21,6 +22,7 @@ import Link from 'next/link';
 import { fetchMyApplication } from '@/redux/slices/applicationsSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DatePicker } from '@/components/ui/date-picker';
+import { formatTime } from '@/lib/formatTime';
 /* ──────────────────────── helpers ──────────────────────── */
 
 function formatLocation(loc: Job['location']): string {
@@ -216,9 +218,9 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                                 <p> Name: {job.client.firstName} {job.client.lastName} </p>
                                 <p> Email: {job.client.email} </p>
                             </div>
-                            <div className='flex flex-col items-center'>
+                            {/* <div className='flex flex-col items-center'>
                                 <UserRoundCheck className='text-[#27b3eb]' /><Link href={`/profile/${job.client._id}`} className="text-[#27b3eb] hover:underline">View Profile</Link>
-                            </div>
+                            </div> */}
 
                         </div>
                     </div>
@@ -247,9 +249,25 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                                 </div>
                             ))}
 
+                            {/* Preferred Worker Type display */}
+                            {job.preferredWorkerType && (
+
+                                <>
+                                    <Separator />
+                                    <div className="flex flex-row items-center flex-wrap gap-2 md:text-[13px] text-xs lg:text-sm font-semibold">
+                                        <div className='flex flex-row gap-2'>
+                                            <BadgeCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+                                            <span>Preferred Worker Type:</span>
+
+                                        </div>
+                                        <span className="capitalize font-normal border-2 border-blue-400 text-blue-500 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full w-fit">{job.preferredWorkerType === 'ndisProvider' ? 'Ndis Provider' : job.preferredWorkerType === 'individualSupportWorker' ? 'Individual Support Worker' : job.preferredWorkerType}</span>
+                                    </div>
+                                </>
+                            )}
+
                             {(job.jobSessions ?? []).length > 0 && (
                                 <>
-                                    {((job.supportDetails ?? []).length > 0 || loc) && <Separator />}
+                                    {((job.supportDetails ?? []).length > 0 || loc || job.preferredWorkerType) && <Separator />}
                                     <div>
                                         <div className="flex items-center gap-2 text-sm font-semibold mb-2">
                                             <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -262,7 +280,8 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {(s.period ?? []).map((p: any, j: number) => (
                                                             <Badge key={j} variant="outline" className="text-xs font-normal">
-                                                                <Clock className="h-3 w-3 mr-1" />{p.startTime} – {p.endTime}
+                                                                <Clock className="h-3 w-3 mr-1" />
+                                                                {formatTime(p.startTime)} – {formatTime(p.endTime)}
                                                             </Badge>
                                                         ))}
                                                     </div>
@@ -295,8 +314,6 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                         </div>
                     </div>
 
-                    {/* Apply Button */}
-                    // Replace the Apply Button section:
                     <div className="pt-2">
                         {hasApplied ? (
                             <Button

@@ -27,6 +27,7 @@ import {
     Clock, Calendar, DollarSign, Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatTime } from '@/lib/formatTime';
 
 const statusStyles: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
@@ -236,6 +237,7 @@ export default function AdminInvoicesPage() {
                                 <TableHead>Time</TableHead>
                                 <TableHead>Amount</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Attachment</TableHead>
                                 <TableHead>Submitted</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -273,10 +275,17 @@ export default function AdminInvoicesPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-sm">
-                                        {format(new Date(invoice.date), 'dd MMM yyyy')}
+                                        {invoice?.date ? format(new Date(invoice.date), 'dd MMM yyyy') : '—'}
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
-                                        {invoice.startTime} – {invoice.endTime}
+                                        {invoice?.startTime && invoice?.endTime
+                                            ? `${formatTime(invoice.startTime)} – ${formatTime(invoice.endTime)}`
+                                            : invoice?.startTime
+                                                ? formatTime(invoice.startTime)
+                                                : invoice?.endTime
+                                                    ? formatTime(invoice.endTime)
+                                                    : '—'
+                                        }
                                     </TableCell>
                                     <TableCell className="font-semibold">
                                         ${invoice.totalAmount.toFixed(2)}
@@ -286,6 +295,21 @@ export default function AdminInvoicesPage() {
                                             {statusIcons[invoice.status]}
                                             <span className="capitalize">{invoice.status}</span>
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {(invoice as any).file?.url ? (
+                                            <a
+                                                href={(invoice as any).file.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                            >
+                                                <FileText className="h-3.5 w-3.5" />
+                                                View
+                                            </a>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-xs text-muted-foreground">
                                         {invoice.createdAt
@@ -298,52 +322,47 @@ export default function AdminInvoicesPage() {
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className="h-8 w-8"
+                                                className="md:h-7 h-6 lg:h-8 lg:w-8 md:w-7 w-6 cursor-pointer"
                                                 onClick={() => {
                                                     setSelectedInvoice(invoice);
                                                     setViewDialogOpen(true);
                                                 }}
                                             >
-                                                <Eye className="h-4 w-4" />
+                                                <Eye className="lg:h-4 lg:w-4 md:h-3.5 md:w-3.5 h-3 w-3" />
                                             </Button>
 
                                             {/* Pending — approve + decline */}
                                             {invoice.status === 'pending' && (
                                                 <>
-                                                    <Button
-                                                        size="sm"
-                                                        className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                                    <button
+                                                        className="cursor-pointer md:h-7 h-6 lg:h-8 md:text-[11px] text-[10px] lg:text-xs bg-green-600 hover:bg-green-700 text-white flex flex-row items-center font-medium rounded px-1.5"
                                                         disabled={actionLoading}
                                                         onClick={() => handleAdminApprove(invoice)}
                                                     >
-                                                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                                        <CheckCircle2 className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1" />
                                                         Approve
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                                                    </button>
+                                                    <button
+                                                        className="cursor-pointer md:h-7 h-6 lg:h-8 md:text-[11px] text-[10px] lg:text-xs bg-red-500 hover:bg-red-600 text-white flex flex-row items-center font-medium rounded px-1.5"
                                                         onClick={() => openDeclineFromPending(invoice)}
                                                     >
                                                         <XCircle className="h-3.5 w-3.5 mr-1" />
                                                         Decline
-                                                    </Button>
+                                                    </button>
                                                 </>
                                             )}
 
                                             {/* Not pending — overwrite */}
                                             {invoice.status !== 'pending' && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-8 text-xs"
+                                                <button
+                                                    className="cursor-pointer md:h-7 h-6 lg:h-8 lg:text-xs md:text-[11px] text-[10px] bg-sky-500 hover:bg-sky-600 text-white flex flex-row items-center font-medium rounded px-1.5"
                                                     onClick={() => {
                                                         setSelectedInvoice(invoice);
                                                         setOverwriteDialogOpen(true);
                                                     }}
                                                 >
                                                     Overwrite
-                                                </Button>
+                                                </button>
                                             )}
                                         </div>
                                     </TableCell>
@@ -428,7 +447,7 @@ export default function AdminInvoicesPage() {
                                         <Calendar className="h-3 w-3" /> Date
                                     </p>
                                     <p className="font-medium">
-                                        {format(new Date(selectedInvoice.date), 'dd MMM yyyy')}
+                                        {selectedInvoice.date ? format(new Date(selectedInvoice.date), 'dd MMM yyyy') : '—'}
                                     </p>
                                 </div>
                                 <div>
@@ -436,7 +455,14 @@ export default function AdminInvoicesPage() {
                                         <Clock className="h-3 w-3" /> Time
                                     </p>
                                     <p className="font-medium">
-                                        {selectedInvoice.startTime} – {selectedInvoice.endTime}
+                                        {selectedInvoice?.startTime && selectedInvoice?.endTime
+                                            ? `${formatTime(selectedInvoice.startTime)} – ${formatTime(selectedInvoice.endTime)}`
+                                            : selectedInvoice?.startTime
+                                                ? formatTime(selectedInvoice.startTime)
+                                                : selectedInvoice?.endTime
+                                                    ? formatTime(selectedInvoice.endTime)
+                                                    : '—'
+                                        }
                                     </p>
                                 </div>
                                 <div>
@@ -455,6 +481,19 @@ export default function AdminInvoicesPage() {
                                     </Badge>
                                 </div>
                             </div>
+                            {selectedInvoice.file?.url && (
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Attachment</Label>
+                                    <a
+                                        href={selectedInvoice.file.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm mt-1 block bg-gray-200 rounded px-3 py-2 text-blue-600 hover:underline"
+                                    >
+                                        {selectedInvoice.file.originalName ?? 'View Attachment'}
+                                    </a>
+                                </div>
+                            )}
 
                             {selectedInvoice.notes && (
                                 <div>

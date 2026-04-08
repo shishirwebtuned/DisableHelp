@@ -20,15 +20,18 @@ export const createInvoice = catchAsync(async (req, res) => {
   const { client, totalAmount, date, startTime, endTime, notes } = req.body;
   const filesMap = req.files as Record<string, Express.Multer.File[]>;
 
-  const invoice = await Invoice.create({
+  const invoiceData: any = {
     worker: workerId,
     client,
     totalAmount,
-    date,
-    startTime,
-    endTime,
     notes,
-  });
+  };
+
+  if (date) invoiceData.date = date;
+  if (startTime) invoiceData.startTime = startTime;
+  if (endTime) invoiceData.endTime = endTime;
+
+  const invoice = await Invoice.create(invoiceData);
 
   if (filesMap?.invoiceFile?.[0]) {
     const uploaded = await uploadToCloudinary(
@@ -71,9 +74,12 @@ export const editInvoice = catchAsync(async (req, res) => {
   const filesMap = req.files as Record<string, Express.Multer.File[]>;
 
   if (totalAmount !== undefined) invoice.totalAmount = totalAmount;
-  if (date !== undefined) invoice.date = date;
-  if (startTime !== undefined) invoice.startTime = startTime;
-  if (endTime !== undefined) invoice.endTime = endTime;
+  if (date !== undefined && date !== "") invoice.date = date;
+
+  if (startTime !== undefined && startTime !== "")
+    invoice.startTime = startTime;
+
+  if (endTime !== undefined && endTime !== "") invoice.endTime = endTime;
   if (notes !== undefined) invoice.notes = notes;
 
   if (filesMap?.invoiceFile?.[0]) {

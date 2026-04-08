@@ -40,6 +40,7 @@ interface FormState {
     jobSessions: SessionDay[];
     preference: { gender: string; others: string[] };
     jobSessionByClient: boolean;
+    preferredWorkerType?: string;
     // hourlyRate: number;
 }
 
@@ -60,8 +61,8 @@ export default function EditJobPage() {
         jobSessions: [],
         preference: { gender: '', others: [] },
         jobSessionByClient: false,
+        preferredWorkerType: undefined,
         // hourlyRate: 0
-
     });
     const [enableJobSessions, setEnableJobSessions] = useState(false);
     const [otherInput, setOtherInput] = useState('');
@@ -97,6 +98,7 @@ export default function EditJobPage() {
             jobSessions,
             preference: job.preference ?? { gender: '', others: [] },
             jobSessionByClient: job.jobSessionByClient ?? false,
+            preferredWorkerType: job.preferredWorkerType ?? undefined,
             // hourlyRate: job.hourlyRate ?? 0
         });
         setEnableJobSessions(job.jobSessionByClient ?? (jobSessions.length > 0));
@@ -143,6 +145,7 @@ export default function EditJobPage() {
         setOtherInput('');
     };
 
+
     const handleSubmit = async () => {
         setSubmitError(null);
         if (!form.title.trim()) { setSubmitError('Job title is required.'); return; }
@@ -167,6 +170,7 @@ export default function EditJobPage() {
             jobSessions: enableJobSessions ? form.jobSessions : [],
             preference: { gender: form.preference.gender || undefined, others: form.preference.others },
             jobSessionByClient,
+            preferredWorkerType: form.preferredWorkerType,
             // hourlyRate: form.hourlyRate,
         };
 
@@ -234,6 +238,7 @@ export default function EditJobPage() {
                             </Select>
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Sessions per period</Label>
@@ -250,6 +255,18 @@ export default function EditJobPage() {
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {HOURS_OPTIONS.map((n) => (<SelectItem key={n} value={String(n)}>{n} hr{n > 1 ? 's' : ''}</SelectItem>))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <Label>Preferred Worker Type</Label>
+                            <Select value={form.preferredWorkerType} onValueChange={(v) => setField('preferredWorkerType', v)}>
+                                <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ndisProvider">Ndis Provider</SelectItem>
+                                    <SelectItem value="individualSupportWorker">Individual Support Worker</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

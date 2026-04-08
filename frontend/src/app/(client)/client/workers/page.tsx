@@ -42,6 +42,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WorkerCard from './WorkerCard';
+import { CircleWithPopup } from './CircleWithPopup';
 
 
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -64,9 +65,27 @@ function formatDistance(km: number): string {
 
 function FitBounds({ markers }: { markers: [number, number][] }) {
     const map = useMap();
-    if (!markers || markers.length === 0) return null;
-    const bounds = L.latLngBounds(markers);
-    map.fitBounds(bounds, { padding: [50, 50] });
+
+    useEffect(() => {
+        if (!markers || markers.length === 0) return;
+        const bounds = L.latLngBounds(markers);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+    }, [markers.length]);
+
+    return null;
+}
+
+function ZoomLimiter({ active }: { active: boolean }) {
+    const map = useMap();
+    useEffect(() => {
+        if (active) {
+            map.setMinZoom(12);
+            map.setMaxZoom(14);
+        } else {
+            map.setMinZoom(2);
+            map.setMaxZoom(18);
+        }
+    }, [active, map]);
     return null;
 }
 
@@ -101,7 +120,6 @@ function FocusWorker({ worker }: { worker: any }) {
     return null;
 }
 
-// Defined outside component to avoid recreation on every render
 const MapLegend = () => (
     <div className="absolute top-3 right-3 z-[1000] bg-white border rounded-lg shadow-md px-2 md:px-3 py-1.5 md:py-2 md:text-[11px] text-[10px] lg:text-xs">
         <div className="font-semibold mb-1">Worker Type</div>
@@ -116,7 +134,7 @@ const MapLegend = () => (
     </div>
 );
 
-const WorkerPopup = ({
+export const WorkerPopup = ({
     worker,
     clientCoords,
 }: {
@@ -134,7 +152,7 @@ const WorkerPopup = ({
                 {worker.approved ? <BadgeCheck className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1" /> : ""}
             </strong>
             <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">
-                {worker.address?.line1}, {worker.address?.state}, {worker.address?.postalCode}
+                {worker.address?.state}, {worker.address?.postalCode}
             </span>
             {clientCoords && worker.coords && (
                 <div className="text-[10px] md:text-[11px] lg:text-xs text-blue-500 mt-0.5">
@@ -152,15 +170,12 @@ export default function ClientWorkersPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: workers, myWorkers, loading } = useSelector((state: RootState) => state.users);
 
-    // Find Workers tab state
     const [view, setView] = useState<'map' | 'list'>('list');
     const [workerType, setWorkerType] = useState("all");
 
-    // My Workers tab state
     const [myView, setMyView] = useState<'map' | 'list'>('list');
     const [myWorkerType, setMyWorkerType] = useState("all");
 
-    // Shared state
     const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
@@ -171,10 +186,7 @@ export default function ClientWorkersPage() {
     const focusWorkerParam = searchParams.get('focusWorker');
     const router = useRouter();
 
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+    useEffect(() => { setIsClient(true); }, []);
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition(
@@ -184,17 +196,11 @@ export default function ClientWorkersPage() {
     }, []);
 
     useEffect(() => {
-        dispatch(fetchWorkersWithProfile({
-            page: 1,
-            limit: 20
-        }));
+        dispatch(fetchWorkersWithProfile({ page: 1, limit: 20 }));
     }, [dispatch]);
 
     useEffect(() => {
-        dispatch(fetchMyWorkers({
-            page: 1,
-            limit: 20
-        }));
+        dispatch(fetchMyWorkers({ page: 1, limit: 20 }));
     }, [dispatch]);
 
     useEffect(() => {
@@ -202,14 +208,11 @@ export default function ClientWorkersPage() {
             const updatedWorkers = await Promise.all(
                 workers.map(async (worker) => {
                     if (!worker.address) return worker;
-
                     const fullAddress = `${worker.address.line1}, ${worker.address.line2 || ''}, ${worker.address.state} ${worker.address.postalCode}, Australia`;
                     const normalizedAddress = fullAddress.replace(/\s+/g, ' ').trim();
-
                     try {
                         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}location/geocode?address=${encodeURIComponent(normalizedAddress)}`);
                         const coords = await res.json();
-
                         return {
                             ...worker,
                             coords: coords?.lat && coords?.lon ? [Number(coords.lat), Number(coords.lon)] : undefined,
@@ -220,39 +223,39 @@ export default function ClientWorkersPage() {
                     }
                 })
             );
-
             setWorkersWithCoords(updatedWorkers);
         };
-
         if (workers.length > 0) fetchCoords();
     }, [workers]);
 
+    // Sync focusedWorker with coords once geocoding finishes
+    useEffect(() => {
+        if (!focusedWorker) return;
+        const geocoded = workersWithCoords.find(w => w._id === focusedWorker._id);
+        if (geocoded?.coords && !focusedWorker.coords) {
+            setFocusedWorker(geocoded);
+        }
+    }, [workersWithCoords]);
+
     useEffect(() => {
         if (!focusWorkerParam || workersWithCoords.length === 0) return;
-
         const target = workersWithCoords.find(w => w._id === focusWorkerParam);
         if (target?.coords) {
             setFocusedWorker(target);
-            // Open the correct tab's map depending on whether it's a "my worker"
             const isMyWorker = myWorkers.some(w => w._id === target._id);
             if (isMyWorker) {
                 setMyView('map');
             } else {
                 setView('map');
             }
-            // Clear the URL param so a page refresh doesn't re-trigger the focus
             router.replace(window.location.pathname, { scroll: false });
         }
     }, [focusWorkerParam, workersWithCoords]);
 
     useEffect(() => {
-        const checkScreen = () => {
-            setIsMobile(window.innerWidth < 900);
-        };
-
+        const checkScreen = () => setIsMobile(window.innerWidth < 900);
         checkScreen();
         window.addEventListener("resize", checkScreen);
-
         return () => window.removeEventListener("resize", checkScreen);
     }, []);
 
@@ -276,7 +279,6 @@ export default function ClientWorkersPage() {
         shadowSize: isMobile ? [30, 30] : [41, 41],
     }), [isMobile]);
 
-    // Find Workers filtered lists
     const filteredWorkers = workers.filter(worker => {
         if (workerType === "all") return true;
         if (workerType === "ndis") return worker.isNdisProvider;
@@ -291,7 +293,6 @@ export default function ClientWorkersPage() {
         return true;
     });
 
-    // My Workers filtered lists
     const filteredMyWorkers = myWorkers.filter(worker => {
         if (myWorkerType === "all") return true;
         if (myWorkerType === "ndis") return worker.isNdisProvider;
@@ -307,7 +308,7 @@ export default function ClientWorkersPage() {
         return true;
     });
 
-    // Reusable map legend — defined above component
+    const hasFocusedCoords = focusedWorker && Array.isArray(focusedWorker.coords) && focusedWorker.coords.length === 2;
 
     return (
         <div className="space-y-5">
@@ -384,30 +385,41 @@ export default function ClientWorkersPage() {
                                             className="w-full h-full"
                                         >
                                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                            <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
-                                                {filteredWorkersWithCoords
-                                                    .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
-                                                    .filter(w => focusedWorker ? w._id === focusedWorker._id : true)
-                                                    .map(worker => (
-                                                        <Marker
-                                                            key={worker._id}
-                                                            position={worker.coords as [number, number]}
-                                                            icon={worker.isNdisProvider ? ndisIcon : workerIcon}
-                                                        >
-                                                            <Popup>
-                                                                <WorkerPopup worker={worker} clientCoords={clientCoords} />
-                                                            </Popup>
-                                                        </Marker>
-                                                    ))}
-                                            </MarkerClusterGroup>
-                                            {focusedWorker?.coords ? (
-                                                <FocusWorker worker={focusedWorker} />
+                                            <ZoomLimiter active={!!hasFocusedCoords} />
+
+                                            {hasFocusedCoords ? (
+                                                <>
+                                                    <CircleWithPopup worker={focusedWorker} clientCoords={clientCoords} />
+                                                    <Marker
+                                                        position={focusedWorker.coords as [number, number]}
+                                                        icon={focusedWorker.isNdisProvider ? ndisIcon : workerIcon}
+                                                        interactive={false}
+                                                    />
+                                                    <FocusWorker worker={focusedWorker} />
+                                                </>
                                             ) : (
-                                                <FitBounds
-                                                    markers={filteredWorkersWithCoords
-                                                        .filter(w => w.coords)
-                                                        .map(w => w.coords as [number, number])}
-                                                />
+                                                <>
+                                                    <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
+                                                        {filteredWorkersWithCoords
+                                                            .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
+                                                            .map(worker => (
+                                                                <Marker
+                                                                    key={worker._id}
+                                                                    position={worker.coords as [number, number]}
+                                                                    icon={worker.isNdisProvider ? ndisIcon : workerIcon}
+                                                                >
+                                                                    <Popup>
+                                                                        <WorkerPopup worker={worker} clientCoords={clientCoords} />
+                                                                    </Popup>
+                                                                </Marker>
+                                                            ))}
+                                                    </MarkerClusterGroup>
+                                                    <FitBounds
+                                                        markers={filteredWorkersWithCoords
+                                                            .filter(w => w.coords)
+                                                            .map(w => w.coords as [number, number])}
+                                                    />
+                                                </>
                                             )}
                                         </MapContainer>
                                     </div>
@@ -431,7 +443,9 @@ export default function ClientWorkersPage() {
                                             clientCoords={clientCoords}
                                             workerCoords={workerWithCoord}
                                             onViewMap={(w) => {
-                                                setFocusedWorker(w);
+                                                const geocoded = workersWithCoords.find(wc => wc._id === w._id);
+                                                const resolved = geocoded?.coords ? geocoded : w;
+                                                setFocusedWorker(resolved);
                                                 setView("map");
                                             }}
                                         />
@@ -451,7 +465,6 @@ export default function ClientWorkersPage() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {/* Controls */}
                             <div className="flex justify-end items-center">
                                 <div className="flex flex-wrap gap-4 md:gap-8 items-center">
                                     <Select value={myWorkerType} onValueChange={(val) => { setMyWorkerType(val); setFocusedWorker(null); }}>
@@ -510,30 +523,41 @@ export default function ClientWorkersPage() {
                                                 className="w-full h-full"
                                             >
                                                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                                <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
-                                                    {filteredMyWorkersWithCoords
-                                                        .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
-                                                        .filter(w => focusedWorker ? w._id === focusedWorker._id : true)
-                                                        .map(worker => (
-                                                            <Marker
-                                                                key={worker._id}
-                                                                position={worker.coords as [number, number]}
-                                                                icon={worker.isNdisProvider ? ndisIcon : workerIcon}
-                                                            >
-                                                                <Popup>
-                                                                    <WorkerPopup worker={worker} clientCoords={clientCoords} />
-                                                                </Popup>
-                                                            </Marker>
-                                                        ))}
-                                                </MarkerClusterGroup>
-                                                {focusedWorker?.coords ? (
-                                                    <FocusWorker worker={focusedWorker} />
+                                                <ZoomLimiter active={!!hasFocusedCoords} />
+
+                                                {hasFocusedCoords ? (
+                                                    <>
+                                                        <CircleWithPopup worker={focusedWorker} clientCoords={clientCoords} />
+                                                        <Marker
+                                                            position={focusedWorker.coords as [number, number]}
+                                                            icon={focusedWorker.isNdisProvider ? ndisIcon : workerIcon}
+                                                            interactive={false}
+                                                        />
+                                                        <FocusWorker worker={focusedWorker} />
+                                                    </>
                                                 ) : (
-                                                    <FitBounds
-                                                        markers={filteredMyWorkersWithCoords
-                                                            .filter(w => w.coords)
-                                                            .map(w => w.coords as [number, number])}
-                                                    />
+                                                    <>
+                                                        <MarkerClusterGroup iconCreateFunction={createCustomClusterIcon}>
+                                                            {filteredMyWorkersWithCoords
+                                                                .filter(w => Array.isArray(w.coords) && w.coords.length === 2)
+                                                                .map(worker => (
+                                                                    <Marker
+                                                                        key={worker._id}
+                                                                        position={worker.coords as [number, number]}
+                                                                        icon={worker.isNdisProvider ? ndisIcon : workerIcon}
+                                                                    >
+                                                                        <Popup>
+                                                                            <WorkerPopup worker={worker} clientCoords={clientCoords} />
+                                                                        </Popup>
+                                                                    </Marker>
+                                                                ))}
+                                                        </MarkerClusterGroup>
+                                                        <FitBounds
+                                                            markers={filteredMyWorkersWithCoords
+                                                                .filter(w => w.coords)
+                                                                .map(w => w.coords as [number, number])}
+                                                        />
+                                                    </>
                                                 )}
                                             </MapContainer>
                                         </div>
@@ -553,7 +577,9 @@ export default function ClientWorkersPage() {
                                                 clientCoords={clientCoords}
                                                 workerCoords={workerWithCoord}
                                                 onViewMap={(w) => {
-                                                    setFocusedWorker(w);
+                                                    const geocoded = workersWithCoords.find(wc => wc._id === w._id);
+                                                    const resolved = geocoded?.coords ? geocoded : w;
+                                                    setFocusedWorker(resolved);
                                                     setMyView("map");
                                                 }}
                                             />

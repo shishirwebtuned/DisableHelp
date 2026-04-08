@@ -121,6 +121,7 @@ export interface Job {
   startDate: string;
   endDate?: string;
   hoursPerWeek: number;
+  preferredWorkerType?: "ndisProvider" | "individualSupportWorker";
   createdAt: string;
   updatedAt: string;
 }

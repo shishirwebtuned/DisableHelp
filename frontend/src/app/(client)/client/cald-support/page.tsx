@@ -30,9 +30,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Languages, ChevronDown, BadgeCheck, MapPin } from 'lucide-react';
 import WorkerCard from '../workers/WorkerCard';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Input } from '@/components/ui/input';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ const WorkerPopup = ({
                 )}
             </strong>
             <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">
-                {worker.address?.line1}, {worker.address?.state}, {worker.address?.postalCode}
+                {worker.address?.state}, {worker.address?.postalCode}
             </span>
             {clientCoords && worker.coords && (
                 <div className="text-[10px] md:text-[11px] lg:text-xs text-blue-500 mt-0.5">
@@ -105,13 +106,20 @@ const WorkerPopup = ({
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const LANGUAGE_OPTIONS = [
-    'English', 'Mandarin', 'Arabic', 'Vietnamese', 'Cantonese',
-    'Greek', 'Italian', 'Hindi', 'Punjabi', 'Spanish',
-    'Tagalog', 'Korean', 'Japanese', 'Turkish', 'Persian',
-    'Nepali', 'Tamil', 'Sinhalese', 'French', 'Portuguese',
+    'English', 'Mandarin', 'Cantonese', 'Hindi', 'Bengali', 'Spanish', 'French', 'Arabic', 'Portuguese', 'Russian',
+    'Urdu', 'Indonesian', 'German', 'Japanese', 'Swahili', 'Marathi', 'Telugu', 'Turkish', 'Tamil', 'Yue Chinese',
+    'Vietnamese', 'Korean', 'Italian', 'Thai', 'Gujarati', 'Javanese', 'Persian', 'Polish', 'Ukrainian', 'Malay',
+    'Punjabi', 'Romanian', 'Dutch', 'Greek', 'Hungarian', 'Czech', 'Swedish', 'Finnish', 'Hebrew', 'Danish',
+    'Norwegian', 'Slovak', 'Bulgarian', 'Serbian', 'Croatian', 'Sinhalese', 'Tagalog', 'Nepali', 'Burmese', 'Khmer',
+    'Lao', 'Pashto', 'Somali', 'Amharic', 'Zulu', 'Xhosa', 'Afrikaans', 'Hausa', 'Igbo', 'Yoruba', 'Maori',
+    'Samoan', 'Tongan', 'Fijian', 'Māori', 'Mongolian', 'Azerbaijani', 'Kazakh', 'Uzbek', 'Kurdish', 'Albanian',
+    'Lithuanian', 'Latvian', 'Estonian', 'Slovenian', 'Macedonian', 'Georgian', 'Armenian', 'Bosnian', 'Montenegrin',
+    'Basque', 'Galician', 'Catalan', 'Breton', 'Welsh', 'Irish', 'Scottish Gaelic', 'Icelandic', 'Greenlandic', 'Luxembourgish',
+    'Malagasy', 'Haitian Creole', 'Creole', 'Other',
 ];
 
 // ─── main component ───────────────────────────────────────────────────────────
+
 
 export default function CALDSupportPage() {
     const dispatch = useDispatch<AppDispatch>();
@@ -123,6 +131,7 @@ export default function CALDSupportPage() {
     const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [languageSearch, setLanguageSearch] = useState('');
 
     // null = dialog closed; worker object = dialog open, focused on that worker
     const [mapDialogWorker, setMapDialogWorker] = useState<any>(null);
@@ -223,6 +232,12 @@ export default function CALDSupportPage() {
         return true;
     });
 
+    // Filter language options based on search
+    const filteredLanguageOptions = useMemo(() => {
+        if (!languageSearch.trim()) return LANGUAGE_OPTIONS;
+        return LANGUAGE_OPTIONS.filter(lang => lang.toLowerCase().includes(languageSearch.trim().toLowerCase()));
+    }, [languageSearch]);
+
     // Always use the geocoded version for the dialog (has coords)
     const dialogWorker = mapDialogWorker
         ? (workersWithCoords.find(w => w._id === mapDialogWorker._id) ?? mapDialogWorker)
@@ -248,7 +263,7 @@ export default function CALDSupportPage() {
                 {/* Toolbar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="font-semibold text-black">Support Workers List</div>
-                    <div className="flex flex-row gap-4">
+                    <div className="flex sm:flex-row flex-col  gap-4">
                         <Select value={workerType} onValueChange={setWorkerType}>
                             <SelectTrigger className="md:w-[150px] w-[115px] lg:w-[180px] h-8 text-xs">
                                 <SelectValue placeholder="Filter workers" />
@@ -275,8 +290,19 @@ export default function CALDSupportPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52 max-h-72 overflow-y-auto">
                                 <DropdownMenuLabel>Filter by language</DropdownMenuLabel>
+                                <div className="px-2 py-1">
+                                    <Input
+                                        placeholder="Search language..."
+                                        value={languageSearch}
+                                        onChange={e => setLanguageSearch(e.target.value)}
+                                        className="h-7 md:text-[13px] text-xs lg:text-sm px-2"
+                                    />
+                                </div>
                                 <DropdownMenuSeparator />
-                                {LANGUAGE_OPTIONS.map(lang => (
+                                {filteredLanguageOptions.length === 0 && (
+                                    <div className="px-3 py-2 text-xs text-muted-foreground">No languages found</div>
+                                )}
+                                {filteredLanguageOptions.map(lang => (
                                     <DropdownMenuCheckboxItem
                                         key={lang}
                                         checked={selectedLanguages.includes(lang)}
@@ -368,21 +394,28 @@ export default function CALDSupportPage() {
                                 <MapContainer
                                     center={dialogWorker.coords as [number, number]}
                                     zoom={13}
+                                    minZoom={12}
+                                    maxZoom={14}
+                                    scrollWheelZoom={false}
+                                    doubleClickZoom={false}
+                                    dragging={true}
                                     className="w-full h-full"
-                                    // key forces a full remount when switching between workers
                                     key={dialogWorker._id}
                                 >
                                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
+                                    {/* Show a circle for privacy */}
+                                    <Circle
+                                        center={dialogWorker.coords as [number, number]}
+                                        radius={1000} // 1km radius, adjust as needed
+                                        pathOptions={{ color: '#2563eb', fillColor: '#60a5fa', fillOpacity: 0.25 }}
+                                    />
+                                    {/* Show the icon in the middle, but no popup */}
                                     <Marker
                                         position={dialogWorker.coords as [number, number]}
                                         icon={dialogWorker.isNdisProvider ? ndisIcon : workerIcon}
-                                        ref={(ref) => { if (ref) ref.openPopup(); }}
-                                    >
-                                        <Popup>
-                                            <WorkerPopup worker={dialogWorker} clientCoords={clientCoords} />
-                                        </Popup>
-                                    </Marker>
+                                        interactive={false}
+                                    />
 
                                     {/* Fly to the focused worker */}
                                     <FocusWorker worker={dialogWorker} />

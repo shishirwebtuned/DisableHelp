@@ -8,6 +8,7 @@ import {
   capturePayPalOrder,
   createPayPalOrder,
 } from "../utils/PaypalService.js";
+import { buildFilter, getPagination } from "../utils/queryHelper.js";
 
 export const createPayment = catchAsync(async (req, res) => {
   const { workerId, clientId, paymentMethod } = req.body;
@@ -152,19 +153,43 @@ export const getPaymentStatus = catchAsync(async (req, res) => {
 
 export const getWorkerPayments = catchAsync(async (req, res) => {
   const workerId = req.params.workerId as string;
+  const { page, limit, skip } = getPagination(req.query);
 
   if (!mongoose.Types.ObjectId.isValid(workerId))
     throw new AppError("Invalid worker ID", 400);
 
-  const payments = await Payment.find({ worker: workerId })
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
+  const query = {
+    worker: workerId,
+    ...filter,
+  };
+
+  const payments = await Payment.find(query)
     .sort({ paymentDate: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("worker", "firstName lastName email")
+    .populate("client", "firstName lastName email")
+    .lean()
     .exec();
+
+  const total = await Payment.countDocuments(query);
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Worker payments fetched successfully",
-    data: payments,
+    data: {
+      payments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: limit ? Math.ceil(total / limit) : 0,
+      },
+    },
   });
 });
 
@@ -182,5 +207,82 @@ export const getClientPayments = catchAsync(async (req, res) => {
     statusCode: 200,
     message: "Client payments fetched successfully",
     data: payments,
+  });
+});
+
+export const getMyPayments = catchAsync(async (req, res) => {
+  const workerId = req.user.id;
+  const { page, limit, skip } = getPagination(req.query);
+
+  if (!mongoose.Types.ObjectId.isValid(workerId))
+    throw new AppError("Invalid user ID", 400);
+
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
+
+  const query = {
+    worker: workerId,
+    ...filter,
+  };
+
+  const payments = await Payment.find(query)
+    .sort({ paymentDate: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("worker", "firstName lastName email")
+    .populate("client", "firstName lastName email")
+    .lean()
+    .exec();
+
+  const total = await Payment.countDocuments(query);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "My payments fetched successfully",
+    data: {
+      payments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: limit ? Math.ceil(total / limit) : 0,
+      },
+    },
+  });
+});
+
+export const getAllPayments = catchAsync(async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = buildFilter(req.query, {
+    exact: ["status"],
+  });
+
+  const payments = await Payment.find(filter)
+    .sort({ paymentDate: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("worker", "firstName lastName email")
+    .populate("client", "firstName lastName email")
+    .lean()
+    .exec();
+
+  const total = await Payment.countDocuments(filter);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "All payments fetched successfully",
+    data: {
+      payments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: limit ? Math.ceil(total / limit) : 0,
+      },
+    },
   });
 });

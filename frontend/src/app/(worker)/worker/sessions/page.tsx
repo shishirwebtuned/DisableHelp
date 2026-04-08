@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import {
+    cancelSession,
     fetchSessionsByUser,
     rescheduleSession,
 } from '@/redux/slices/sessionsSlice';
@@ -37,6 +38,7 @@ import {
     DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from '@/components/ui/date-picker';
@@ -44,6 +46,7 @@ import { format } from 'date-fns';
 import Loading from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { formatDuration, formatTime } from '@/lib/formatTime';
+import { Textarea } from '@/components/ui/textarea';
 
 type Status = "scheduled" | "in-progress" | "completed" | "cancelled";
 
@@ -85,6 +88,11 @@ export default function WorkerSessionsPage() {
     const [editingSession, setEditingSession] = useState<any>(null);
 
     const [statusFilter, setStatusFilter] = useState<string>("all");
+
+    // Cancel dialog state
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelReason, setCancelReason] = useState("");
+    const [cancelSessionId, setCancelSessionId] = useState<string | null>(null);
 
     // Form state for new/edit session
     const [formData, setFormData] = useState({
@@ -218,9 +226,21 @@ export default function WorkerSessionsPage() {
         setIsDrawerOpen(false);
     };
 
-    // const handleCancelSession = async (id: string) => {
-    //     await dispatch(cancelSession(id));
-    // };
+
+    const openCancelDialog = (sessionId: string) => {
+        setCancelSessionId(sessionId);
+        setCancelReason("");
+        setCancelDialogOpen(true);
+    };
+
+    const handleCancelSessionConfirm = async () => {
+        if (cancelSessionId && cancelReason.trim()) {
+            await dispatch(cancelSession({ sessionId: cancelSessionId, cancelledReason: cancelReason }));
+            setCancelDialogOpen(false);
+            setCancelSessionId(null);
+            setCancelReason("");
+        }
+    };
 
     const nextSession = useMemo(() => {
         const now = new Date();
@@ -474,25 +494,25 @@ export default function WorkerSessionsPage() {
                                     return (
                                         <div key={session._id} className="group  transition-all overflow-hidden">
                                             <div className={`h-1 w-full ${session.status === 'cancelled' ? 'bg-destructive' : 'bg-blue-600'}`} />
-                                            <div className="p-5">
+                                            <div className="md:p-4 p-3 lg:p-5">
                                                 <div className="flex justify-between items-start">
-                                                    <div className="flex gap-5">
-                                                        <div className="flex flex-col items-center justify-center h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                                                            <span className="text-xl font-black">{sessionDate.getDate()}</span>
-                                                            <span className="text-[10px] uppercase font-bold">{sessionDate.toLocaleDateString([], { month: 'short' })}</span>
+                                                    <div className="flex md:gap-4 gap-3.5 lg:gap-5">
+                                                        <div className={`flex flex-col items-center justify-center h-10.5 w-10.5 md:h-12 md:w-12 lg:h-14 lg:w-14 rounded-2xl ${session.status === 'cancelled' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                            <span className="text-[15px] md:text-lg lg:text-xl font-black">{sessionDate.getDate()}</span>
+                                                            <span className="text-[8px] md:text-[9px] lg:text-[10px] uppercase font-bold">{sessionDate.toLocaleDateString([], { month: 'short' })}</span>
                                                         </div>
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-3">
-                                                                <h4 className="font-bold text-base">{session?.job?.title}</h4>
-                                                                <StatusBadge status={session?.status} className="text-[10px] py-0 h-4 font-bold uppercase tracking-wider" />
+                                                                <h4 className="font-bold text-[13px] md:text-sm lg:text-base">{session?.job?.title}</h4>
+                                                                <StatusBadge status={session?.status} className="text-[8px] md:text-[9px] lg:text-[10px] py-0 h-3 md:h-4 font-bold uppercase tracking-wider" />
                                                             </div>
-                                                            <div className="flex flex-wrap gap-y-1 gap-x-4 text-sm text-muted-foreground mt-2">
+                                                            <div className="flex flex-wrap gap-y-1 gap-x-3 md:gap-x-3.5 lg:gap-x-4 md:text-[13px] text-xs lg:text-sm text-muted-foreground mt-2">
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <User className="h-3.5 w-3.5 text-blue-500" />
-                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{session?.client?.firstName} {session?.client?.lastName}</span>
+                                                                    <User className={`h-3 w-3 md:h-3.5 md:w-3.5 ${session.status === 'cancelled' ? 'text-red-500' : 'text-blue-500'}`} />
+                                                                    <span className="font-medium text-slate-700">{session?.client?.firstName} {session?.client?.lastName}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                                                    <Clock className={`h-3 w-3 md:h-3.5 md:w-3.5 ${session.status === 'cancelled' ? 'text-red-500' : 'text-blue-500'}`} />
                                                                     <span>
                                                                         {/* {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} */}
 
@@ -541,14 +561,14 @@ export default function WorkerSessionsPage() {
                                                                 >
                                                                     Edit Booking
                                                                 </DropdownMenuItem> */}
-                                                                {/* {session.status !== 'cancelled' && (
+                                                                {session.status !== 'cancelled' && (
                                                                     <DropdownMenuItem
                                                                         className="text-destructive cursor-pointer py-2 font-bold"
-                                                                    // onClick={() => handleCancelSession(session._id)}
+                                                                        onClick={() => openCancelDialog(session._id)}
                                                                     >
                                                                         Cancel Session
                                                                     </DropdownMenuItem>
-                                                                )} */}
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -576,6 +596,61 @@ export default function WorkerSessionsPage() {
                     </div>
                 </div>
             </div>
+            {/* Cancel Session Dialog */}
+            <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader className="space-y-2">
+                        <DialogTitle className="text-xl font-semibold text-red-600">
+                            Cancel Session
+                        </DialogTitle>
+
+                        <DialogDescription className="text-sm text-muted-foreground">
+                            Please provide a reason for cancelling this session. This message
+                            will be visible to the client.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 py-3">
+                        <Label
+                            htmlFor="cancel-reason"
+                            className="text-sm font-medium"
+                        >
+                            Reason for cancellation
+                        </Label>
+
+                        <Textarea
+                            id="cancel-reason"
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            placeholder="Explain why you are cancelling this session..."
+                            className="min-h-[100px] resize-none border-none"
+                            autoFocus
+                        />
+
+                        <p className="text-xs text-muted-foreground">
+                            Be clear and professional. This helps maintain transparency.
+                        </p>
+                    </div>
+
+                    <DialogFooter className="flex gap-2 sm:justify-end">
+                        <Button
+                            variant="outline"
+                            className='cursor-pointer'
+                            onClick={() => setCancelDialogOpen(false)}
+                        >
+                            Keep Session
+                        </Button>
+
+                        <button
+                            onClick={handleCancelSessionConfirm}
+                            disabled={!cancelReason.trim()}
+                            className="min-w-[140px] bg-red-500 text-white rounded-md px-4 py-1.5 disabled:bg-red-300 disabled:cursor-not-allowed font-medium hover:bg-red-600 md:text-[13px] text-xs lg:text-sm cursor-pointer"
+                        >
+                            Confirm Cancellation
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

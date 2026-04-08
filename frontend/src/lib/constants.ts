@@ -36,6 +36,7 @@ export const NAV_ITEMS = {
     // { label: "Timesheets", href: "/worker/timesheets", icon: Clock },
     { label: "Documents", href: "/worker/documents", icon: FolderOpen },
     { label: "Messages", href: "/worker/inbox", icon: MessageSquare },
+    { label: "Payments", href: "/worker/payments", icon: CreditCard },
     { label: "Settings", href: "/worker/settings", icon: Settings },
   ],
   client: [
@@ -56,6 +57,7 @@ export const NAV_ITEMS = {
     { label: "Users", href: "/admin/users", icon: Users },
     { label: "Agreements", href: "/admin/agreements", icon: Shield },
     { label: "Invoices", href: "/admin/invoices", icon: FileText },
+    { label: "Payments", href: "/admin/payments", icon: CreditCard },
     {
       label: "Messages",
       href: "/admin/messages",

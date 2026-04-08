@@ -192,7 +192,7 @@ export const getAgreementById = catchAsync(async (req, res) => {
   const { agreementId } = req.params;
 
   const agreement = await Agreement.findById(agreementId)
-    .populate("job", "title")
+    .populate("job", "title location supportDetails")
     .populate("client", "firstName lastName email")
     .populate("worker", "firstName lastName email")
     .sort({ createdAt: -1 });

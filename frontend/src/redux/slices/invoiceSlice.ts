@@ -20,9 +20,9 @@ export interface Invoice {
   invoiceNumber: string;
   totalAmount: number;
   status: "pending" | "approved" | "declined";
-  date: string;
-  startTime: string;
-  endTime: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
   notes?: string;
   file?: {
     url: string;
@@ -105,9 +105,9 @@ export const createInvoice = createAsyncThunk(
     invoiceData: {
       client: string;
       totalAmount: number;
-      date: string;
-      startTime: string;
-      endTime: string;
+      date?: string;
+      startTime?: string;
+      endTime?: string;
       notes?: string;
       file?: File;
     },
@@ -115,11 +115,12 @@ export const createInvoice = createAsyncThunk(
   ) => {
     try {
       const fd = new FormData();
+
       fd.append("client", invoiceData.client);
       fd.append("totalAmount", String(invoiceData.totalAmount));
-      fd.append("date", invoiceData.date);
-      fd.append("startTime", invoiceData.startTime);
-      fd.append("endTime", invoiceData.endTime);
+      if (invoiceData.date) fd.append("date", invoiceData.date);
+      if (invoiceData.startTime) fd.append("startTime", invoiceData.startTime);
+      if (invoiceData.endTime) fd.append("endTime", invoiceData.endTime);
       if (invoiceData.notes) fd.append("notes", invoiceData.notes);
       if (invoiceData.file) fd.append("invoiceFile", invoiceData.file);
 
@@ -161,10 +162,9 @@ export const editInvoice = createAsyncThunk(
         const fd = new FormData();
         if (data.totalAmount !== undefined)
           fd.append("totalAmount", String(data.totalAmount));
-        if (data.date !== undefined) fd.append("date", data.date);
-        if (data.startTime !== undefined)
-          fd.append("startTime", data.startTime);
-        if (data.endTime !== undefined) fd.append("endTime", data.endTime);
+        if (data.date) fd.append("date", data.date);
+        if (data.startTime) fd.append("startTime", data.startTime);
+        if (data.endTime) fd.append("endTime", data.endTime);
         if (data.notes !== undefined) fd.append("notes", data.notes);
         fd.append("invoiceFile", data.file);
         payload = fd;

@@ -47,10 +47,20 @@ interface FormState {
     jobSessions: SessionDay[];
     preference: { gender: string; others: string[] };
     jobSessionByClient: boolean;
+    preferredWorkerType?: string;
     // hourlyRate: number;
 }
 
 const PREFERENCE_OPTIONS = ['non-smoker', 'experienced', 'has-car', 'pet-friendly', 'bilingual'];
+
+export function RequiredLabel({ children }: { children: React.ReactNode }) {
+    return (
+        <Label className="flex items-center gap-1">
+            {children}
+            <span className="text-destructive font-semibold">*</span>
+        </Label>
+    );
+}
 
 export default function NewJobPage() {
     const dispatch = useAppDispatch();
@@ -71,6 +81,7 @@ export default function NewJobPage() {
         jobSessions: [],
         preference: { gender: '', others: [] },
         jobSessionByClient: false,
+        preferredWorkerType: undefined,
         // hourlyRate: 0
     });
 
@@ -158,7 +169,8 @@ export default function NewJobPage() {
         setSubmitError(null);
         if (!form.title.trim()) { setSubmitError('Job title is required.'); return; }
         if (!form.startDate) { setSubmitError('Start date is required.'); return; }
-        if (form.supportDetails.length === 0) { setSubmitError('Add at least one support service.'); return; }
+        if (!form.frequency) { setSubmitError('Frequency is required.'); return; }
+        if (!form.supportDetails || form.supportDetails.length === 0) { setSubmitError('Add at least one support service.'); return; }
         // Only require jobSessions if schedule is enabled
         if (form.jobSessions.length === 0) {
             setSubmitError('Add at least one job session day.');
@@ -187,6 +199,7 @@ export default function NewJobPage() {
                 others: form.preference.others,
             },
             jobSessionByClient,
+            preferredWorkerType: form.preferredWorkerType,
         };
 
         const result = await dispatch(createJob(payload));
@@ -219,7 +232,7 @@ export default function NewJobPage() {
             <Section icon={<LayoutList className="h-4 w-4" />} title="Basic Information">
                 <div className="space-y-4">
                     <div>
-                        <Label>Job Title <span className="text-destructive">*</span></Label>
+                        <RequiredLabel>Job Title</RequiredLabel>
                         <Textarea
                             className="mt-1.5 resize-none"
                             rows={2}
@@ -240,7 +253,7 @@ export default function NewJobPage() {
                     </div> */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Label>Start Date <span className="text-destructive">*</span></Label>
+                            <RequiredLabel>Start Date</RequiredLabel>
                             <DatePicker
                                 className="w-full mt-1.5"
                                 value={form.startDate ? form.startDate.toISOString().split('T')[0] : ''}
@@ -248,7 +261,7 @@ export default function NewJobPage() {
                             />
                         </div>
                         <div>
-                            <Label>Frequency</Label>
+                            <RequiredLabel>Frequency</RequiredLabel>
                             <Select value={form.frequency} onValueChange={(v) => setField('frequency', v)}>
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -263,7 +276,7 @@ export default function NewJobPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Label>Sessions per period</Label>
+                            <RequiredLabel>Sessions per period</RequiredLabel>
                             <Select value={String(form.duration.session)} onValueChange={(v) => setDuration('session', Number(v))}>
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -274,13 +287,26 @@ export default function NewJobPage() {
                             </Select>
                         </div>
                         <div>
-                            <Label>Total hours per period</Label>
+                            <RequiredLabel>Total hours per period</RequiredLabel>
                             <Select value={String(form.duration.hours)} onValueChange={(v) => setDuration('hours', Number(v))}>
                                 <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {HOURS_OPTIONS.map((n) => (
                                         <SelectItem key={n} value={String(n)}>{n} hr{n > 1 ? 's' : ''}</SelectItem>
                                     ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <Label>Preferred Worker Type</Label>
+                            <Select value={form.preferredWorkerType} onValueChange={(v) => setField('preferredWorkerType', v)}>
+                                <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {/* <SelectItem value="daily">Daily</SelectItem> */}
+                                    <SelectItem value="ndisProvider">Ndis Provider</SelectItem>
+                                    <SelectItem value="individualSupportWorker">Individual Support Worker</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -292,7 +318,7 @@ export default function NewJobPage() {
             <Section icon={<MapPin className="h-4 w-4" />} title="Location">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                        <Label>Address Line 1</Label>
+                        <RequiredLabel>Address Line 1</RequiredLabel>
                         <Input className="mt-1.5" value={form.location.line1} onChange={(e) => setLocation('line1', e.target.value)} placeholder="123 Main Street" />
                     </div>
                     <div className="sm:col-span-2">
@@ -300,11 +326,11 @@ export default function NewJobPage() {
                         <Input className="mt-1.5" value={form.location.line2} onChange={(e) => setLocation('line2', e.target.value)} placeholder="Apartment 4B" />
                     </div>
                     <div>
-                        <Label>State</Label>
+                        <RequiredLabel>State</RequiredLabel>
                         <Input className="mt-1.5" value={form.location.state} onChange={(e) => setLocation('state', e.target.value)} placeholder="NSW" />
                     </div>
                     <div>
-                        <Label>Postal Code</Label>
+                        <RequiredLabel>Postal Code</RequiredLabel>
                         <Input className="mt-1.5" value={form.location.postalCode} onChange={(e) => setLocation('postalCode', e.target.value)} placeholder="2000" />
                     </div>
                 </div>
@@ -317,34 +343,39 @@ export default function NewJobPage() {
                 description="Add services and a description for each"
             >
                 {/* Add new service */}
-                <div className="flex gap-2 mb-4">
-                    <Input
-                        placeholder="Service title…"
-                        value={serviceInput}
-                        onChange={(e) => setServiceInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
+                <div className="flex flex-col gap-2 mb-4">
+                    <RequiredLabel>Service</RequiredLabel>
+                    <div className='flex flex-row gap-2'>
+
+                        <Input
+                            placeholder="Service title…"
+                            value={serviceInput}
+                            onChange={(e) => setServiceInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (serviceInput.trim()) {
+                                        addSupportDetail(serviceInput.trim());
+                                        setServiceInput('');
+                                    }
+                                }
+                            }}
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
                                 if (serviceInput.trim()) {
                                     addSupportDetail(serviceInput.trim());
                                     setServiceInput('');
                                 }
-                            }
-                        }}
-                    />
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            if (serviceInput.trim()) {
-                                addSupportDetail(serviceInput.trim());
-                                setServiceInput('');
-                            }
-                        }}
-                    >
-                        <Plus className="h-4 w-4" />
-                    </Button>
+                            }}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+
                 </div>
 
                 {form.supportDetails.length === 0 ? (
@@ -394,25 +425,28 @@ export default function NewJobPage() {
                 </div> */}
                 {/* {enableJobSessions && (
                     <> */}
-                <div className="flex flex-wrap gap-2 mb-5">
-                    {DAYS.map((day) => {
-                        const active = form.jobSessions.some((s) => s.day === day);
-                        return (
-                            <button
-                                key={day}
-                                type="button"
-                                onClick={() => toggleDay(day)}
-                                className={cn(
-                                    'px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer',
-                                    active
-                                        ? 'border-[#6cc5e8] bg-primary/10 text-[#6cc5e8] font-medium'
-                                        : 'border-2 border-gray-300 bg-muted/30 text-gray-400 hover:border-gray-400'
-                                )}
-                            >
-                                {day.slice(0, 3)}
-                            </button>
-                        );
-                    })}
+                <div className="flex flex-col gap-2 mb-5">
+                    <RequiredLabel>Days</RequiredLabel>
+                    <div className='flex flex-wrap gap-2'>
+                        {DAYS.map((day) => {
+                            const active = form.jobSessions.some((s) => s.day === day);
+                            return (
+                                <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => toggleDay(day)}
+                                    className={cn(
+                                        'px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer',
+                                        active
+                                            ? 'border-[#6cc5e8] bg-primary/10 text-[#6cc5e8] font-medium'
+                                            : 'border-2 border-gray-300 bg-muted/30 text-gray-400 hover:border-gray-400'
+                                    )}
+                                >
+                                    {day.slice(0, 3)}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="space-y-4">

@@ -18,6 +18,7 @@ export const createJob = catchAsync(async (req, res) => {
     preference,
     // hourlyRate,
     jobSessionByClient,
+    preferredWorkerType,
   } = req.body;
 
   const client = req.user.id;
@@ -60,6 +61,7 @@ export const createJob = catchAsync(async (req, res) => {
     jobSessions: jobSessions || [], // default empty array if false
     jobSessionByClient: !!jobSessionByClient, // ensure boolean
     preference,
+    preferredWorkerType,
   });
 
   await newJob.save();

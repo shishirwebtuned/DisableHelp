@@ -20,6 +20,7 @@ import {
     CheckCircle, XCircle, AlertCircle,
 } from 'lucide-react';
 import { approveInvoice, declineInvoice, fetchMyInvoicesAsClient } from '@/redux/slices/invoiceSlice';
+import { formatTime } from '@/lib/formatTime';
 
 const statusConfig = {
     pending: {
@@ -206,14 +207,23 @@ export default function ClientInvoicePage() {
                                             <div className="flex items-center gap-1 text-muted-foreground">
                                                 <Calendar className="h-3 w-3 shrink-0" />
                                                 <span>
-                                                    {new Date(invoice.date).toLocaleDateString('en-AU', {
+                                                    {invoice?.date ? new Date(invoice.date).toLocaleDateString('en-AU', {
                                                         day: 'numeric', month: 'short', year: 'numeric',
-                                                    })}
+                                                    }) : '—'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1 text-muted-foreground">
                                                 <Clock className="h-3 w-3 shrink-0" />
-                                                <span>{invoice.startTime} – {invoice.endTime}</span>
+                                                <span>
+                                                    {invoice?.startTime && invoice?.endTime
+                                                        ? `${formatTime(invoice.startTime)} – ${formatTime(invoice.endTime)}`
+                                                        : invoice?.startTime
+                                                            ? formatTime(invoice.startTime)
+                                                            : invoice?.endTime
+                                                                ? formatTime(invoice.endTime)
+                                                                : '—'
+                                                    }
+                                                </span>
                                             </div>
                                         </div>
 

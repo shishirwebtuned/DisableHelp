@@ -337,7 +337,7 @@ export default function RegisterPage() {
                                                                 I am an NDIS registered provider
                                                             </FormLabel>
                                                             <p className="text-xs text-muted-foreground mt-0.5">
-                                                                Uncheck if you are an independent worker
+                                                                Uncheck if you are an independent/individual worker
                                                             </p>
                                                         </div>
                                                     </FormItem>

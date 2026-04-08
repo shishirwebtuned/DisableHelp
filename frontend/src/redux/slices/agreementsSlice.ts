@@ -169,6 +169,15 @@ export const terminateAgreement = createAsyncThunk(
   },
 );
 
+export const getAgreementById = createAsyncThunk(
+  "agreements/getAgreementById",
+  async (agreementId: string) => {
+    const res = await api.get(`agreement/${agreementId}`);
+
+    return res.data.data;
+  },
+);
+
 export const agreementsSlice = createSlice({
   name: "agreements",
   initialState,
@@ -231,6 +240,29 @@ export const agreementsSlice = createSlice({
       .addCase(terminateAgreement.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(getAgreementById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAgreementById.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updatedAgreement = action.payload;
+
+        const existingIndex = state.items.findIndex(
+          (agreement) => agreement._id === updatedAgreement._id,
+        );
+
+        if (existingIndex !== -1) {
+          state.items[existingIndex] = updatedAgreement;
+        } else {
+          state.items.push(updatedAgreement); // important
+        }
+      })
+      .addCase(getAgreementById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch agreement";
       });
   },
 });

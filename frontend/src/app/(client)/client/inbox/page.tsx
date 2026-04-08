@@ -9,10 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Search, Check, CheckCheck, Mail } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getSocket, setActiveSocketChat } from "@/lib/socket";
+import { connectSocket, getSocket, setActiveSocketChat } from "@/lib/socket";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchMyChats, setActiveChat, updateLastMessage } from "@/redux/slices/chatSlice";
 import { fetchMessagesByChat, markMessagesRead, sendMessage, addMessage } from "@/redux/slices/messageSlice";
+import { markNotificationRead } from "@/redux/slices/notificationSlice";
 
 const chatStatusConfig: Record<string, { label: string; className: string }> = {
     active: {
@@ -34,6 +35,7 @@ export default function ClientInboxPage() {
     const { items: chats, activeChat } = useSelector((s: RootState) => s.chat);
     const { items: messages, loading } = useSelector((s: RootState) => s.message);
     const user = useSelector((s: RootState) => s.auth.user);
+    const notifications = useSelector((s: RootState) => s.notifications.items);
 
     const [messageInput, setMessageInput] = useState("");
     const [search, setSearch] = useState("");
@@ -43,7 +45,7 @@ export default function ClientInboxPage() {
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const socketRef = useRef(getSocket());
+    const socketRef = useRef<any>(null);
 
     const isInitialLoad = useRef(true);
     const prevMessageCount = useRef(0);
@@ -56,6 +58,13 @@ export default function ClientInboxPage() {
     useEffect(() => {
         dispatch(fetchMyChats());
     }, [dispatch]);
+
+    useEffect(() => {
+        if (!user || !user._id) return;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) return;
+        socketRef.current = connectSocket(token, user._id);
+    }, [user]);
 
     // 2. When active chat changes — join/leave socket room + fetch messages
     useEffect(() => {
@@ -74,22 +83,33 @@ export default function ClientInboxPage() {
         dispatch(fetchMessagesByChat(chatId));
         dispatch(markMessagesRead(chatId));
 
+        // Mark related message notifications as read
+        notifications
+            .filter(
+                (n) =>
+                    n.type === "message" &&
+                    !n.read &&
+                    (n as any).chat === chatId
+            )
+            .forEach((n) => {
+                dispatch(markNotificationRead(n._id));
+            });
+
         setActiveSocketChat(chatId);
 
-
-        if (socket.connected) {
+        if (socket && socket.connected) {
             socket.emit("joinChat", chatId);
-        } else {
+        } else if (socket) {
             socket.once("connect", () => {
                 socket.emit("joinChat", chatId);
             });
         }
-        return () => {
-            socket.emit("leaveChat", chatId);
-            setActiveSocketChat(null);
 
+        return () => {
+            if (socket) socket.emit("leaveChat", chatId);
+            setActiveSocketChat(null);
         };
-    }, [activeChat?._id, dispatch]);
+    }, [activeChat?._id, dispatch, notifications]);
 
     // 3. Socket listener for new messages
     useEffect(() => {

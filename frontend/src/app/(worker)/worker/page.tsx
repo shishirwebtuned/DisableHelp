@@ -27,7 +27,7 @@ export default function WorkerOverview() {
                 </div>
                 <div className="flex items-center space-x-2">
                     <Link href="/worker/jobs"><Button>Find Jobs</Button></Link>
-                    <Link href="/worker/sessions"><Button variant="outline">View Calendar</Button></Link>
+                    <Link href="/worker/sessions"><Button variant="outline">View Sessions</Button></Link>
                 </div>
             </div>
 

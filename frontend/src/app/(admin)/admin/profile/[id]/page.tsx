@@ -243,7 +243,7 @@ export default function AdminProfilePage() {
 
                             {role === 'worker' && (
                                 <Badge className="bg-indigo-100 px-2 py-1 shadow-sm text-indigo-700">
-                                    {user?.isNdisProvider ? 'NDIS Provider' : 'Independent Worker'}
+                                    {user?.isNdisProvider ? 'NDIS Provider' : 'Individual Worker'}
                                 </Badge>
                             )}
                         </div>

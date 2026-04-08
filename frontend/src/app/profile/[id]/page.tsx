@@ -160,10 +160,10 @@ export default function PublicProfilePage() {
                             <Mail className="h-3.5 w-3.5 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" />
                             {user?.email}
                         </div>
-                        <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm text-muted-foreground">
+                        {/* <div className="flex items-center gap-2 md:text-[13px] text-xs lg:text-sm text-muted-foreground">
                             <Phone className="h-3.5 w-3.5 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" />
                             {user?.phoneNumber || 'No phone number provided'}
-                        </div>
+                        </div> */}
 
                         {/* Gender */}
                         <div className="flex flex-row items-center gap-1 md:text-[13px] text-xs lg:text-sm text-muted-foreground">
@@ -173,14 +173,14 @@ export default function PublicProfilePage() {
 
                         {/* Role + provider type badges */}
                         <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <Badge className="bg-blue-100 px-2 py-1 shadow-sm text-blue-700 capitalize">
+                            {/* <Badge className="bg-blue-100 px-2 py-1 shadow-sm text-blue-700 capitalize">
                                 Role: {role}
-                            </Badge>
+                            </Badge> */}
 
                             {/* Only show provider badge for roles that have it */}
                             {(role === 'worker') && (
                                 <Badge className="bg-indigo-100 px-2 py-1 shadow-sm text-indigo-700">
-                                    {user?.isNdisProvider ? 'NDIS Provider' : 'Independent Worker'}
+                                    {user?.isNdisProvider ? 'NDIS Provider' : 'Individual Worker'}
                                 </Badge>
                             )}
                         </div>

@@ -96,8 +96,8 @@ export default function ClientProfilePage() {
         setActiveTab('view');
     };
 
-    const profileStats = [
-        { label: 'Profile Complete', value: '85%', icon: Activity, color: 'text-purple-600' },
+    const profileStats: any = [
+        // { label: 'Profile Complete', value: '85%', icon: Activity, color: 'text-purple-600' },
         // { label: 'NDIS Status', value: profile?.isNdisManaged ? 'Managed' : 'Self', icon: CheckCircle, color: 'text-green-600' },
     ];
 
@@ -138,12 +138,12 @@ export default function ClientProfilePage() {
                     </div>
 
                     <div className="hidden md:flex md:items-center md:gap-4">
-                        {profileStats.map((stat) => (
+                        {/* {profileStats.map((stat) => (
                             <div key={stat.label} className="text-center">
                                 <div className="text-lg md:text-xl lg:text-2xl font-semibold">{stat.value}</div>
                                 <div className="text-[10px] md:text-[11px] lg:text-xs text-muted-foreground">{stat.label}</div>
                             </div>
-                        ))}
+                        ))} */}
                     </div>
                 </div>
             </div>

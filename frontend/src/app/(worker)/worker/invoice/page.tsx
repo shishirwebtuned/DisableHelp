@@ -27,6 +27,7 @@ import {
     SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,6 +37,8 @@ import {
     CheckCircle2, XCircle, Edit, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatTime } from '@/lib/formatTime';
+import { RequiredLabel } from '@/app/(client)/client/jobs/new/page';
 
 const statusConfig: Record<string, {
     label: string;
@@ -188,10 +191,17 @@ export default function WorkerInvoicesPage() {
                                             {invoice.client?.firstName} {invoice.client?.lastName}
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {format(new Date(invoice.date), 'dd MMM yyyy')}
+                                            {invoice?.date ? format(new Date(invoice.date), 'dd MMM yyyy') : '—'}
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
-                                            {invoice.startTime} – {invoice.endTime}
+                                            {invoice?.startTime && invoice?.endTime
+                                                ? `${formatTime(invoice.startTime)} – ${formatTime(invoice.endTime)}`
+                                                : invoice?.startTime
+                                                    ? formatTime(invoice.startTime)
+                                                    : invoice?.endTime
+                                                        ? formatTime(invoice.endTime)
+                                                        : '—'
+                                            }
                                         </TableCell>
                                         <TableCell className="font-semibold">
                                             ${invoice.totalAmount.toFixed(2)}
@@ -324,6 +334,7 @@ function InvoiceForm({
         endTime: invoice?.endTime || '',
         notes: invoice?.notes || '',
     });
+    const [alreadyMade, setAlreadyMade] = useState(false);
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -333,29 +344,34 @@ function InvoiceForm({
         e.preventDefault();
         setSubmitting(true);
 
+        // Validation: if alreadyMade, attachment is required
+        if (alreadyMade && !invoiceFile && !(invoice?.file?.url)) {
+            alert('Attachment is required if invoice is already made.');
+            setSubmitting(false);
+            return;
+        }
+
         if (invoice) {
             await dispatch(editInvoice({
                 invoiceId: invoice._id,
                 data: {
                     totalAmount: parseFloat(formData.totalAmount),
-                    date: formData.date,
-                    startTime: formData.startTime,
-                    endTime: formData.endTime,
+                    date: alreadyMade ? undefined : formData.date,
+                    startTime: alreadyMade ? undefined : formData.startTime,
+                    endTime: alreadyMade ? undefined : formData.endTime,
                     notes: formData.notes,
                     file: invoiceFile ?? undefined,
-
                 },
             }));
         } else {
             await dispatch(createInvoice({
                 client: formData.client,
                 totalAmount: parseFloat(formData.totalAmount),
-                date: formData.date,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
+                date: alreadyMade ? undefined : formData.date,
+                startTime: alreadyMade ? undefined : formData.startTime,
+                endTime: alreadyMade ? undefined : formData.endTime,
                 notes: formData.notes,
-                file: invoiceFile ?? undefined, // 👈 add
-
+                file: invoiceFile ?? undefined,
             }));
         }
 
@@ -363,13 +379,23 @@ function InvoiceForm({
         onClose();
     };
 
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-
+            {/* Row: Already made invoice checkbox + client select */}
+            <div className="flex items-start w-full gap-2">
+                <div className="flex-1" />
+                <div className="flex flex-col items-end min-w-[180px]">
+                    <div className="flex items-center gap-2">
+                        <Checkbox id="alreadyMade" checked={alreadyMade} onCheckedChange={(checked) => setAlreadyMade(checked === true)} />
+                        <Label htmlFor="alreadyMade" className="cursor-pointer">Already made invoice</Label>
+                    </div>
+                </div>
+            </div>
             {/* Client select — only for new invoices */}
             {!invoice && (
                 <div className="space-y-1.5 w-full">
-                    <Label>Client</Label>
+                    <RequiredLabel>Client</RequiredLabel>
                     {clients.length === 0 ? (
                         <p className="text-xs text-muted-foreground border rounded-md px-3 py-2">
                             No active clients found. You need an active agreement to submit an invoice.
@@ -411,44 +437,48 @@ function InvoiceForm({
             )}
 
             {/* Date */}
-            <div className="space-y-1.5">
-                <Label htmlFor="date">Service Date</Label>
-                <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={e => handleChange('date', e.target.value)}
-                    required
-                />
-            </div>
+            {!alreadyMade && (
+                <div className="space-y-1.5">
+                    <RequiredLabel>Service Date</RequiredLabel>
+                    <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={e => handleChange('date', e.target.value)}
+                        required
+                    />
+                </div>
+            )}
 
             {/* Start / End time */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <Label htmlFor="startTime">Start Time</Label>
-                    <Input
-                        id="startTime"
-                        type="time"
-                        value={formData.startTime}
-                        onChange={e => handleChange('startTime', e.target.value)}
-                        required
-                    />
+            {!alreadyMade && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <RequiredLabel>Start Time</RequiredLabel>
+                        <Input
+                            id="startTime"
+                            type="time"
+                            value={formData.startTime}
+                            onChange={e => handleChange('startTime', e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <RequiredLabel>End Time</RequiredLabel>
+                        <Input
+                            id="endTime"
+                            type="time"
+                            value={formData.endTime}
+                            onChange={e => handleChange('endTime', e.target.value)}
+                            required
+                        />
+                    </div>
                 </div>
-                <div className="space-y-1.5">
-                    <Label htmlFor="endTime">End Time</Label>
-                    <Input
-                        id="endTime"
-                        type="time"
-                        value={formData.endTime}
-                        onChange={e => handleChange('endTime', e.target.value)}
-                        required
-                    />
-                </div>
-            </div>
+            )}
 
             {/* Total Amount */}
             <div className="space-y-1.5">
-                <Label htmlFor="totalAmount">Total Amount ($)</Label>
+                <RequiredLabel>Total Amount ($)</RequiredLabel>
                 <Input
                     id="totalAmount"
                     type="number"
@@ -476,9 +506,16 @@ function InvoiceForm({
             </div>
 
             <div className="space-y-1.5">
-                <Label htmlFor="invoiceFile">
-                    Attachment <span className="text-muted-foreground">(optional)</span>
-                </Label>
+                {alreadyMade ? (
+                    <RequiredLabel>
+                        Attachment <span className="text-muted-foreground">(required)</span>
+                    </RequiredLabel>
+                ) : (
+                    <Label htmlFor="invoiceFile">
+                        Attachment <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                )}
+
                 {/* Show existing file if editing */}
                 {invoice?.file?.url && !invoiceFile && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground border rounded-md px-3 py-2">
@@ -501,6 +538,7 @@ function InvoiceForm({
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={e => setInvoiceFile(e.target.files?.[0] ?? null)}
+                    required={alreadyMade && !(invoice?.file?.url)}
                 />
                 {invoiceFile && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
