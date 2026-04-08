@@ -18,6 +18,7 @@ import messageReducer from "./slices/messageSlice";
 import activeConnectionsReducer from "./slices/activeConnectionsSlice";
 import notificationReducer from "./slices/notificationSlice";
 import paymentReducer from "./slices/paymentSlice";
+import inviteReducer from "./slices/inviteSlice";
 import { socketMiddleware } from "@/lib/socketMiddleware";
 
 export const store = configureStore({
@@ -41,6 +42,7 @@ export const store = configureStore({
     activeConnections: activeConnectionsReducer,
     notifications: notificationReducer,
     payments: paymentReducer,
+    invite: inviteReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,11 +1,32 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
 
+interface SchedulePeriod {
+  startTime?: string;
+  endTime?: string;
+}
+
+interface ScheduleDay {
+  day?: string;
+  period?: SchedulePeriod[];
+}
+
+interface SupportDetail {
+  name?: string;
+  description?: string;
+}
 export interface Agreement {
   _id: string;
   job: {
     _id: string;
     title: string;
+    location?: {
+      line1?: string;
+      line2?: string;
+      state?: string;
+      postalCode?: string;
+    };
+    supportDetails?: SupportDetail[];
   } | null;
   client: {
     _id: string;
@@ -34,6 +55,9 @@ export interface Agreement {
   hourlyRate: number;
   termsAcceptedByWorker: boolean;
   startDate: string;
+  schedule?: ScheduleDay[];
+  frequency?: string;
+  terminationReason?: string;
   createdAt: string;
   updatedAt: string;
   termsAcceptedAt?: string;

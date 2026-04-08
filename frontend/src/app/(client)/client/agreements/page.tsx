@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { getAgreementsByClient, terminateAgreement } from '@/redux/slices/agreementsSlice';
+import { getAgreementById, getAgreementsByClient, terminateAgreement } from '@/redux/slices/agreementsSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { set } from 'date-fns';
 
 export default function ClientAgreementsPage() {
     const dispatch = useAppDispatch();
@@ -48,6 +47,10 @@ export default function ClientAgreementsPage() {
     const [termsDialogOpen, setTermsDialogOpen] = useState(false);
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const pageSize = 10;
+
+    const agreement = agreements.find(
+        (a) => a._id === selectedAgreementId
+    );
 
     useEffect(() => {
         dispatch(getAgreementsByClient({ page: currentPage, limit: pageSize, status: statusFilter }));
@@ -68,6 +71,12 @@ export default function ClientAgreementsPage() {
         );
     });
 
+    useEffect(() => {
+        if (detailsDialogOpen && selectedAgreementId) {
+            dispatch(getAgreementById(selectedAgreementId));
+        }
+    }, [detailsDialogOpen, selectedAgreementId, dispatch]);
+
     const handleTerminateConfirm = async () => {
         if (!selectedAgreementId) return;
         if (!terminateReason.trim()) {
@@ -87,14 +96,14 @@ export default function ClientAgreementsPage() {
 
     const statusStyles: Record<string, string> = {
         pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
-        active: 'bg-blue-100 text-blue-700 border border-blue-200',
-        completed: 'bg-green-100 text-green-700 border border-green-200',
+        active: 'bg-green-100 text-green-700 border border-green-200',
+        completed: 'bg-blue-100 text-blue-700 border border-blue-200',
         terminated: 'bg-red-100 text-red-700 border border-red-200',
     };
 
     return (
         <>
-            {loading && <Loading />}
+            {loading && !detailsDialogOpen && <Loading />}
             <div className="space-y-6">
 
                 {/* Header */}
@@ -144,10 +153,10 @@ export default function ClientAgreementsPage() {
                                 <CardHeader className="pb-2 px-0 pt-0">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
-                                            <CardTitle className="text-sm leading-tight">
+                                            <CardTitle className="text-sm md:text-[15px] lg:text-base leading-tight">
                                                 {agreement.job?.title || 'No Job Title'}
                                             </CardTitle>
-                                            <CardDescription className="mt-0.5 text-[11px]">
+                                            <CardDescription className="mt-1 text-xs">
                                                 ID: {agreement._id.slice(-12).toUpperCase()}
                                             </CardDescription>
                                         </div>
@@ -301,7 +310,7 @@ export default function ClientAgreementsPage() {
                                     <div className='border-t pt-3 flex flex-row-reverse items-center justify-between'>
                                         <button className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
                                             onClick={() => {
-
+                                                setSelectedAgreementId(agreement._id);
                                                 setDetailsDialogOpen(true);
                                             }}>
                                             View Details
@@ -452,16 +461,309 @@ export default function ClientAgreementsPage() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="sm:max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>AgreementDialog</DialogTitle>
-                        <DialogDescription>
-                            Please read the terms and conditions carefully before accepting.
-                        </DialogDescription>
+            <Dialog
+                open={detailsDialogOpen}
+                onOpenChange={(open) => {
+                    setDetailsDialogOpen(open);
+
+                    if (!open) {
+                        setSelectedAgreementId(null);
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-2xl">
+
+                    <DialogHeader className="pb-2">
+
+                        <DialogTitle className="flex items-center mt-2 justify-between text-base">
+
+                            Agreement Details
+
+
+
+                        </DialogTitle>
+
                     </DialogHeader>
-                </DialogContent >
-            </Dialog >
+
+
+                    {loading && !agreement ? (
+
+                        <div className="flex justify-center py-6">
+                            <Loading />
+                        </div>
+
+                    ) : agreement ? (
+
+                        <div className="space-y-4 text-sm">
+
+                            {/* JOB */}
+                            <div className='flex flex-row justify-between items-center'>
+                                <div>
+                                    <p className="font-medium">
+                                        {agreement.job?.title}
+                                    </p>
+
+                                    <p className="text-xs text-muted-foreground">
+
+                                        {agreement.job?.location?.line1}
+                                        {" • "}
+                                        {agreement.job?.location?.state}
+
+                                    </p>
+                                </div>
+
+                                <Badge className={`text-xs font-medium capitalize px-2 py-0.5 ${statusStyles[agreement.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                                    {agreement?.status}
+                                </Badge>
+                            </div>
+
+
+                            {/* BASIC INFO */}
+                            <div className="grid grid-cols-3 gap-3 text-xs">
+
+                                <div>
+
+                                    <p className="text-muted-foreground">
+                                        Rate
+                                    </p>
+
+                                    <p className="font-medium">
+                                        ${agreement.hourlyRate}/hr
+                                    </p>
+
+                                </div>
+
+
+                                <div>
+
+                                    <p className="text-muted-foreground">
+                                        Start
+                                    </p>
+
+                                    <p className="font-medium">
+
+                                        {new Date(
+                                            agreement.startDate
+                                        ).toLocaleDateString()}
+
+                                    </p>
+
+                                </div>
+
+
+                                <div>
+
+                                    <p className="text-muted-foreground">
+                                        Frequency
+                                    </p>
+
+                                    <p className="font-medium capitalize">
+                                        {agreement.frequency}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            {/* CLIENT WORKER */}
+                            <div className="flex flex-row flex-wrap justify-between gap-4 text-xs">
+
+                                <div>
+
+                                    <p className="text-muted-foreground mb-1">
+                                        Client
+                                    </p>
+
+                                    <p className="font-medium">
+
+                                        {agreement.client.firstName}
+                                        {" "}
+                                        {agreement.client.lastName}
+
+                                    </p>
+
+                                    <p className="text-muted-foreground">
+                                        {agreement.client.email}
+                                    </p>
+
+                                </div>
+
+
+                                {typeof agreement.worker !== "string" && (
+
+                                    <div>
+
+                                        <p className="text-muted-foreground mb-1">
+                                            Worker
+                                        </p>
+
+                                        <p className="font-medium">
+
+                                            {agreement.worker.firstName}
+                                            {" "}
+                                            {agreement.worker.lastName}
+
+                                        </p>
+
+                                        <p className="text-muted-foreground">
+                                            {agreement.worker.email}
+                                        </p>
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
+
+                            {/* TERMS */}
+                            <div className="flex items-center justify-between text-xs border-t pt-3">
+
+                                <div>
+
+                                    <p className="text-muted-foreground">
+                                        Terms accepted
+                                    </p>
+
+                                    <p className="font-medium">
+
+                                        {agreement.termsAcceptedAt
+                                            ? new Date(
+                                                agreement.termsAcceptedAt
+                                            ).toLocaleDateString()
+                                            : "Pending"}
+
+                                    </p>
+
+                                </div>
+
+
+                                <Badge
+                                    variant="outline"
+                                    className={
+                                        agreement.termsAcceptedByWorker
+                                            ? "text-green-600"
+                                            : "text-orange-600"
+                                    }
+                                >
+
+                                    {agreement.termsAcceptedByWorker
+                                        ? "Accepted"
+                                        : "Pending"}
+
+                                </Badge>
+
+                            </div>
+
+
+                            {/* SUPPORT */}
+                            {(agreement.job?.supportDetails?.length ?? 0) > 0 && (
+
+                                <div className="border-t pt-3">
+
+                                    <p className="text-xs font-medium mb-2">
+                                        Support
+                                    </p>
+
+                                    <div className="space-y-1 text-xs">
+
+                                        {agreement.job?.supportDetails?.map(
+                                            (sd: any, index: number) => (
+                                                <div key={index}>
+
+                                                    <span className="font-medium">
+                                                        {sd.name}
+                                                    </span>
+
+                                                    <span className="text-muted-foreground">
+                                                        {" — "}
+                                                        {sd.description}
+                                                    </span>
+
+                                                </div>
+                                            )
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            )}
+
+
+                            {/* SCHEDULE */}
+                            {(agreement.schedule?.length ?? 0) > 0 && (
+
+                                <div className="border-t pt-3">
+
+                                    <p className="text-xs font-medium mb-2">
+                                        Schedule
+                                    </p>
+
+                                    <div className="space-y-1">
+
+                                        {agreement.schedule?.map(
+                                            (day: any, index: number) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex justify-between text-xs"
+                                                >
+
+                                                    <span className="capitalize font-medium">
+                                                        {day.day}
+                                                    </span>
+
+                                                    <span className="text-muted-foreground">
+
+                                                        {day.period
+                                                            ?.map(
+                                                                (p: any) => `${p.startTime}-${p.endTime}`
+                                                            )
+                                                            .join(", ")}
+
+                                                    </span>
+
+                                                </div>
+                                            )
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+                    ) : (
+
+                        <div className="py-6 text-center text-muted-foreground text-sm">
+                            Agreement not found
+                        </div>
+
+                    )}
+
+
+                    <DialogFooter className="pt-3">
+
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                                setDetailsDialogOpen(false);
+                                setSelectedAgreementId(null);
+                            }}
+                        >
+
+                            Close
+
+                        </Button>
+
+                    </DialogFooter>
+
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

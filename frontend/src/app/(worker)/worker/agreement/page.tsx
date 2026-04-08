@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { getAgreementsByWorker, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
+import { getAgreementById, getAgreementsByWorker, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -50,8 +50,13 @@ export default function WorkerAgreementsPage() {
     const [selectedTermsAgreementId, setSelectedTermsAgreementId] = useState<string | null>(null);
     const [acceptingTerms, setAcceptingTerms] = useState(false);
     const [viewOnlyTerms, setViewOnlyTerms] = useState(false);
-
+    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+    const [selectedAgreementId, setSelectedAgreementId] = useState<string | null>(null);
     const pageSize = 10;
+
+    const agreement = agreements.find(
+        (a) => a._id === selectedAgreementId
+    );
 
     useEffect(() => {
         dispatch(getAgreementsByWorker({ page: currentPage, limit: pageSize, status: statusFilter }));
@@ -71,6 +76,12 @@ export default function WorkerAgreementsPage() {
             jobTitle.includes(searchLower)
         );
     });
+
+    useEffect(() => {
+        if (detailsDialogOpen && selectedAgreementId) {
+            dispatch(getAgreementById(selectedAgreementId));
+        }
+    }, [detailsDialogOpen, selectedAgreementId, dispatch]);
 
     const handleAcceptTerms = async () => {
         if (!selectedTermsAgreementId) return;
@@ -101,12 +112,12 @@ export default function WorkerAgreementsPage() {
 
     return (
         <>
-            {loading && <Loading />}
+            {loading && !detailsDialogOpen && <Loading />}
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight">Service Agreements</h1>
-                        <p className="text-muted-foreground">Monitor and manage all service agreements on the platform</p>
+                        <p className="text-muted-foreground text-sm">Monitor and manage all service agreements on the platform</p>
                     </div>
                 </div>
 
@@ -150,11 +161,11 @@ export default function WorkerAgreementsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredAgreements.length > 0 ? (
                         filteredAgreements.map((agreement) => (
-                            <Card key={agreement._id}>
-                                <CardHeader className="pb-1">
+                            <Card key={agreement._id} className="p-3">
+                                <CardHeader className="pb-2 px-0 pt-0">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
-                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                            <CardTitle className="text-sm md:text-[15px] lg:text-base leading-tight">
                                                 {agreement.job?.title || 'No Job Title'}
                                             </CardTitle>
                                             <CardDescription className="mt-1 text-xs">
@@ -167,70 +178,104 @@ export default function WorkerAgreementsPage() {
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-2.5 p-0">
                                     {/* Client Information */}
                                     <div className="rounded-lg px-0 space-y-2">
-                                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                        <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                                             Client Details
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Mail className="h-4 w-4 text-muted-foreground" />
-                                            <span className="font-medium">
-                                                {agreement.client.firstName} {agreement.client.lastName}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Mail className="h-3.5 w-3.5" />
-                                            <span className="text-xs">{agreement.client.email}</span>
-                                        </div>
-                                        {agreement.client.phoneNumber && (
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Phone className="h-3.5 w-3.5" />
-                                                <span className="text-xs">{agreement.client.phoneNumber}</span>
-                                            </div>
+                                        {typeof agreement.client === 'string' ? (
+                                            <p className="text-xs text-muted-foreground">ID: {agreement.client}</p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-2 text-sm font-medium">
+                                                    <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                    {agreement.client.firstName} {agreement.client.lastName}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Mail className="h-3 w-3 shrink-0" />
+                                                    {agreement.client.email}
+                                                </div>
+                                                {agreement.client.phoneNumber && (
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                        <Phone className="h-3 w-3 shrink-0" />
+                                                        {agreement.client.phoneNumber}
+                                                    </div>
+                                                )}
+                                                {agreement.client.dateOfBirth && (
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                        <Calendar className="h-3 w-3 shrink-0" />
+                                                        DOB: {new Date(agreement.client.dateOfBirth).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
-                                        {agreement.client.dateOfBirth && (
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Calendar className="h-3.5 w-3.5" />
-                                                <span className="text-xs">
-                                                    DOB: {new Date(agreement.client.dateOfBirth).toLocaleDateString()}
-                                                </span>
-                                            </div>
+                                    </div>
+
+                                    <div className="space-y-1.5 pt-2 border-t">
+                                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                            Worker Details
+                                        </p>
+                                        {typeof agreement.worker === 'string' ? (
+                                            <p className="text-xs text-muted-foreground">ID: {agreement.worker}</p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-2 text-sm font-medium">
+                                                    <Briefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                    {agreement.worker.firstName} {agreement.worker.lastName}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Mail className="h-3 w-3 shrink-0" />
+                                                    {agreement.worker.email}
+                                                </div>
+                                                {('phoneNumber' in agreement.worker) && (agreement.worker as any).phoneNumber && (
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                        <Phone className="h-3 w-3 shrink-0" />
+                                                        {(agreement.worker as any).phoneNumber}
+                                                    </div>
+                                                )}
+                                                {('dateOfBirth' in agreement.worker) && (agreement.worker as any).dateOfBirth && (
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                        <Calendar className="h-3 w-3 shrink-0" />
+                                                        DOB: {new Date((agreement.worker as any).dateOfBirth).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 
                                     {/* Agreement Details Grid */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                                 <DollarSign className="h-3.5 w-3.5" />
                                                 Hourly Rate
                                             </div>
-                                            <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                                            <div className="text-sm font-bold text-green-600 ">
                                                 ${agreement.hourlyRate}/hr
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                <Calendar className="h-3.5 w-3.5" />
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Calendar className="h-3 w-3" />
                                                 Start Date
                                             </div>
-                                            <div className="text-sm font-medium">
+                                            <div className="text-xs font-medium">
                                                 {new Date(agreement.startDate).toLocaleDateString()}
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                <FileText className="h-3.5 w-3.5" />
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <FileText className="h-3 w-3" />
                                                 Application
                                             </div>
                                             <div className="text-xs font-mono text-muted-foreground">
                                                 {agreement.application.slice(-8).toUpperCase()}
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                <Clock className="h-3.5 w-3.5" />
+                                        <div className="space-y-0.5">
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Clock className="h-3 w-3" />
                                                 Created
                                             </div>
                                             <div className="text-xs font-medium">
@@ -240,7 +285,7 @@ export default function WorkerAgreementsPage() {
                                     </div>
 
                                     {/* Updated Date */}
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-2 border-t">
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1 border-t">
                                         <Clock className="h-3 w-3" />
                                         Last updated: {new Date(agreement.updatedAt).toLocaleDateString()} at {new Date(agreement.updatedAt).toLocaleTimeString()}
                                     </div>
@@ -265,7 +310,7 @@ export default function WorkerAgreementsPage() {
                                         <div>
                                             {agreement.termsAcceptedByWorker ? (
                                                 <button
-                                                    className="h-7 md:text-[11px] text-[9px] lg:text-[13px] bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground border px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                                    className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground border px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
                                                     onClick={() => {
                                                         setSelectedTermsAgreementId(agreement._id);
                                                         setViewOnlyTerms(true);
@@ -302,6 +347,16 @@ export default function WorkerAgreementsPage() {
                                             )}
                                         </div>
 
+
+                                    </div>
+                                    <div className='border-t pt-3 flex flex-row items-center justify-center'>
+                                        <button className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                            onClick={() => {
+                                                setSelectedAgreementId(agreement._id);
+                                                setDetailsDialogOpen(true);
+                                            }}>
+                                            View Details
+                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -501,6 +556,310 @@ export default function WorkerAgreementsPage() {
                                 </Button>
                             )}
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog
+                    open={detailsDialogOpen}
+                    onOpenChange={(open) => {
+                        setDetailsDialogOpen(open);
+
+                        if (!open) {
+                            setSelectedAgreementId(null);
+                        }
+                    }}
+                >
+                    <DialogContent className="sm:max-w-2xl">
+
+                        <DialogHeader className="pb-2">
+
+                            <DialogTitle className="flex items-center mt-2 justify-between text-base">
+
+                                Agreement Details
+
+
+
+                            </DialogTitle>
+
+                        </DialogHeader>
+
+
+                        {loading && !agreement ? (
+
+                            <div className="flex justify-center py-6">
+                                <Loading />
+                            </div>
+
+                        ) : agreement ? (
+
+                            <div className="space-y-4 text-sm">
+
+                                {/* JOB */}
+                                <div className='flex flex-row justify-between items-center'>
+                                    <div>
+                                        <p className="font-medium">
+                                            {agreement.job?.title}
+                                        </p>
+
+                                        <p className="text-xs text-muted-foreground">
+
+                                            {agreement.job?.location?.line1}
+                                            {" • "}
+                                            {agreement.job?.location?.state}
+
+                                        </p>
+                                    </div>
+
+                                    <Badge className={`text-xs font-medium capitalize px-2 py-0.5 ${statusStyles[agreement.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                                        {agreement?.status}
+                                    </Badge>
+                                </div>
+
+
+                                {/* BASIC INFO */}
+                                <div className="grid grid-cols-3 gap-3 text-xs">
+
+                                    <div>
+
+                                        <p className="text-muted-foreground">
+                                            Rate
+                                        </p>
+
+                                        <p className="font-medium">
+                                            ${agreement.hourlyRate}/hr
+                                        </p>
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <p className="text-muted-foreground">
+                                            Start
+                                        </p>
+
+                                        <p className="font-medium">
+
+                                            {new Date(
+                                                agreement.startDate
+                                            ).toLocaleDateString()}
+
+                                        </p>
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <p className="text-muted-foreground">
+                                            Frequency
+                                        </p>
+
+                                        <p className="font-medium capitalize">
+                                            {agreement.frequency}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* CLIENT WORKER */}
+                                <div className="flex flex-row flex-wrap justify-between gap-4 text-xs">
+
+                                    <div>
+
+                                        <p className="text-muted-foreground mb-1">
+                                            Client
+                                        </p>
+
+                                        <p className="font-medium">
+
+                                            {agreement.client.firstName}
+                                            {" "}
+                                            {agreement.client.lastName}
+
+                                        </p>
+
+                                        <p className="text-muted-foreground">
+                                            {agreement.client.email}
+                                        </p>
+
+                                    </div>
+
+
+                                    {typeof agreement.worker !== "string" && (
+
+                                        <div>
+
+                                            <p className="text-muted-foreground mb-1">
+                                                Worker
+                                            </p>
+
+                                            <p className="font-medium">
+
+                                                {agreement.worker.firstName}
+                                                {" "}
+                                                {agreement.worker.lastName}
+
+                                            </p>
+
+                                            <p className="text-muted-foreground">
+                                                {agreement.worker.email}
+                                            </p>
+
+                                        </div>
+
+                                    )}
+
+                                </div>
+
+
+                                {/* TERMS */}
+                                <div className="flex items-center justify-between text-xs border-t pt-3">
+
+                                    <div>
+
+                                        <p className="text-muted-foreground">
+                                            Terms accepted
+                                        </p>
+
+                                        <p className="font-medium">
+
+                                            {agreement.termsAcceptedAt
+                                                ? new Date(
+                                                    agreement.termsAcceptedAt
+                                                ).toLocaleDateString()
+                                                : "Pending"}
+
+                                        </p>
+
+                                    </div>
+
+
+                                    <Badge
+                                        variant="outline"
+                                        className={
+                                            agreement.termsAcceptedByWorker
+                                                ? "text-green-600"
+                                                : "text-orange-600"
+                                        }
+                                    >
+
+                                        {agreement.termsAcceptedByWorker
+                                            ? "Accepted"
+                                            : "Pending"}
+
+                                    </Badge>
+
+                                </div>
+
+
+                                {/* SUPPORT */}
+                                {(agreement.job?.supportDetails?.length ?? 0) > 0 && (
+
+                                    <div className="border-t pt-3">
+
+                                        <p className="text-xs font-medium mb-2">
+                                            Support
+                                        </p>
+
+                                        <div className="space-y-1 text-xs">
+
+                                            {agreement.job?.supportDetails?.map(
+                                                (sd: any, index: number) => (
+                                                    <div key={index}>
+
+                                                        <span className="font-medium">
+                                                            {sd.name}
+                                                        </span>
+
+                                                        <span className="text-muted-foreground">
+                                                            {" — "}
+                                                            {sd.description}
+                                                        </span>
+
+                                                    </div>
+                                                )
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+                                )}
+
+
+                                {/* SCHEDULE */}
+                                {(agreement.schedule?.length ?? 0) > 0 && (
+
+                                    <div className="border-t pt-3">
+
+                                        <p className="text-xs font-medium mb-2">
+                                            Schedule
+                                        </p>
+
+                                        <div className="space-y-1">
+
+                                            {agreement.schedule?.map(
+                                                (day: any, index: number) => (
+                                                    <div
+                                                        key={index}
+                                                        className="flex justify-between text-xs"
+                                                    >
+
+                                                        <span className="capitalize font-medium">
+                                                            {day.day}
+                                                        </span>
+
+                                                        <span className="text-muted-foreground">
+
+                                                            {day.period
+                                                                ?.map(
+                                                                    (p: any) => `${p.startTime}-${p.endTime}`
+                                                                )
+                                                                .join(", ")}
+
+                                                        </span>
+
+                                                    </div>
+                                                )
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
+                        ) : (
+
+                            <div className="py-6 text-center text-muted-foreground text-sm">
+                                Agreement not found
+                            </div>
+
+                        )}
+
+
+                        <DialogFooter className="pt-3">
+
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                    setDetailsDialogOpen(false);
+                                    setSelectedAgreementId(null);
+                                }}
+                            >
+
+                                Close
+
+                            </Button>
+
+                        </DialogFooter>
+
                     </DialogContent>
                 </Dialog>
             </PayPalScriptProvider>

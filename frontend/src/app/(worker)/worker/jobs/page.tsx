@@ -23,6 +23,7 @@ import { fetchMyApplication } from '@/redux/slices/applicationsSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatTime } from '@/lib/formatTime';
+import { useSearchParams } from 'next/navigation';
 /* ──────────────────────── helpers ──────────────────────── */
 
 function formatLocation(loc: Job['location']): string {
@@ -362,6 +363,9 @@ export default function WorkerJobsPage() {
     const [hourlyRate, setHourlyRate] = useState<string>('');
     const [startDateFilter, setStartDateFilter] = useState<Date | null>(null);
 
+    const searchParams = useSearchParams();
+    const jobIdFromQuery = searchParams.get('jobId');
+
     // Debounce search input → debouncedSearch after 450 ms
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search.trim()), 450);
@@ -441,11 +445,22 @@ export default function WorkerJobsPage() {
         [mySelfItems]
     );
 
-    // Fetch on mount
     useEffect(() => {
         dispatch(fetchMyApplication({ page: 1, limit: 100 }));
     }, [dispatch]);
 
+    useEffect(() => {
+        if (myJobs.length === 0) return;
+
+        if (jobIdFromQuery) {
+            const jobToSelect = myJobs.find(job => job._id === jobIdFromQuery);
+            if (jobToSelect) {
+                setSelectedJob(jobToSelect);
+            } else {
+                setSelectedJob(null);
+            }
+        }
+    }, [myJobs, jobIdFromQuery]);
 
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)]">

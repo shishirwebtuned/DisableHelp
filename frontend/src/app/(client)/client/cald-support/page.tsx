@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -34,6 +35,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-le
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Input } from '@/components/ui/input';
+import { getJobByClient } from '@/redux/slices/jobsSlice';
+import { checkInvitation, sendInvite } from '@/redux/slices/inviteSlice';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -55,7 +58,7 @@ function formatDistance(km: number): string {
     return `${Math.round(km)}km away`;
 }
 
-// ─── map sub-components ───────────────────────────────────────────────────────
+
 
 function FocusWorker({ worker }: { worker: any }) {
     const map = useMap();
@@ -67,7 +70,7 @@ function FocusWorker({ worker }: { worker: any }) {
     return null;
 }
 
-// ─── static pieces (outside component) ───────────────────────────────────────
+
 
 const WorkerPopup = ({
     worker,
@@ -125,6 +128,10 @@ export default function CALDSupportPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: workers, loading } = useSelector((state: RootState) => state.users);
 
+    const { jobs, loading: jobsLoading } = useSelector(
+        (state: RootState) => state.jobs
+    );
+
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
     const [workerType, setWorkerType] = useState('all');
     const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
@@ -133,7 +140,14 @@ export default function CALDSupportPage() {
     const [isMobile, setIsMobile] = useState(false);
     const [languageSearch, setLanguageSearch] = useState('');
 
-    // null = dialog closed; worker object = dialog open, focused on that worker
+    const [inviteDialog, setInviteDialog] = useState(false);
+
+    const [selectedWorker, setSelectedWorker] = useState<any>(null);
+
+    const [selectedJob, setSelectedJob] = useState("");
+
+    const [invitedJobIds, setInvitedJobIds] = useState<string[]>([]);
+
     const [mapDialogWorker, setMapDialogWorker] = useState<any>(null);
 
     useEffect(() => { setIsClient(true); }, []);
@@ -249,6 +263,29 @@ export default function CALDSupportPage() {
         setMapDialogWorker(geocoded ?? worker);
     };
 
+    useEffect(() => {
+        dispatch(getJobByClient({}));
+    }, [dispatch]);
+
+    const handleInviteClick = async (worker: any) => {
+        setSelectedWorker(worker);
+        setInviteDialog(true);
+
+        try {
+            const result = await Promise.all(
+                jobs.map(async (job: any) => {
+                    const res = await dispatch(
+                        checkInvitation({ jobId: job._id, receiverId: worker._id })
+                    ).unwrap();
+                    return res ? job._id : null;
+                })
+            );
+            setInvitedJobIds(result.filter(Boolean) as string[]);
+        } catch (err) {
+            console.error("Error fetching invitations", err);
+            setInvitedJobIds([]);
+        }
+    }
     return (
         <div className="space-y-5">
             <div>
@@ -344,6 +381,8 @@ export default function CALDSupportPage() {
                                 clientCoords={clientCoords}
                                 workerCoords={workerWithCoord}
                                 onViewMap={() => handleViewMap(worker)}
+                                onInvite={handleInviteClick}
+
                             />
                         );
                     })}
@@ -438,6 +477,87 @@ export default function CALDSupportPage() {
                         </div>
                     )}
 
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Invite Worker to Apply</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                            Select a job to invite{" "}
+                            <b>{selectedWorker?.firstName} {selectedWorker?.lastName}</b>
+                        </p>
+
+                        {/* Loading state */}
+                        {jobsLoading ? (
+                            <p className="text-center text-sm text-muted-foreground">Loading jobs...</p>
+                        ) : (
+                            // Check if any jobs left to invite
+                            jobs?.filter(job => !invitedJobIds.includes(job._id)).length > 0 ? (
+                                <Select value={selectedJob} onValueChange={(val) => setSelectedJob(val)}>
+                                    <SelectTrigger className="w-full text-sm">
+                                        <SelectValue placeholder="Select job" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {jobs
+                                            ?.filter(job => !invitedJobIds.includes(job._id))
+                                            .map((job: any) => {
+                                                const startDate = new Date(job.startDate).toLocaleDateString('en-US', {
+                                                    weekday: 'short',
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                });
+
+                                                return (
+                                                    <SelectItem
+                                                        key={job._id}
+                                                        value={job._id}
+                                                        className="flex flex-col items-start gap-0.5 py-2"
+                                                    >
+                                                        <span className="font-medium text-sm">{job.title}</span>
+                                                        <span className="text-xs text-muted-foreground">{startDate}</span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <p className="text-center text-sm lg:text-base font-medium pt-2 mb-2 text-red-500">
+                                    No jobs left to invite this worker.
+                                </p>
+                            )
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setInviteDialog(false)} className='cursor-pointer'>
+                            Cancel
+                        </Button>
+
+                        <Button
+                            disabled={
+                                !selectedJob ||
+                                jobs?.filter(job => !invitedJobIds.includes(job._id)).length === 0
+                            }
+                            onClick={() => {
+                                dispatch(
+                                    sendInvite({
+                                        jobId: selectedJob,
+                                        receiverId: selectedWorker._id,
+                                    })
+                                );
+                                setInviteDialog(false);
+                                setSelectedJob("");
+                            }}
+                            className="bg-[#96CCE1] hover:bg-[#96CCE1]/80 cursor-pointer"
+                        >
+                            Send Invite
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

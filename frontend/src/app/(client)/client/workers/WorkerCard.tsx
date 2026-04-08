@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Card,
     CardContent,
@@ -24,16 +24,17 @@ import {
 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/redux/store';
+import { checkInvitation } from '@/redux/slices/inviteSlice';
 
 type WorkerCardProps = {
 
     worker: any
-
     clientCoords?: [number, number] | null
-
     workerCoords?: any
-
     onViewMap: (worker: any) => void
+    onInvite?: (worker: any) => void
 
 }
 
@@ -83,8 +84,10 @@ export default function WorkerCard({
     worker,
     clientCoords,
     workerCoords,
-    onViewMap
+    onViewMap,
+    onInvite,
 }: WorkerCardProps) {
+
 
     const router = useRouter();
 
@@ -523,6 +526,17 @@ ${badgeColors[
                     >
 
                         View Profile
+
+                    </Button>
+
+                    <Button
+                        onClick={() => onInvite?.(worker)}
+                        size="sm"
+
+                        className="h-6.5 md:h-7 lg:h-8 text-[10px] md:text-[11px] lg:text-xs flex-1 cursor-pointer"
+                    >
+                        Invite
+
 
                     </Button>
 
