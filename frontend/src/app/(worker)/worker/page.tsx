@@ -1,9 +1,6 @@
 'use client';
 
-import { useSelector } from 'react-redux';
-import { RootState } from '@/redux/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -18,7 +15,6 @@ import { fetchMyClients } from '@/redux/slices/usersSlice';
 export default function WorkerOverview() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
-    const userId = user?._id;
 
     // Agreements
     const { items: agreements } = useAppSelector((state) => state.agreements);
@@ -33,27 +29,23 @@ export default function WorkerOverview() {
     // Counts
     const activeClients = useAppSelector((state) => state.users.myClients.length);
 
-    const activeAgreements = agreements?.length || 0;
+    const activeAgreements = agreements?.length ?? 0;
 
     const pendingInvoices = invoices?.filter(
         (inv: any) => inv.status === 'pending'
-    ).length;
+    )?.length ?? 0;
 
 
-    const upcomingSessions = sessions
-        .filter((s) => s.status === 'scheduled')
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3)
-        .map((s) => ({
-            id: s._id,
-            client: s.client?.firstName ? `${s.client.firstName} ${s.client.lastName || ''}` : 'Client',
-            date: `${new Date(s.date).toLocaleDateString()} ${s.startTime || ''}`,
-            status: s.status,
-            type: s.job?.title || 'Session',
-        }));
+    const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled')?.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())?.slice(0, 3)?.map((s) => ({
+        id: s._id,
+        client: s.client?.firstName ? `${s.client.firstName} ${s.client.lastName ?? ''}` : 'Client',
+        date: s.date ? `${new Date(s.date).toLocaleDateString()} ${s.startTime ?? ''}`.trim() : "Date TBD",
+        status: s.status,
+        type: s.job?.title ?? 'Session',
+    })) ?? [];
 
     useEffect(() => {
-        dispatch(fetchMyClients());
+        dispatch(fetchMyClients({}));
         dispatch(getAgreementsByWorker({}));
         dispatch(fetchSessionsByUser());
         dispatch(fetchMyInvoicesAsWorker({}));
@@ -63,7 +55,7 @@ export default function WorkerOverview() {
     const stats = {
         activeClients,
         activeAgreements,
-        upcomingSessions: sessions.filter((s) => s.status === 'scheduled').length,
+        upcomingSessions: sessions?.filter((s) => s.status === 'scheduled')?.length ?? 0,
         pendingInvoices,
     };
 
@@ -71,7 +63,7 @@ export default function WorkerOverview() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold tracking-tight">Welcome back, {user?.firstName?.split(' ')[0] || 'Worker'}!</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.firstName?.split(' ')[0] || 'Worker'}!</h1>
                     <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your account today.</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -157,7 +149,7 @@ export default function WorkerOverview() {
                             <CardTitle>Upcoming Sessions</CardTitle>
                             <CardDescription>Your scheduled support sessions</CardDescription>
                         </div>
-                        <Link href="/client/sessions">
+                        <Link href="/worker/sessions">
                             <Button variant="outline" size="sm">View All</Button>
                         </Link>
                     </div>
@@ -166,10 +158,10 @@ export default function WorkerOverview() {
                     <div className="space-y-4">
                         {sessionsLoading ? (
                             <div>Loading...</div>
-                        ) : upcomingSessions.length === 0 ? (
+                        ) : (upcomingSessions?.length ?? 0) === 0 ? (
                             <div className="text-muted-foreground">No upcoming sessions.</div>
                         ) : (
-                            upcomingSessions.map((session) => (
+                            upcomingSessions?.map((session) => (
                                 <div
                                     key={session.id}
                                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"

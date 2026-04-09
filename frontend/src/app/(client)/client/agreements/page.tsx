@@ -421,7 +421,7 @@ export default function ClientAgreementsPage() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 px-4 py-3 md:text-[13px] text-xs lg:text-sm text-muted-foreground md:space-y-2.5 space-y-2 lg:space-y-3">
+                    <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 px-4 py-3 md:text-[13px] text-xs lg:text-sm text-gray-600 md:space-y-2.5 space-y-2 lg:space-y-3">
 
                         <p className="font-semibold text-foreground md:text-[15px] text-sm lg:text-base">
                             Service Agreement Terms
@@ -434,25 +434,30 @@ export default function ClientAgreementsPage() {
 
 
 
-                        <div className="space-y-2 text-xs border-t pt-3">
+                        <div className="space-y-2 text-[11px] md:text-xs lg:text-[13px] border-t pt-3">
 
                             <p className="font-medium text-foreground">
                                 Key Conditions:
                             </p>
 
+                            {/* <p>
+                                <span className="font-medium text-foreground">Payment:</span>{" "}
+                                A monthly subscription fee of <span className="text-[green] font-medium">$100</span> is required for each client.
+                            </p> */}
+
                             <p>
-                                <span className="font-medium text-foreground">Confidentiality:</span>
-                                {" "}Client data must remain private.
+                                <span className="font-medium text-foreground">Confidentiality:</span>{" "}
+                                All client data must be kept strictly private.
                             </p>
 
                             <p>
-                                <span className="font-medium text-foreground">Conduct:</span>
-                                {" "}Professional behaviour is required.
+                                <span className="font-medium text-foreground">Conduct:</span>{" "}
+                                Maintain professional behavior at all times.
                             </p>
 
                             <p>
-                                <span className="font-medium text-foreground">Compliance:</span>
-                                {" "}NDIS and safety regulations must be followed.
+                                <span className="font-medium text-foreground">Compliance:</span>{" "}
+                                Adhere to NDIS and safety regulations consistently.
                             </p>
 
 

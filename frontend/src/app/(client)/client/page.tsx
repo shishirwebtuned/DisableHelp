@@ -3,12 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Briefcase, Calendar, MessageSquare, Plus, FileText } from 'lucide-react';
+import { Users, Briefcase, Calendar, Plus, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchMyWorkers } from '@/redux/slices/usersSlice';
-import { fetchApplicationsByApplicantId } from '@/redux/slices/applicationsSlice';
 import { fetchSessionsByUser } from '@/redux/slices/sessionsSlice';
 import { getAgreementsByClient } from '@/redux/slices/agreementsSlice';
 import { fetchMyInvoicesAsClient } from '@/redux/slices/invoiceSlice';
@@ -16,7 +15,6 @@ import { fetchMyInvoicesAsClient } from '@/redux/slices/invoiceSlice';
 export default function ClientDashboard() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
-    const userId = user?._id;
 
     // Agreements
     const { items: agreements } = useAppSelector((state) => state.agreements);
@@ -31,27 +29,23 @@ export default function ClientDashboard() {
     // Counts
     const activeWorkers = useAppSelector((state) => state.users.myWorkers.length);
 
-    const activeAgreements = agreements?.length || 0;
+    const activeAgreements = agreements?.length ?? 0;
 
     const pendingInvoices = invoices?.filter(
         (inv: any) => inv.status === 'pending'
-    ).length;
+    )?.length ?? 0;
 
 
-    const upcomingSessions = sessions
-        .filter((s) => s.status === 'scheduled')
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3)
-        .map((s) => ({
-            id: s._id,
-            worker: s.worker?.firstName ? `${s.worker.firstName} ${s.worker.lastName || ''}` : 'Worker',
-            date: `${new Date(s.date).toLocaleDateString()} ${s.startTime || ''}`,
-            status: s.status,
-            type: s.job?.title || 'Session',
-        }));
+    const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled')?.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())?.slice(0, 3)?.map((s) => ({
+        id: s._id,
+        worker: s.worker?.firstName ? `${s.worker.firstName} ${s.worker.lastName ?? ''}` : 'Worker',
+        date: s.date ? `${new Date(s.date).toLocaleDateString()} ${s.startTime ?? ''}`.trim() : 'Date TBD',
+        status: s.status,
+        type: s.job?.title ?? 'Session',
+    })) ?? [];
 
     useEffect(() => {
-        dispatch(fetchMyWorkers());
+        dispatch(fetchMyWorkers({}));
         dispatch(getAgreementsByClient({}));
         dispatch(fetchSessionsByUser());
         dispatch(fetchMyInvoicesAsClient({}));
@@ -61,7 +55,7 @@ export default function ClientDashboard() {
     const stats = {
         activeWorkers,
         activeAgreements,
-        upcomingSessions: sessions.filter((s) => s.status === 'scheduled').length,
+        upcomingSessions: sessions?.filter((s) => s.status === 'scheduled')?.length ?? 0,
         pendingInvoices,
     };
 
@@ -69,7 +63,7 @@ export default function ClientDashboard() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.firstName?.split(' ')[0] || 'Client'}!</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.firstName?.split(' ')[0] || 'Client'}!</h1>
                     <p className="text-muted-foreground">Manage your support services and workers</p>
                 </div>
                 <div className="flex gap-2">
@@ -150,10 +144,10 @@ export default function ClientDashboard() {
                     <div className="space-y-4">
                         {sessionsLoading ? (
                             <div>Loading...</div>
-                        ) : upcomingSessions.length === 0 ? (
+                        ) : (upcomingSessions?.length ?? 0) === 0 ? (
                             <div className="text-muted-foreground">No upcoming sessions.</div>
                         ) : (
-                            upcomingSessions.map((session) => (
+                            upcomingSessions?.map((session) => (
                                 <div
                                     key={session.id}
                                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"

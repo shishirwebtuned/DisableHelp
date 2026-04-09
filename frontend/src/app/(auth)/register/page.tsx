@@ -54,7 +54,7 @@ const formSchema = z.object({
     confirmPassword: z.string(),
     address: z.object({
         line1: z.string().min(1, { message: "Required." }),
-        line2: z.string().min(1, { message: "Required." }),
+        line2: z.string().optional(),
         state: z.string().min(1, { message: "Required." }),
         postalCode: z.string().min(1, { message: "Required." }),
     }),

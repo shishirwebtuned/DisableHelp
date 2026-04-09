@@ -171,7 +171,7 @@ export default function ClientProfilePage() {
                                 <CardContent className="text-center">
                                     <h3 className="text-sm md:text-[16px] lg:text-lg font-bold">Quick Details</h3>
                                     <Separator className="my-4" />
-                                    <div className="grid grid-cols-2 gap-8 md:gap-10 lg:gap-14">
+                                    <div className="grid grid-cols-1 gap-4 md:gap-5 lg:gap-6">
                                         <div className="text-left">
                                             <Label className="text-muted-foreground">Email</Label>
                                             <p className="font-medium text-[12px] md:text-[13px] lg:text-sm">{user?.email}</p>

@@ -187,7 +187,7 @@ export default function ClientSettingsPage() {
                 <TabsContent value="appearance" className="space-y-4">
                     <DashboardStyleSwitcher />
 
-                    <Card>
+                    {/* <Card>
                         <CardHeader>
                             <CardTitle>Theme Preferences</CardTitle>
                             <CardDescription>Customize the appearance of the platform</CardDescription>
@@ -245,7 +245,7 @@ export default function ClientSettingsPage() {
                                 />
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> */}
                 </TabsContent>
             </Tabs>
         </div>

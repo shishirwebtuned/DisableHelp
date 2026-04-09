@@ -2,7 +2,7 @@ import http from "http";
 import app from "./app.js";
 import { Server } from "socket.io";
 import { connectDB } from "./config/database.js";
-import { seedAdminUser } from "./utils/seedAdmin.js";
+// import { seedAdminUser } from "./utils/seedAdmin.js";
 import messageRoutes, { initMessageRoutes } from "./routes/message.routes.js";
 import { initChatRoutes } from "./routes/chat.routes.js";
 import { initApplicationRoutes } from "./routes/application.routes.js";
