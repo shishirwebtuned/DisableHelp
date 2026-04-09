@@ -37,12 +37,12 @@ import {
 
 export default function WorkerAgreementsPage() {
     const dispatch = useAppDispatch();
-    const { items: agreements, loading, total, totalPages, page: currentPageFromStore } = useAppSelector((state) => state.agreements);
+    const { items: agreements, loading, totalPages, page: currentPageFromStore } = useAppSelector((state) => state.agreements);
     const { paymentDue, approveLink, orderId } = useAppSelector((state) => state.payments);
 
     const [paymentCompleted, setPaymentCompleted] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'expired' | 'rejected'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'terminated' | 'completed'>('all');
     const [currentPage, setCurrentPage] = useState<number>(currentPageFromStore || 1);
 
     // Terms dialog state
@@ -59,23 +59,30 @@ export default function WorkerAgreementsPage() {
     );
 
     useEffect(() => {
-        dispatch(getAgreementsByWorker({ page: currentPage, limit: pageSize, status: statusFilter }));
-    }, [dispatch, currentPage, statusFilter]);
+        dispatch(getAgreementsByWorker({
+            page: currentPage, limit: pageSize,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            search: searchTerm || undefined
+        }));
+    }, [dispatch, currentPage, statusFilter, searchTerm, pageSize]);
 
 
 
-    const filteredAgreements = agreements.filter((agreement) => {
-        const searchLower = searchTerm.toLowerCase();
-        const workerName = typeof agreement.worker === 'string' ? '' : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
-        const clientName = `${agreement.client.firstName} ${agreement.client.lastName}`.toLowerCase();
-        const jobTitle = agreement.job?.title?.toLowerCase() || '';
-        return (
-            agreement._id.toLowerCase().includes(searchLower) ||
-            workerName.includes(searchLower) ||
-            clientName.includes(searchLower) ||
-            jobTitle.includes(searchLower)
-        );
-    });
+    // const filteredAgreements = agreements.filter((agreement) => {
+    //     const searchLower = searchTerm.toLowerCase();
+    //     const workerName = typeof agreement.worker === 'string' ? '' : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
+    //     const clientName = `${agreement.client.firstName} ${agreement.client.lastName}`.toLowerCase();
+    //     const jobTitle = agreement.job?.title?.toLowerCase() || '';
+    //     return (
+    //         agreement._id.toLowerCase().includes(searchLower) ||
+    //         workerName.includes(searchLower) ||
+    //         clientName.includes(searchLower) ||
+    //         jobTitle.includes(searchLower)
+    //     );
+    // });
+
+    const filteredAgreements = agreements;
+
 
     useEffect(() => {
         if (detailsDialogOpen && selectedAgreementId) {
@@ -103,8 +110,8 @@ export default function WorkerAgreementsPage() {
 
     const statusStyles: Record<string, string> = {
         pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
-        active: 'bg-blue-100 text-blue-700 border border-blue-200',
-        completed: 'bg-green-100 text-green-700 border border-green-200',
+        active: 'bg-green-100 text-green-700 border border-green-200',
+        completed: 'bg-blue-100 text-blue-700 border border-blue-200',
         terminated: 'bg-red-100 text-red-700 border border-red-200',
     };
 
@@ -117,7 +124,7 @@ export default function WorkerAgreementsPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight">Service Agreements</h1>
-                        <p className="text-muted-foreground text-sm">Monitor and manage all service agreements on the platform</p>
+                        <p className="text-muted-foreground text-sm">View and manage your service agreements.</p>
                     </div>
                 </div>
 
@@ -128,7 +135,7 @@ export default function WorkerAgreementsPage() {
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                                 <Input
-                                    placeholder="Search by agreement ID, worker, or client..."
+                                    placeholder="Search by Job Title, Agreement ID, worker, or client name..."
                                     className="pl-10"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -137,7 +144,7 @@ export default function WorkerAgreementsPage() {
                             <Select
                                 value={statusFilter}
                                 onValueChange={(val) => {
-                                    const v = val as 'all' | 'pending' | 'active' | 'expired' | 'rejected';
+                                    const v = val as 'all' | 'pending' | 'active' | 'terminated' | 'completed';
                                     setStatusFilter(v);
                                     setCurrentPage(1);
                                 }}
@@ -178,7 +185,7 @@ export default function WorkerAgreementsPage() {
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="space-y-2.5 p-0">
+                                <CardContent className="space-y-2.5 p-0 -mt-2">
                                     {/* Client Information */}
                                     <div className="rounded-lg px-0 space-y-2">
                                         <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">

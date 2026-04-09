@@ -601,7 +601,7 @@ export const getMyWorkers = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message: "My workers retrieved successfully",
+    message: "Workers retrieved successfully",
     data: {
       users: usersWithProfiles,
       pagination: {
@@ -616,22 +616,103 @@ export const getMyWorkers = catchAsync(async (req, res) => {
 
 export const getMyClients = catchAsync(async (req, res) => {
   const workerId = req.user._id;
+  const { page, limit, skip } = getPagination(req.query);
+  const { languages, search, approved } = req.query;
 
   const agreements = await Agreement.find({
     worker: workerId,
     status: "active",
-  }).populate(
-    "client",
-    "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+  }).select("client");
+
+  const myClientIds = agreements.map((a) => a.client);
+
+  if (myClientIds.length === 0) {
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "No active client found",
+      data: { users: [], pagination: { total: 0, page, limit, totalPages: 0 } },
+    });
+  }
+
+  const profileFilter: any = { user: { $in: myClientIds } };
+
+  if (languages) {
+    const languageList = (languages as string).split(",").map((l) => l.trim());
+
+    const regexList = languageList.map((lang) => new RegExp(`^${lang}$`, "i"));
+
+    profileFilter.$or = [
+      { "languages.firstLanguages": { $in: regexList } },
+      { "languages.secondLanguages": { $in: regexList } },
+    ];
+  }
+
+  const matchingProfiles = await ClientProfile.find(profileFilter)
+    .select("user gender avatar")
+    .lean();
+
+  const matchingUserIds = matchingProfiles.map((p) => p.user);
+
+  // Build User filter
+  const userFilter: any = {
+    role: "client",
+    _id: { $in: matchingUserIds },
+  };
+
+  if (search) {
+    const regex = new RegExp(search as string, "i");
+    userFilter.$or = [
+      { firstName: regex },
+      { lastName: regex },
+      { email: regex },
+    ];
+  }
+
+  if (approved !== undefined) {
+    userFilter.approved = approved === "true";
+  }
+
+  const users = await User.find(userFilter)
+    .select(
+      "firstName lastName email phoneNumber avatar address timezone isVerified approved",
+    )
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await User.countDocuments(userFilter);
+
+  const profileMap = new Map(
+    matchingProfiles.map((p) => [
+      p.user.toString(),
+      {
+        gender: p.gender,
+        avatar: p.avatar ?? null,
+      },
+    ]),
   );
+
+  const usersWithProfiles = users.map((u) => ({
+    ...u.toObject(),
+    profile: profileMap.get(u._id.toString()) ?? {
+      gender: null,
+      avatar: null,
+    },
+  }));
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
-    message:
-      agreements.length === 0
-        ? "No active clients found"
-        : "My clients retrieved successfully",
-    data: { clients: agreements.map((a) => a.client) },
+    message: "Clients retrieved successfully",
+    data: {
+      users: usersWithProfiles,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
   });
 });

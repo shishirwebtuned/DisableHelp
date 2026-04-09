@@ -6,6 +6,7 @@ import { buildFilter, getPagination } from "../utils/queryHelper.js";
 import { Session } from "../models/session.model.js";
 import { generateSessionsFromSchedule } from "../utils/sessionGenerator.js";
 import { Chat } from "../models/chat.model.js";
+import mongoose from "mongoose";
 
 export const acceptAgreementByWorker = catchAsync(async (req, res) => {
   const { agreementId } = req.params;
@@ -209,44 +210,159 @@ export const getAgreementById = catchAsync(async (req, res) => {
   });
 });
 
+// export const getAgreementsByClient = catchAsync(async (req, res) => {
+//   const { page, limit, skip } = getPagination(req.query);
+
+//   const filter = buildFilter(req.query, {
+//     searchFields: ["status"],
+//     exact: [],
+//     range: [],
+//   });
+
+//   const clientId = req.user.id;
+
+//   const agreements = await Agreement.find({ ...filter, client: clientId })
+//     .populate("job", "title")
+//     .populate(
+//       "worker",
+//       "firstName lastName email dateOfBirth phoneNumber address",
+//     )
+//     .sort({ createdAt: -1 })
+//     .skip(skip)
+//     .limit(limit);
+
+//   if (!agreements || agreements.length === 0) {
+//     return sendResponse(res, {
+//       success: true,
+//       statusCode: 200,
+//       message: "No Agreements Found for this client",
+//       data: [],
+//     });
+//   }
+
+//   const total = await Agreement.countDocuments({ ...filter, client: clientId });
+
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 200,
+//     message: "Agreements retrieved successfully",
+//     data: {
+//       agreements,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(total / limit),
+//       },
+//     },
+//   });
+// });
+
 export const getAgreementsByClient = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
-
-  const filter = buildFilter(req.query, {
-    searchFields: ["status"],
-    exact: [],
-    range: [],
-  });
+  const search = req.query.search as string;
+  const status = req.query.status as string;
 
   const clientId = req.user.id;
 
-  const agreements = await Agreement.find({ ...filter, client: clientId })
-    .populate("job", "title")
-    .populate(
-      "worker",
-      "firstName lastName email dateOfBirth phoneNumber address",
-    )
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  let matchStage: any = {
+    client: new mongoose.Types.ObjectId(clientId),
+  };
 
-  if (!agreements || agreements.length === 0) {
-    return sendResponse(res, {
-      success: true,
-      statusCode: 200,
-      message: "No Agreements Found for this client",
-      data: [],
+  if (status && status !== "all") {
+    matchStage.status = status;
+  }
+
+  const pipeline: any[] = [
+    { $match: matchStage },
+
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "job",
+        foreignField: "_id",
+        as: "job",
+      },
+    },
+
+    { $unwind: "$job" },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "worker",
+        foreignField: "_id",
+        as: "worker",
+      },
+    },
+
+    { $unwind: "$worker" },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "client",
+        foreignField: "_id",
+        as: "client",
+      },
+    },
+
+    { $unwind: "$client" },
+  ];
+
+  // SEARCH
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          {
+            $expr: {
+              $regexMatch: {
+                input: { $toString: "$_id" },
+                regex: search,
+                options: "i",
+              },
+            },
+          },
+          { "job.title": { $regex: search, $options: "i" } },
+
+          { "worker.firstName": { $regex: search, $options: "i" } },
+
+          { "worker.lastName": { $regex: search, $options: "i" } },
+
+          { "client.firstName": { $regex: search, $options: "i" } },
+
+          { "client.lastName": { $regex: search, $options: "i" } },
+        ],
+      },
     });
   }
 
-  const total = await Agreement.countDocuments({ ...filter, client: clientId });
+  // PAGINATION
+  pipeline.push(
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  );
+
+  const agreements = await Agreement.aggregate(pipeline);
+
+  const totalPipeline = [...pipeline.filter((p) => !p.$skip && !p.$limit)];
+
+  totalPipeline.push({ $count: "total" });
+
+  const totalResult = await Agreement.aggregate(totalPipeline);
+
+  const total = totalResult[0]?.total || 0;
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Agreements retrieved successfully",
+
     data: {
       agreements,
+
       pagination: {
         total,
         page,
@@ -257,44 +373,159 @@ export const getAgreementsByClient = catchAsync(async (req, res) => {
   });
 });
 
+// export const getAgreementsByWorker = catchAsync(async (req, res) => {
+//   const { page, limit, skip } = getPagination(req.query);
+
+//   const filter = buildFilter(req.query, {
+//     searchFields: ["status"],
+//     exact: [],
+//     range: [],
+//   });
+
+//   const workerId = req.user.id;
+
+//   const agreements = await Agreement.find({ ...filter, worker: workerId })
+//     .populate("job", "title")
+//     .populate(
+//       "client",
+//       "firstName lastName email address dateOfBirth phoneNumber",
+//     )
+//     .sort({ createdAt: -1 })
+//     .skip(skip)
+//     .limit(limit);
+
+//   if (!agreements || agreements.length === 0) {
+//     return sendResponse(res, {
+//       success: true,
+//       statusCode: 200,
+//       message: "No Agreements Found for this worker",
+//       data: [],
+//     });
+//   }
+
+//   const total = await Agreement.countDocuments({ ...filter, worker: workerId });
+
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: 200,
+//     message: "Agreements retrieved successfully",
+//     data: {
+//       agreements,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(total / limit),
+//       },
+//     },
+//   });
+// });
+
 export const getAgreementsByWorker = catchAsync(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
 
-  const filter = buildFilter(req.query, {
-    searchFields: ["status"],
-    exact: [],
-    range: [],
-  });
+  const search = req.query.search as string;
+  const status = req.query.status as string;
 
   const workerId = req.user.id;
 
-  const agreements = await Agreement.find({ ...filter, worker: workerId })
-    .populate("job", "title")
-    .populate(
-      "client",
-      "firstName lastName email address dateOfBirth phoneNumber",
-    )
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  let matchStage: any = {
+    worker: new mongoose.Types.ObjectId(workerId),
+  };
 
-  if (!agreements || agreements.length === 0) {
-    return sendResponse(res, {
-      success: true,
-      statusCode: 200,
-      message: "No Agreements Found for this worker",
-      data: [],
+  if (status && status !== "all") {
+    matchStage.status = status;
+  }
+
+  const pipeline: any[] = [
+    { $match: matchStage },
+
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "job",
+        foreignField: "_id",
+        as: "job",
+      },
+    },
+
+    { $unwind: "$job" },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "worker",
+        foreignField: "_id",
+        as: "worker",
+      },
+    },
+
+    { $unwind: "$worker" },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "client",
+        foreignField: "_id",
+        as: "client",
+      },
+    },
+
+    { $unwind: "$client" },
+  ];
+
+  // SEARCH
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          {
+            $expr: {
+              $regexMatch: {
+                input: { $toString: "$_id" },
+                regex: search,
+                options: "i",
+              },
+            },
+          },
+          { "job.title": { $regex: search, $options: "i" } },
+
+          { "worker.firstName": { $regex: search, $options: "i" } },
+
+          { "worker.lastName": { $regex: search, $options: "i" } },
+
+          { "client.firstName": { $regex: search, $options: "i" } },
+
+          { "client.lastName": { $regex: search, $options: "i" } },
+        ],
+      },
     });
   }
 
-  const total = await Agreement.countDocuments({ ...filter, worker: workerId });
+  pipeline.push(
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  );
+
+  const agreements = await Agreement.aggregate(pipeline);
+
+  const totalPipeline = [...pipeline.filter((p) => !p.$skip && !p.$limit)];
+
+  totalPipeline.push({ $count: "total" });
+
+  const totalResult = await Agreement.aggregate(totalPipeline);
+
+  const total = totalResult[0]?.total || 0;
 
   sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Agreements retrieved successfully",
+
     data: {
       agreements,
+
       pagination: {
         total,
         page,

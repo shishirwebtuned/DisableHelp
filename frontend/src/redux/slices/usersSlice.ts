@@ -11,7 +11,6 @@ export interface User {
   dateOfBirth?: Date;
   approved: boolean;
   isVerified?: boolean;
-  verification: "verified" | "pending" | "under_review";
   joinedDate: Date;
   avatar?: string;
   phoneNumber?: string;
@@ -49,6 +48,7 @@ interface Pagination {
 interface UsersState {
   items: User[];
   myWorkers: User[];
+  myClients: User[];
   pagination: Pagination;
   selectedUser: SelectedUser | null;
   loading: boolean;
@@ -58,6 +58,7 @@ interface UsersState {
 const initialState: UsersState = {
   items: [],
   myWorkers: [],
+  myClients: [],
   pagination: { total: 0, page: 1, limit: 10, totalPages: 1 },
   selectedUser: null,
   loading: false,
@@ -205,6 +206,36 @@ export const fetchMyWorkers = createAsyncThunk(
   },
 );
 
+export const fetchMyClients = createAsyncThunk(
+  "users/fetchMyClients",
+  async (
+    params:
+      | {
+          search?: string;
+          approved?: boolean;
+          page?: number;
+          limit?: number;
+        }
+      | undefined,
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.get("users/my/clients", {
+        params,
+      });
+
+      return {
+        users: response.data.data.users,
+        pagination: response.data.data.pagination,
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to fetch clients",
+      );
+    }
+  },
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -328,6 +359,7 @@ const usersSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to fetch workers";
       })
+
       .addCase(fetchMyWorkers.pending, (state) => {
         state.loading = true;
       })
@@ -336,6 +368,18 @@ const usersSlice = createSlice({
         state.myWorkers = action.payload.users;
       })
       .addCase(fetchMyWorkers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      .addCase(fetchMyClients.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchMyClients.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myClients = action.payload.users;
+      })
+      .addCase(fetchMyClients.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

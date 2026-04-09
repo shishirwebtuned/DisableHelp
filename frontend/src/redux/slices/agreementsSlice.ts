@@ -114,7 +114,12 @@ export const fetchAgreements = createAsyncThunk(
 export const getAgreementsByClient = createAsyncThunk(
   "agreements/getAgreementsByClient",
   async (
-    payload: { page?: number; limit?: number; status?: string } = {},
+    payload: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      search?: string;
+    } = {},
     { getState },
   ) => {
     const state = getState() as { agreements: AgreementsState };
@@ -124,6 +129,9 @@ export const getAgreementsByClient = createAsyncThunk(
     };
     if (payload.status && payload.status !== "all") {
       params.status = payload.status;
+    }
+    if (payload.search) {
+      params.search = payload.search;
     }
     const response = await api.get("agreement/client", { params });
     const agreements = response.data.data.agreements;
@@ -140,7 +148,12 @@ export const getAgreementsByClient = createAsyncThunk(
 export const getAgreementsByWorker = createAsyncThunk(
   "agreements/getAgreementsByWorker",
   async (
-    payload: { page?: number; limit?: number; status?: string } = {},
+    payload: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      search?: string;
+    } = {},
     { getState },
   ) => {
     const state = getState() as { agreements: AgreementsState };
@@ -151,6 +164,11 @@ export const getAgreementsByWorker = createAsyncThunk(
     if (payload.status && payload.status !== "all") {
       params.status = payload.status;
     }
+
+    if (payload.search) {
+      params.search = payload.search;
+    }
+
     const response = await api.get("agreement/worker", { params });
     const agreements = response.data.data.agreements;
     const pagination = response.data.data.pagination || {};

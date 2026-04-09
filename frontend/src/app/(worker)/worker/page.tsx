@@ -7,16 +7,65 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { AlertCircle, CheckCircle2, DollarSign, Clock } from 'lucide-react';
+import { Briefcase, Calendar, FileText, Search, Users } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { useEffect } from 'react';
+import { getAgreementsByWorker } from '@/redux/slices/agreementsSlice';
+import { fetchSessionsByUser } from '@/redux/slices/sessionsSlice';
+import { fetchMyInvoicesAsWorker } from '@/redux/slices/invoiceSlice';
+import { fetchMyClients } from '@/redux/slices/usersSlice';
 
 export default function WorkerOverview() {
-    const { user } = useSelector((state: RootState) => state.auth);
-    // Mock data for overview
-    const completion: number = 45;
-    const recentJobs = [
-        { id: 1, title: 'Morning Support', client: 'Alice Freeman', date: 'Today, 9:00 AM', status: 'Upcoming' },
-        { id: 2, title: 'Weekend Care', client: 'Bob Smith', date: 'Sat, 10:00 AM', status: 'Pending' },
-    ];
+    const dispatch = useAppDispatch();
+    const user = useAppSelector((state) => state.auth.user);
+    const userId = user?._id;
+
+    // Agreements
+    const { items: agreements } = useAppSelector((state) => state.agreements);
+
+    // Sessions
+    const sessions = useAppSelector((state) => state.sessions.items);
+    const sessionsLoading = useAppSelector((state) => state.sessions.loading);
+
+    // Invoices
+    const { items: invoices } = useAppSelector((state) => state.invoices);
+
+    // Counts
+    const activeClients = useAppSelector((state) => state.users.myClients.length);
+
+    const activeAgreements = agreements?.length || 0;
+
+    const pendingInvoices = invoices?.filter(
+        (inv: any) => inv.status === 'pending'
+    ).length;
+
+
+    const upcomingSessions = sessions
+        .filter((s) => s.status === 'scheduled')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3)
+        .map((s) => ({
+            id: s._id,
+            client: s.client?.firstName ? `${s.client.firstName} ${s.client.lastName || ''}` : 'Client',
+            date: `${new Date(s.date).toLocaleDateString()} ${s.startTime || ''}`,
+            status: s.status,
+            type: s.job?.title || 'Session',
+        }));
+
+    useEffect(() => {
+        dispatch(fetchMyClients());
+        dispatch(getAgreementsByWorker({}));
+        dispatch(fetchSessionsByUser());
+        dispatch(fetchMyInvoicesAsWorker({}));
+
+    }, [dispatch]);
+
+    const stats = {
+        activeClients,
+        activeAgreements,
+        upcomingSessions: sessions.filter((s) => s.status === 'scheduled').length,
+        pendingInvoices,
+    };
 
     return (
         <div className="space-y-6">
@@ -26,8 +75,17 @@ export default function WorkerOverview() {
                     <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your account today.</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Link href="/worker/jobs"><Button>Find Jobs</Button></Link>
-                    <Link href="/worker/sessions"><Button variant="outline">View Sessions</Button></Link>
+                    <Link href="/worker/jobs">
+                        <Button>
+                            <Search className="h-4 w-4 mr-2" />Find Jobs
+                        </Button>
+                    </Link>
+                    <Link href="/worker/sessions">
+                        <Button variant="outline">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            View Sessions
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -44,70 +102,97 @@ export default function WorkerOverview() {
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">$1,240.50</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-                    </CardContent>
-                </Card>
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                        <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                        <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">3</div>
-                        <p className="text-xs text-muted-foreground">2 pending requests</p>
+                        <div className="text-2xl font-bold">{stats.activeClients}</div>
+                        <p className="text-xs text-muted-foreground">Currently Engaged</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Hours Worked</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Active Agreements</CardTitle>
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">24.5h</div>
-                        <p className="text-xs text-muted-foreground">This week</p>
+                        <div className="text-2xl font-bold">{stats.activeAgreements}</div>
+                        <p className="text-xs text-muted-foreground">Ongoing</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Task Compliance</CardTitle>
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Upcoming Session</CardTitle>
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">98%</div>
-                        <p className="text-xs text-muted-foreground">On-time submissions</p>
+                        <div className="text-2xl font-bold">
+                            {stats.upcomingSessions}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Next 7 days</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Invoices</CardTitle>
+
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {stats.pendingInvoices}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Pending</p>
                     </CardContent>
                 </Card>
             </div>
-
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Upcoming Sessions</CardTitle>
+                            <CardDescription>Your scheduled support sessions</CardDescription>
+                        </div>
+                        <Link href="/client/sessions">
+                            <Button variant="outline" size="sm">View All</Button>
+                        </Link>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {sessionsLoading ? (
+                            <div>Loading...</div>
+                        ) : upcomingSessions.length === 0 ? (
+                            <div className="text-muted-foreground">No upcoming sessions.</div>
+                        ) : (
+                            upcomingSessions.map((session) => (
+                                <div
+                                    key={session.id}
+                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <Calendar className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">{session.client}</div>
+                                            <div className="text-sm text-muted-foreground">{session.type}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-medium">{session.date}</div>
+                                        <Badge variant="outline" className="mt-1">{session?.status}</Badge>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
-}
-
-function UsersIcon(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-    )
 }

@@ -53,23 +53,35 @@ export default function ClientAgreementsPage() {
     );
 
     useEffect(() => {
-        dispatch(getAgreementsByClient({ page: currentPage, limit: pageSize, status: statusFilter }));
-    }, [dispatch, currentPage, statusFilter]);
+        dispatch(getAgreementsByClient({
+            page: currentPage, limit: pageSize,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            search: searchTerm || undefined
 
-    const filteredAgreements = agreements.filter((agreement) => {
-        const searchLower = searchTerm.toLowerCase();
-        const workerName = typeof agreement.worker === 'string'
-            ? ''
-            : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
-        const clientName = `${agreement.client.firstName} ${agreement.client.lastName}`.toLowerCase();
-        const jobTitle = agreement.job?.title?.toLowerCase() || '';
-        return (
-            agreement._id.toLowerCase().includes(searchLower) ||
-            workerName.includes(searchLower) ||
-            clientName.includes(searchLower) ||
-            jobTitle.includes(searchLower)
-        );
-    });
+        }));
+    }, [dispatch, currentPage, statusFilter, searchTerm, pageSize]);
+
+    const filteredAgreements = agreements;
+
+    // const filteredAgreements = agreements.filter((agreement) => {
+    //     const searchLower = searchTerm.toLowerCase();
+    //     const workerName = typeof agreement.worker === 'string'
+    //         ? ''
+    //         : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
+    //     const clientName = `${agreement.client.firstName} ${agreement.client.lastName}`.toLowerCase();
+    //     const jobTitle = agreement.job?.title?.toLowerCase() || '';
+
+    //     const matchesSearch =
+    //         agreement._id.toLowerCase().includes(searchLower) ||
+    //         workerName.includes(searchLower) ||
+    //         clientName.includes(searchLower) ||
+    //         jobTitle.includes(searchLower);
+
+    //     const matchesStatus =
+    //         statusFilter === 'all' || agreement.status === statusFilter;
+
+    //     return matchesSearch && matchesStatus;
+    // });
 
     useEffect(() => {
         if (detailsDialogOpen && selectedAgreementId) {
@@ -119,7 +131,7 @@ export default function ClientAgreementsPage() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input
-                            placeholder="Search by agreement ID, worker, or client..."
+                            placeholder="Search by Job Title, Agreement ID, worker, or client name..."
                             className="pl-10"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
