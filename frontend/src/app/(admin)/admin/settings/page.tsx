@@ -17,14 +17,14 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import DashboardStyleSwitcher from '@/components/common/DashboardStyleSwitcher';
-import { Lock, Bell, UserCircle,  ShieldCheck ,Eye ,EyeClosed } from 'lucide-react';
+import { Lock, Bell, UserCircle, ShieldCheck, Eye, EyeClosed } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminSettingsPage() {
     const dispatch = useAppDispatch();
     const { admin, platform, loading } = useAppSelector((state) => state.settings);
     const mee = useAppSelector((state) => state.auth.mee.user);
-    console.log ( "sdfdsf'mee", mee );
+    console.log("sdfdsf'mee", mee);
     const [formData, setFormData] = useState({
         email: '',
         displayName: '',
@@ -49,7 +49,7 @@ export default function AdminSettingsPage() {
     const handleUpdatePassword = async () => {
         try {
             await dispatch(updateAdminPassword({
-                email:mee?.email,
+                email: mee?.email,
                 currentPassword: formData.currentPassword,
                 newPassword: formData.newPassword,
             })).unwrap()
@@ -170,8 +170,8 @@ export default function AdminSettingsPage() {
                                         </button>
                                     </div>
                                 </div>
-                               {loading && <div className="text-center py-4">Updating password...</div>}
-                               {!loading && <Button disabled={loading} className='w-full' onClick={handleUpdatePassword}>Update Password</Button>}
+                                {loading && <div className="text-center py-4">Updating password...</div>}
+                                {!loading && <Button disabled={loading} className='w-full' onClick={handleUpdatePassword}>Update Password</Button>}
                             </div>
                         </CardContent>
                     </Card>

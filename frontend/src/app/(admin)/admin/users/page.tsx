@@ -336,7 +336,7 @@ export default function AdminUsersPage() {
                                                         onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
                                                         <UserX className="mr-2 h-4 w-4" />
-                                                        Remove Approval
+                                                        Remove Approval (suspend)
                                                     </DropdownMenuItem>
                                                 ) : (
                                                     <DropdownMenuItem

@@ -49,6 +49,6 @@ app.use(`${baseApi}/payments`, paymentRoutes);
 app.use(`${baseApi}/invite`, inviteRoutes);
 
 // Error handler
-app.use(errorHandler);
+// app.use(errorHandler);
 
 export default app;

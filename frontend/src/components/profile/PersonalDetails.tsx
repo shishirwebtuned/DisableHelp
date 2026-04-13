@@ -33,6 +33,7 @@ export interface PersonalDetailsData {
     contactInfo: {
         email: string;
         phone: string;
+        name: string;
         street: string;
         suburb: string;
         state: string;
@@ -54,6 +55,7 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
 
     const [contactInfo, setContactInfo] = useState({
         email: initialData?.contactInfo?.email || '',
+        name: initialData?.contactInfo?.name || '',
         phone: initialData?.contactInfo?.phone || '',
         street: initialData?.contactInfo?.street || '',
         suburb: initialData?.contactInfo?.suburb || '',
@@ -82,6 +84,7 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
             setContactInfo(prev => {
                 const updated = {
                     email: initialData.contactInfo?.email || '',
+                    name: initialData.contactInfo?.name || '',
                     phone: initialData.contactInfo?.phone || '',
                     street: initialData.contactInfo?.street || '',
                     suburb: initialData.contactInfo?.suburb || '',
@@ -250,8 +253,8 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                         <div>
                             <Label>Street Address</Label>
                             <Input
-                                value={contactInfo.street}
-                                onChange={(e) => setContactInfo({ ...contactInfo, street: e.target.value })}
+                                value={contactInfo.name}
+                                onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
                                 className="mt-2"
                             />
                         </div>

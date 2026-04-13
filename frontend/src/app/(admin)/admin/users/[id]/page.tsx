@@ -188,7 +188,7 @@ export default function AdminProfilePage() {
                         <AvatarImage
                             src={
                                 profile?.personalDetails?.avatar?.url ??
-                                user?.avatar ??
+                                profile?.avatar?.url ??
                                 ''
                             }
                         />
@@ -280,7 +280,7 @@ export default function AdminProfilePage() {
                             {isApproving
                                 ? 'Processing…'
                                 : user?.approved
-                                    ? 'Remove Approval'
+                                    ? 'Remove Approval (suspend)'
                                     : 'Approve User'
                             }
                         </Button>

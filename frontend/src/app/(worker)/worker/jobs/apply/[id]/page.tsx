@@ -174,7 +174,7 @@ export default function Page() {
       const map: Record<string, Period[]> = {};
       (selectedJob.jobSessions as any[]).forEach((s) => {
         s.period.forEach((p: any, i: number) => {
-          const key = `${s._id}_${i}`;
+          const key = `${s.day}_${i}`;
           if (selectedSessionKeys.has(key)) {
             if (!map[s.day]) map[s.day] = [];
             map[s.day].push({ startTime: p.startTime, endTime: p.endTime });
@@ -221,25 +221,27 @@ export default function Page() {
           {STEPS.map((s, i) => {
             const done = i < stepIndex;
             const active = s.key === step;
+
             return (
               <button
                 key={s.key}
                 onClick={() => { if (done) setStep(s.key); }}
                 className={[
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-left transition-colors',
-                  active ? 'bg-primary text-primary-foreground font-medium' : '',
-                  done ? 'text-foreground cursor-pointer hover:bg-accent' : '',
-                  !active && !done ? 'text-muted-foreground cursor-default' : '',
+                  active ? 'bg-gray-200/70 text-black ' : '',
+                  done ? 'text-black cursor-pointer hover:bg-gray-100' : '',
+                  !active && !done ? 'text-gray-500 cursor-default' : '',
                 ].join(' ')}
               >
                 {done ? (
                   <CheckCircle2
                     className="w-4 h-4 shrink-0"
-                    style={{ color: active ? 'inherit' : 'var(--color-primary)' }}
+                    style={{ color: active ? 'white' : '#22c55e' }} // green-500
                   />
                 ) : (
                   <Circle
-                    className={`w-4 h-4 shrink-0 ${active ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+                    className={`w-4 h-4 shrink-0 ${active ? 'text-black' : 'text-gray-400'
+                      }`}
                   />
                 )}
                 {s.label}
@@ -377,7 +379,7 @@ export default function Page() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {(jobSessions as any[]).flatMap((s: any) =>
                         s.period.map((p: any, i: number) => {
-                          const key = `${s._id}_${i}`;
+                          const key = `${s.day}_${i}`;
                           const dayAbbr = s.day.charAt(0).toUpperCase() + s.day.slice(1, 3);
                           return (
                             <div
@@ -602,7 +604,7 @@ export default function Page() {
                       // Show selected session slots
                       (jobSessions as any[]).flatMap((s: any) =>
                         s.period.map((p: any, i: number) => {
-                          const key = `${s._id}_${i}`;
+                          const key = `${s.day}_${i}`;
                           if (!selectedSessionKeys.has(key)) return null;
                           const dayAbbr = s.day.charAt(0).toUpperCase() + s.day.slice(1, 3);
                           return (

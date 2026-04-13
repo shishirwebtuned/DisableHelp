@@ -9,7 +9,6 @@ import {
     editInvoice,
     deleteInvoice,
 } from '@/redux/slices/invoiceSlice';
-import { fetchMyClients } from '@/redux/slices/activeConnectionsSlice';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,7 @@ import {
 import { format } from 'date-fns';
 import { formatTime } from '@/lib/formatTime';
 import { RequiredLabel } from '@/app/(client)/client/jobs/new/page';
+import { fetchMyClients } from '@/redux/slices/usersSlice';
 
 const statusConfig: Record<string, {
     label: string;
@@ -65,7 +65,7 @@ const statusConfig: Record<string, {
 export default function WorkerInvoicesPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: invoices, loading } = useSelector((state: RootState) => state.invoices);
-    const { clients } = useSelector((state: RootState) => state.activeConnections);
+    const { myClients: clients = [] } = useSelector((state: RootState) => state.users);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<any | null>(null);
@@ -410,7 +410,7 @@ function InvoiceForm({
                                 <SelectValue placeholder="Select a client" />
                             </SelectTrigger>
                             <SelectContent>
-                                {clients.map(client => (
+                                {clients?.map(client => (
                                     <SelectItem key={client._id} value={client._id}>
                                         <div className="flex items-center gap-2">
                                             <Avatar className="h-6 w-6">

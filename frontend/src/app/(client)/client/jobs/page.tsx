@@ -8,7 +8,7 @@ import { fetchApplications, acceptApplication, rejectApplication } from '@/redux
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -568,24 +568,24 @@ export default function ClientJobsPage() {
                                                                 <Mail className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
                                                                 <span className="truncate max-w-[180px] sm:max-w-[300px] block">{application.applicant?.email}</span>
                                                             </div>
-                                                            <div className="flex items-center gap-1">
+                                                            <div className="flex items-center gap-1 mt-1 mb-1">
                                                                 <UserPlus className="w-2.5 h-2.5 md:w-3 md:h-3 lg:h-3.5 lg:w-3.5 text-blue-400" />
                                                                 <div className='border-2 px-2 py-0.5 rounded-full border-blue-400 text-blue-400'>
                                                                     {application.applicant.isNdisProvider ? "NDIS Provider" : "Individual Suport Worker"
                                                                     }
                                                                 </div>
                                                             </div>
-                                                            {application.applicant?.phoneNumber && (
+                                                            {/* {application.applicant?.phoneNumber && (
                                                                 <div className="flex items-center gap-1">
                                                                     <Phone className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
                                                                     <span className="truncate max-w-[140px] sm:max-w-[220px] block">{application.applicant.phoneNumber}</span>
                                                                 </div>
-                                                            )}
+                                                            )} */}
                                                             {application?.applicant?.address && (
                                                                 <div className="flex items-center gap-1">
                                                                     <MapPinCheckInside className="w-2 h-2 md:w-2.5 md:h-2.5 lg:h-3 lg:w-3" />
                                                                     <span className="truncate max-w-[140px] sm:max-w-[220px] block">
-                                                                        {application?.applicant?.address?.line1} {application?.applicant?.address?.line2}, {application?.applicant?.address?.state}, {application?.applicant?.address?.postalCode}</span>
+                                                                        {application?.applicant?.address?.state}, {application?.applicant?.address?.postalCode}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -719,10 +719,20 @@ export default function ClientJobsPage() {
                                 <MapContainer
                                     center={mapDialogWorker.coords as [number, number]}
                                     zoom={13}
-                                    className="w-full h-full"
+                                    minZoom={12}
+                                    maxZoom={14}
+                                    scrollWheelZoom={false}
+                                    doubleClickZoom={false}
+                                    dragging={true} className="w-full h-full"
                                     key={mapDialogWorker._id}
                                 >
                                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                                    <Circle
+                                        center={mapDialogWorker.coords as [number, number]}
+                                        radius={1000} // 1km radius, adjust as needed
+                                        pathOptions={{ color: '#2563eb', fillColor: '#60a5fa', fillOpacity: 0.25 }}
+                                    />
                                     <Marker
                                         position={mapDialogWorker.coords as [number, number]}
                                         icon={workerIcon}

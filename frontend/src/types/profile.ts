@@ -1,6 +1,6 @@
 /**
  * Complete Profile Data Type Definitions
- * 
+ *
  * This file contains all the TypeScript interfaces for the worker profile
  * These types ensure type safety across all components
  */
@@ -15,6 +15,7 @@ export interface PersonalDetailsData {
   contactInfo: {
     email: string;
     phone: string;
+    name: string;
     street: string;
     suburb: string;
     state: string;
@@ -60,9 +61,9 @@ export interface ProfessionalDetailsData {
     expiryDate: string;
   };
   additionalTraining: {
-    cpr: { expiryDate: string; };
-    firstAid: { expiryDate: string; };
-    driverLicense: { expiryDate: string; };
+    cpr: { expiryDate: string };
+    firstAid: { expiryDate: string };
+    driverLicense: { expiryDate: string };
   };
 }
 
@@ -138,23 +139,24 @@ export const exampleCompleteProfile: CompleteProfileData = {
     personalInfo: {
       firstName: "Sarah",
       lastName: "Johnson",
-      gender: "female"
+      gender: "female",
     },
     contactInfo: {
       email: "sarah.johnson@example.com",
       phone: "+61 411 222 333",
+      name: "123 Main Street",
       street: "123 Main Street",
       suburb: "Sydney",
       state: "NSW",
-      postcode: "2000"
+      postcode: "2000",
     },
-    bio: "Experienced disability support worker with 8 years of experience..."
+    bio: "Experienced disability support worker with 8 years of experience...",
   },
   professionalDetails: {
     experience: {
       years: "8",
       totalHours: "5200",
-      specializations: "Personal Care, Community Support, Transport"
+      specializations: "Personal Care, Community Support, Transport",
     },
     workHistory: [
       {
@@ -163,8 +165,8 @@ export const exampleCompleteProfile: CompleteProfileData = {
         organisation: "Independent Contractor",
         startDate: "2018-01-01",
         currentlyWorkingHere: true,
-        desc: "Providing personalized support services to NDIS participants"
-      }
+        desc: "Providing personalized support services to NDIS participants",
+      },
     ],
     education: [
       {
@@ -173,81 +175,81 @@ export const exampleCompleteProfile: CompleteProfileData = {
         institution: "TAFE NSW",
         startDate: "2018-01-01",
         endDate: "2018-12-31",
-        currentlyStudyingHere: false
-      }
+        currentlyStudyingHere: false,
+      },
     ],
     ndisWorkerScreening: {
       screening_number: "NSW12345",
       expiry_date: "2027-06-15",
       legal_first_name: "Sarah",
       legal_last_name: "Johnson",
-      date_of_birth: "1980-01-01"
+      date_of_birth: "1980-01-01",
     },
     wwcc: {
       wwccNumber: "WWC123456",
-      expiryDate: "2025-01-01"
+      expiryDate: "2025-01-01",
     },
     additionalTraining: {
       cpr: { expiryDate: "2024-01-01" },
       firstAid: { expiryDate: "2024-01-01" },
-      driverLicense: { expiryDate: "2026-01-01" }
-    }
+      driverLicense: { expiryDate: "2026-01-01" },
+    },
   },
   jobDetails: {
     preferredHours: {
       Monday: { enabled: true, slots: ["6am-11am", "11am-2pm"] },
-      Tuesday: { enabled: true, slots: ["11am-2pm", "2pm-5pm"] }
+      Tuesday: { enabled: true, slots: ["11am-2pm", "2pm-5pm"] },
       // ... other days
     },
     rates: {
       standard: 45,
       weekend: 55,
       evening: 50,
-      overnight: 60
+      overnight: 60,
     },
     selectedServices: [
       "Personal Care",
       "Community Access",
       "Transport",
-      "Household Tasks"
+      "Household Tasks",
     ],
-    freeMeetAndGreet: true
+    freeMeetAndGreet: true,
   },
   additionalDetails: {
     languages: {
       firstLanguages: ["English"],
-      secondLanguages: ["Spanish"]
+      secondLanguages: ["Spanish"],
     },
     selectedInterests: ["cooking", "movies", "pets"],
     culturalInfo: {
       background: ["Australian"],
       religion: ["No preference"],
       smokingPolicy: "non-smoker",
-      petFriendly: "yes"
+      petFriendly: "yes",
     },
     preferences: {
       preferredClientAge: "No preference",
       preferredGender: "No preference",
       willingToTravel: "yes",
-      maxTravelDistance: "20"
+      maxTravelDistance: "20",
     },
     bankDetails: {
       accountName: "Sarah Johnson",
       bsb: "123-456",
-      accountNumber: "12345678"
+      accountNumber: "12345678",
     },
     immunisation: {
       hasSeasonalFluShot: true,
       covidVaccineStatus: "fullyVaccinated",
-      statusConfirmed: true
+      statusConfirmed: true,
     },
     lgbtqiaPlusFriendly: true,
-    personality: "outgoing"
+    personality: "outgoing",
   },
   profileImage: {
     base64: "data:image/png;base64,iVBORw0KGgo...",
-    binary: null // Blob object in runtime
-  }
+    binary: null, // Blob object in runtime
+  },
 };
 
 // ==================== API PAYLOAD HELPERS ====================
@@ -259,21 +261,27 @@ export function profileToFormData(profile: CompleteProfileData): FormData {
 
   // Add profile image as binary if available
   if (profile.profileImage?.binary) {
-    formData.append('profileImage', profile.profileImage.binary, 'profile.png');
+    formData.append("profileImage", profile.profileImage.binary, "profile.png");
   }
 
   // Add all other data as JSON strings
   if (profile.personalDetails) {
-    formData.append('personalDetails', JSON.stringify(profile.personalDetails));
+    formData.append("personalDetails", JSON.stringify(profile.personalDetails));
   }
   if (profile.professionalDetails) {
-    formData.append('professionalDetails', JSON.stringify(profile.professionalDetails));
+    formData.append(
+      "professionalDetails",
+      JSON.stringify(profile.professionalDetails),
+    );
   }
   if (profile.jobDetails) {
-    formData.append('jobDetails', JSON.stringify(profile.jobDetails));
+    formData.append("jobDetails", JSON.stringify(profile.jobDetails));
   }
   if (profile.additionalDetails) {
-    formData.append('additionalDetails', JSON.stringify(profile.additionalDetails));
+    formData.append(
+      "additionalDetails",
+      JSON.stringify(profile.additionalDetails),
+    );
   }
 
   return formData;
@@ -285,10 +293,12 @@ export function profileToFormData(profile: CompleteProfileData): FormData {
 export function profileToJSON(profile: CompleteProfileData): string {
   const jsonSafe = {
     ...profile,
-    profileImage: profile.profileImage ? {
-      base64: profile.profileImage.base64,
-      // Binary excluded for JSON serialization
-    } : undefined
+    profileImage: profile.profileImage
+      ? {
+          base64: profile.profileImage.base64,
+          // Binary excluded for JSON serialization
+        }
+      : undefined,
   };
   return JSON.stringify(jsonSafe, null, 2);
 }

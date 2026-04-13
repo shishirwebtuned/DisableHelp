@@ -6,6 +6,7 @@ import { connectDB } from "./config/database.js";
 import messageRoutes, { initMessageRoutes } from "./routes/message.routes.js";
 import { initChatRoutes } from "./routes/chat.routes.js";
 import { initApplicationRoutes } from "./routes/application.routes.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -52,6 +53,7 @@ connectDB().then(async () => {
   app.use("/api/v1/en/message", initMessageRoutes(io));
   app.use("/api/v1/en/chat", initChatRoutes(io));
   app.use("/api/v1/en/application", initApplicationRoutes(io));
+  app.use(errorHandler);
 
   server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

@@ -80,7 +80,9 @@ api.interceptors.response.use(
           break;
         }
         case 403:
-          toast.error("Access forbidden. You don't have permission.");
+          toast.error(
+            errorMessage || "Access forbidden. You don't have permission.",
+          );
           break;
         case 404:
           toast.error("Resource not found");

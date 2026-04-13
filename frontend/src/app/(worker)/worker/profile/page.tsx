@@ -51,7 +51,8 @@ export default function WorkerProfilePage() {
                 contactInfo: {
                     email: userData.user?.email || '',
                     phone: userData.user?.phoneNumber || '',
-                    street: profile?.locations?.[0]?.name || profile?.address?.street || '',
+                    name: profile?.locations?.[0]?.name || '',
+                    street: profile?.locations?.[0]?.street || '',
                     suburb: profile?.locations?.[0]?.suburb || profile?.address?.suburb || '',
                     state: profile?.locations?.[0]?.state || profile?.address?.state || '',
                     postcode: profile?.locations?.[0]?.postalCode || profile?.address?.postcode || '',

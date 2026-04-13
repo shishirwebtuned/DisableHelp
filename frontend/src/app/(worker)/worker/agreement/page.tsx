@@ -52,6 +52,8 @@ export default function WorkerAgreementsPage() {
     const [viewOnlyTerms, setViewOnlyTerms] = useState(false);
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [selectedAgreementId, setSelectedAgreementId] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
     const pageSize = 10;
 
     const agreement = agreements.find(
@@ -116,6 +118,15 @@ export default function WorkerAgreementsPage() {
     };
 
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 640); // Tailwind sm breakpoint
+        };
+
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     return (
         <>
@@ -392,14 +403,14 @@ export default function WorkerAgreementsPage() {
             >
                 <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
-                        <DialogHeader>
-                            <DialogTitle>Terms & Conditions</DialogTitle>
-                            <DialogDescription>
+                        <DialogHeader className='flex gap-0'>
+                            <DialogTitle className='md:text-[17px] text-base lg:text-lg'>Terms & Conditions</DialogTitle>
+                            <DialogDescription className='md:text-[13px] text-xs lg:text-sm'>
                                 Please read the terms and conditions carefully before accepting.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="max-h-96 overflow-y-auto rounded-md border bg-muted/30 px-4 py-3 md:text-[13px] text-xs lg:text-sm text-gray-600 md:space-y-2.5 space-y-2 lg:space-y-3">
+                        <div className="max-h-96 md:max-h-full overflow-y-auto rounded-md border bg-muted/30 px-3 md:px-4 py-1 md:py-2 md:text-[13px] text-xs lg:text-sm text-gray-600 md:space-y-2 space-y-1.5 lg:space-y-2.5">
 
                             <p className="font-semibold text-foreground md:text-[15px] text-sm lg:text-base">
                                 Service Agreement Terms
@@ -411,19 +422,19 @@ export default function WorkerAgreementsPage() {
                             </p>
 
                             {(paymentDue?.amountDue ?? 0) > 0 && !paymentCompleted && (
-                                <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4 space-y-3 shadow-sm">
+                                <div className="rounded-lg border-2 border-green-500 bg-green-50 p-2 lg:p-3 space-y-2 shadow-sm">
 
-                                    <div className="text-center space-y-1">
+                                    <div className="text-center space-y-0.5">
 
-                                        <h3 className="lg:text-lg md:text-[17px] text-base font-bold text-foreground">
+                                        <h3 className="lg:text-[17px] md:text-base text-[15px] font-bold text-foreground">
                                             Agreement Activation Fee
                                         </h3>
 
-                                        <p className="text-muted-foreground">
+                                        <p className="text-muted-foreground lg:text-sm md:text-[13px] text-xs">
                                             Payment is required to accept this agreement
                                         </p>
 
-                                        <div className="md:text-2xl text-xl lg:text-3xl font-extrabold text-green-600">
+                                        <div className="md:text-[22px] text-lg lg:text-[28px] font-extrabold text-green-600">
                                             $100
                                         </div>
 
@@ -489,22 +500,24 @@ export default function WorkerAgreementsPage() {
                                             console.log(err);
                                         }}
 
-                                        // style={{
-                                        //     layout: "horizontal",
-                                        //     height: 35,
-                                        //     shape: "pill",
-                                        //     color: "gold",
-                                        //     label: "pay",
-                                        //     tagline: false
-                                        // }}
                                         style={{
-                                            layout: "horizontal",   // ✅ smaller
-                                            height: 38,             // ✅ smaller height
+                                            layout: "horizontal",
+                                            height: isMobile ? 25 : 38,
                                             shape: "rect",
                                             color: "blue",
                                             label: "pay",
-                                            tagline: false          // ✅ removes extra text
+                                            tagline: false
                                         }}
+
+                                    // style={{
+                                    //     layout: "horizontal",
+                                    //     height: 35,
+                                    //     shape: "pill",
+                                    //     color: "gold",
+                                    //     label: "pay",
+                                    //     tagline: false
+                                    // }}
+
                                     />
                                 </div>
                             )}
@@ -514,7 +527,7 @@ export default function WorkerAgreementsPage() {
                                 </div>
                             )}
                             {/* IMPORTANT TERMS ONLY */}
-                            <div className="space-y-2 text-[11px] md:text-xs lg:text-[13px] border-t pt-3">
+                            <div className="space-y-1.5 md:space-y-2 text-[11px] md:text-xs lg:text-[13px] border-t pt-2">
 
                                 <p className="font-medium text-foreground">
                                     Key Conditions:
