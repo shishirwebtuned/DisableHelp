@@ -35,6 +35,7 @@ type WorkerCardProps = {
     workerCoords?: any
     onViewMap: (worker: any) => void
     onInvite?: (worker: any) => void
+    showLanguages?: boolean
 
 }
 
@@ -86,6 +87,7 @@ export default function WorkerCard({
     workerCoords,
     onViewMap,
     onInvite,
+    showLanguages = false
 }: WorkerCardProps) {
 
 
@@ -387,7 +389,7 @@ ${worker.approved
 
                 )}
 
-                {languages.length > 0 && (
+                {showLanguages && languages.length > 0 && (
 
                     <div className="flex flex-row gap-1 mt-1 items-center">
 
@@ -535,7 +537,7 @@ ${badgeColors[
 
                         className="h-6.5 md:h-7 lg:h-8 text-[10px] md:text-[11px] lg:text-xs flex-1 cursor-pointer"
                     >
-                        Invite
+                        Invite to Apply
 
 
                     </Button>

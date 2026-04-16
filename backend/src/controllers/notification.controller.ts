@@ -97,3 +97,26 @@ export const getUnreadCount = catchAsync(async (req, res) => {
     data: { count },
   });
 });
+
+export const sendNotificationByAdmin = (io: any) =>
+  catchAsync(async (req, res) => {
+    const { recipientId, title, message } = req.body;
+    const senderId = req.user._id;
+
+    const notification = await Notification.create({
+      recipient: recipientId,
+      sender: senderId,
+      type: "system",
+      title,
+      message,
+    });
+
+    io.to(`user:${recipientId}`).emit("newNotification", notification);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "Message sent Successfully.",
+      data: { notification },
+    });
+  });

@@ -7,8 +7,9 @@ import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from '@
 import Pagination from '@/components/ui/pagination';
 import Loading from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Download, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { downloadPaymentPDF } from '@/lib/pdfGenerator';
 
 export default function WorkerPaymentsPage() {
     const dispatch = useAppDispatch();
@@ -73,7 +74,7 @@ export default function WorkerPaymentsPage() {
                                     <TableCell>{payment.paymentMethod}</TableCell>
                                     <TableCell>{new Date(payment.paymentDate).toLocaleDateString()} {new Date(payment.paymentDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}</TableCell>
                                     <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center justify-center gap-4">
                                             {/* View */}
                                             <Button
                                                 variant="outline"
@@ -85,6 +86,14 @@ export default function WorkerPaymentsPage() {
                                                 }}
                                             >
                                                 <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => downloadPaymentPDF(payment)}
+                                            >
+                                                <Download className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </TableCell>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUsers } from '@/redux/slices/usersSlice';
+import { sendNotificationByAdmin } from '@/redux/slices/notificationSlice';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Search,
     MoreHorizontal,
@@ -64,6 +74,10 @@ export default function AdminUsersPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const router = useRouter();
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [notificationTitle, setNotificationTitle] = useState('');
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     // Reset to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -86,6 +100,20 @@ export default function AdminUsersPage() {
 
         return () => clearTimeout(t);
     }, [dispatch, searchTerm, roleFilter, statusFilter, workerTypeFilter, currentPage]);
+
+    const handleSendNotification = () => {
+        if (selectedUserId && notificationTitle.trim() && notificationMessage.trim()) {
+            dispatch(sendNotificationByAdmin({
+                recipientId: selectedUserId,
+                title: notificationTitle.trim(),
+                message: notificationMessage.trim(),
+            }));
+            setDialogOpen(false);
+            setNotificationTitle('');
+            setNotificationMessage('');
+            setSelectedUserId(null);
+        }
+    };
 
 
 
@@ -325,10 +353,15 @@ export default function AdminUsersPage() {
                                                         View Details
                                                     </DropdownMenuItem>
                                                 </Link>
-                                                {/* <DropdownMenuItem className="cursor-pointer">
+                                                <DropdownMenuItem className="cursor-pointer" onClick={() => {
+                                                    setSelectedUserId(user.id);
+                                                    setNotificationTitle('');
+                                                    setNotificationMessage('');
+                                                    setDialogOpen(true);
+                                                }}>
                                                     <Mail className="mr-2 h-4 w-4" />
-                                                    Send Email
-                                                </DropdownMenuItem> */}
+                                                    Send Message
+                                                </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 {user.approved ? (
                                                     <DropdownMenuItem
@@ -336,7 +369,7 @@ export default function AdminUsersPage() {
                                                         onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
                                                         <UserX className="mr-2 h-4 w-4" />
-                                                        Remove Approval (suspend)
+                                                        Remove Approval (Suspend)
                                                     </DropdownMenuItem>
                                                 ) : (
                                                     <DropdownMenuItem
@@ -368,6 +401,43 @@ export default function AdminUsersPage() {
                 onPageChange={(page) => setCurrentPage(page)}
             />
 
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Send Notification</DialogTitle>
+                        <DialogDescription>
+                            Send a notification to {selectedUserId ? normalizedUsers.find(u => u.id === selectedUserId)?.name : ''}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="title" className="block text-sm font-medium">Title</label>
+                            <Input
+                                id="title"
+                                value={notificationTitle}
+                                onChange={(e) => setNotificationTitle(e.target.value)}
+                                placeholder="Enter notification title"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="message" className="block text-sm font-medium">Description</label>
+                            <Textarea
+                                id="message"
+                                value={notificationMessage}
+                                onChange={(e) => setNotificationMessage(e.target.value)}
+                                placeholder="Enter notification message"
+                                rows={4}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSendNotification} disabled={!notificationTitle.trim() || !notificationMessage.trim()}>
+                            Send Message
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );

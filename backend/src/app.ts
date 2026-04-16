@@ -43,7 +43,6 @@ app.use(`${baseApi}/session`, sessionRoutes);
 // app.use(`${baseApi}/message`, messageRoutes);
 app.use(`${baseApi}/location`, locationRoutes);
 app.use(`${baseApi}/invoice`, invoiceRoutes);
-app.use(`${baseApi}/notifications`, notificationRoutes);
 app.use(`${baseApi}/payments`, paymentRoutes);
 
 app.use(`${baseApi}/invite`, inviteRoutes);

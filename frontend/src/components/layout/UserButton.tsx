@@ -107,7 +107,12 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
                             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                             <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="secondary" className="text-[10px] px-2 py-0 h-4 uppercase tracking-tighter">
-                                    {user.role}
+                                    {user.role === 'worker' ?
+                                        (user.isNdisProvider ?
+                                            'Ndis Provider' : 'Individual Worker'
+                                        )
+                                        : user.role}
+
                                 </Badge>
                                 {user.isVerified && (
                                     <Badge variant="default" className="text-[10px] px-2 py-0 h-4 bg-green-500 hover:bg-green-600 border-none">

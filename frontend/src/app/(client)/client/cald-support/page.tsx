@@ -382,6 +382,7 @@ export default function CALDSupportPage() {
                                 workerCoords={workerWithCoord}
                                 onViewMap={() => handleViewMap(worker)}
                                 onInvite={handleInviteClick}
+                                showLanguages={true}
 
                             />
                         );

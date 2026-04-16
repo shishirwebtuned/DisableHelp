@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { getAgreementById, getAgreementsByWorker, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
+import { getAgreementById, getAgreementsByWorker, terminateAgreement, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,8 @@ import {
     Clock,
     CheckCircle,
     Eye,
+    XCircle,
+    AlertTriangle,
 } from 'lucide-react';
 import axios from '@/lib/axios';
 import Pagination from '@/components/ui/pagination';
@@ -33,6 +35,8 @@ import {
     capturePayment,
     fetchPaymentDue
 } from '@/redux/slices/paymentSlice';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export default function WorkerAgreementsPage() {
@@ -53,6 +57,11 @@ export default function WorkerAgreementsPage() {
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
     const [selectedAgreementId, setSelectedAgreementId] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+
+    const [terminating, setTerminating] = useState(false);
+    const [terminateDialogOpen, setTerminateDialogOpen] = useState(false);
+    const [terminateReason, setTerminateReason] = useState('');
+    const [terminateReasonError, setTerminateReasonError] = useState(false);
 
     const pageSize = 10;
 
@@ -127,6 +136,23 @@ export default function WorkerAgreementsPage() {
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const handleTerminateConfirm = async () => {
+        if (!selectedAgreementId) return;
+        if (!terminateReason.trim()) {
+            setTerminateReasonError(true);
+            return;
+        }
+        setTerminating(true);
+        await dispatch(terminateAgreement({
+            id: selectedAgreementId,
+            terminationReason: terminateReason.trim(),
+        }));
+        setTerminating(false);
+        setTerminateDialogOpen(false);
+        setSelectedAgreementId(null);
+        setTerminateReason('');
+    };
 
     return (
         <>
@@ -325,6 +351,32 @@ export default function WorkerAgreementsPage() {
                                             )}
 
                                         </div>
+                                        {agreement.status === 'active' && (
+                                            <button
+                                                className="h-7 text-[11px] bg-red-500 text-white hover:bg-red-600 px-2.5 flex items-center rounded-sm shadow-sm transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedAgreementId(agreement._id);
+                                                    setTerminateReason('');
+                                                    setTerminateReasonError(false);
+                                                    setTerminateDialogOpen(true);
+                                                }}
+                                            >
+                                                <XCircle className="h-3 w-3 mr-1.5" />
+                                                Terminate
+                                            </button>
+                                        )}
+
+
+
+                                    </div>
+                                    <div className='border-t pt-3 flex flex-row-reverse items-center justify-between'>
+                                        <button className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                            onClick={() => {
+                                                setSelectedAgreementId(agreement._id);
+                                                setDetailsDialogOpen(true);
+                                            }}>
+                                            View Details
+                                        </button>
                                         <div>
                                             {agreement.termsAcceptedByWorker ? (
                                                 <button
@@ -364,17 +416,6 @@ export default function WorkerAgreementsPage() {
                                                 </button>
                                             )}
                                         </div>
-
-
-                                    </div>
-                                    <div className='border-t pt-3 flex flex-row items-center justify-center'>
-                                        <button className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
-                                            onClick={() => {
-                                                setSelectedAgreementId(agreement._id);
-                                                setDetailsDialogOpen(true);
-                                            }}>
-                                            View Details
-                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -540,17 +581,22 @@ export default function WorkerAgreementsPage() {
 
                                 <p>
                                     <span className="font-medium text-foreground">Confidentiality:</span>{" "}
-                                    All client data must be kept strictly private.
+                                    All client information must be treated as strictly confidential and handled
+                                    in accordance with privacy obligations. Disclosure or misuse of such information
+                                    is not permitted under any circumstances.
                                 </p>
 
                                 <p>
                                     <span className="font-medium text-foreground">Conduct:</span>{" "}
-                                    Maintain professional behavior at all times.
+                                    You are expected to maintain professional, respectful, and ethical behavior
+                                    at all times while interacting with clients and stakeholders, ensuring a safe
+                                    and appropriate working environment.
                                 </p>
 
                                 <p>
                                     <span className="font-medium text-foreground">Compliance:</span>{" "}
-                                    Adhere to NDIS and safety regulations consistently.
+                                    All services must be delivered in full compliance with NDIS standards,
+                                    organizational policies, and applicable safety regulations at all times.
                                 </p>
 
                                 {/* <p>
@@ -580,6 +626,60 @@ export default function WorkerAgreementsPage() {
                                     {acceptingTerms ? 'Accepting...' : 'Accept'}
                                 </Button>
                             )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={terminateDialogOpen} onOpenChange={setTerminateDialogOpen}>
+                    <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-red-600">
+                                <AlertTriangle className="h-4 w-4" />
+                                Terminate Agreement
+                            </DialogTitle>
+                            <DialogDescription>
+                                This action cannot be undone. Please provide a reason for terminating this agreement.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="terminateReason" className="text-xs">
+                                Reason <span className="text-red-500">*</span>
+                            </Label>
+                            <Textarea
+                                id="terminateReason"
+                                placeholder="e.g. Services no longer required..."
+                                value={terminateReason}
+                                onChange={e => {
+                                    setTerminateReason(e.target.value);
+                                    if (e.target.value.trim()) setTerminateReasonError(false);
+                                }}
+                                rows={3}
+                                className={`text-sm ${terminateReasonError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                            />
+                            {terminateReasonError && (
+                                <p className="text-xs text-red-500">Reason is required to terminate.</p>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2 pt-1">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setTerminateDialogOpen(false)}
+                                disabled={terminating}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleTerminateConfirm}
+                                disabled={terminating}
+                            >
+                                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                {terminating ? 'Terminating...' : 'Confirm'}
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

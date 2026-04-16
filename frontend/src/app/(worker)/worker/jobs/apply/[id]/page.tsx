@@ -16,7 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CheckCircle2, Circle, Info, ExternalLink, ArrowBigLeft } from 'lucide-react';
+import { CheckCircle2, Circle, Info, ExternalLink, ArrowBigLeft, Sparkles, MapPin, Clock, Calendar, User, X } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 // ── Time options (every 30 min) ──────────────────────────────────────────────
 const TIME_OPTIONS: string[] = [];
@@ -68,6 +74,8 @@ export default function Page() {
   // tracks which client-provided session slots the worker selects (key = `${session._id}_${periodIdx}`)
   const [selectedSessionKeys, setSelectedSessionKeys] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openDrawer, setOpenDrawer] = useState(false);
+
 
   useEffect(() => {
     if (id) dispatch(fetchJobById(id as string));
@@ -204,7 +212,7 @@ export default function Page() {
 
       }
       {/* ── Top header ── */}
-      <Button onClick={() => router.back()} className=" w-30 cursor-pointer ml-4 mt-4">
+      <Button onClick={() => router.back()} className="w-30 cursor-pointer ml-4 mt-4">
         <ArrowBigLeft className="h-4 w-4 mr-2" />
         Back
       </Button>
@@ -212,7 +220,7 @@ export default function Page() {
         <h1 className="text-xl font-bold">Job Application</h1>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* ── Left stepper sidebar ── */}
         <aside className="w-56 border-r bg-muted/30 p-6 hidden md:flex flex-col gap-1 shrink-0">
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
@@ -632,16 +640,21 @@ export default function Page() {
         </main>
 
         {/* ── Right job summary sidebar ── */}
-        <aside className="w-64  p-6 hidden lg:flex flex-col gap-3 shrink-0">
-          <p className="font-semibold text-sm">Apply to support</p>
+        <aside className="w-44 md:w-52 lg:w-64 p-6 flex flex-col gap-3 shrink-0">
+          <p className="font-semibold text-xs md:text-[13px] lg:text-sm">Apply to support</p>
           <div>
-            <p className="text-lg font-bold">{selectedJob.title}</p>
+            <p className="text-[15px] md:text-base lg:text-lg font-bold">{selectedJob.title}</p>
             <div className="flex flex-wrap gap-1 mt-2">
             </div>
           </div>
           <button
-            onClick={() => router.push(`/worker/jobs/${id}`)}
-            className="flex items-center gap-1 text-sm text-primary hover:underline mt-auto"
+            onClick={() => {
+              if (!selectedJob && id) {
+                dispatch(fetchJobById(id as string));
+              }
+              setOpenDrawer(true);
+            }}
+            className="flex items-center gap-1 md:text-[13px] text-xs lg:text-sm text-primary hover:underline mt-auto"
           >
             View full job details <ExternalLink className="w-3 h-3" />
           </button>
@@ -671,6 +684,214 @@ export default function Page() {
           </Button>
         )}
       </div>
+
+      <Sheet open={openDrawer} onOpenChange={setOpenDrawer}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg p-0 overflow-y-auto bg-background flex flex-col"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap');
+        `}</style>
+
+          {/* Header */}
+          <div className="sticky top-0 z-20 bg-background border-b px-5 py-4 flex items-center justify-between">
+            <SheetTitle className="text-[15px] font-semibold tracking-tight">
+              Job Details
+            </SheetTitle>
+            <button
+              onClick={() => setOpenDrawer(false)}
+              className="w-7 h-7 rounded-full border border-border/40 bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loading...</p>
+          ) : selectedJob ? (
+            <div className="flex-1 overflow-y-auto">
+
+              {/* Hero Card */}
+              <div
+                className="m-4 rounded-2xl overflow-hidden relative"
+                style={{ background: "linear-gradient(135deg, #378ADD 0%, #185FA5 60%, #0C447C 100%)" }}
+              >
+                <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
+                <div className="absolute -bottom-5 right-5 w-16 h-16 rounded-full bg-white/4 pointer-events-none" />
+
+                <div className="relative p-5">
+                  <div className="inline-flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-full px-3 py-1 mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#85B7EB]" />
+                    <span className="text-[11px] font-medium text-white/90">Open Position</span>
+                  </div>
+
+                  <h2
+                    className="text-[21px] leading-snug text-white mb-3"
+                    style={{ fontFamily: "'Instrument Serif', serif" }}
+                  >
+                    {selectedJob.title}
+                  </h2>
+
+                  <div className="flex items-center gap-2 text-[12px] text-white/75">
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-semibold text-white">
+                      {selectedJob.client?.firstName?.[0]}
+                      {selectedJob.client?.lastName?.[0]}
+                    </div>
+                    Posted by {selectedJob.client?.firstName} {selectedJob.client?.lastName}
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 pb-6 space-y-5">
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    {
+                      label: "Start Date",
+                      value: new Date(selectedJob.startDate).toLocaleDateString("en-AU", {
+                        day: "numeric", month: "short", year: "numeric",
+                      }),
+                      icon: <Calendar className="w-3 h-3" style={{ color: "#378ADD" }} />,
+                    },
+                    {
+                      label: "Frequency",
+                      value: selectedJob.frequency,
+                      icon: <Clock className="w-3 h-3" style={{ color: "#378ADD" }} />,
+                    },
+                    { label: "Sessions", value: selectedJob.duration?.session, icon: null },
+                    { label: "Hours", value: selectedJob.duration?.hours, icon: null },
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-muted/50 border border-border/30 rounded-xl px-3.5 py-3">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-1">
+                        {stat.icon}
+                        {stat.label}
+                      </div>
+                      <p className="text-[14px] font-semibold text-foreground capitalize">
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Location */}
+                <div>
+                  <SectionTitle>Location</SectionTitle>
+                  <div className="bg-muted/50 border border-border/30 rounded-xl p-3.5 flex gap-3 items-start">
+                    <div
+                      className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center"
+                      style={{ background: "#E6F1FB" }}
+                    >
+                      <MapPin className="w-4 h-4" style={{ color: "#185FA5" }} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-foreground leading-snug">
+                        {selectedJob.location?.line1}
+                        {selectedJob.location?.line2 && `, ${selectedJob.location.line2}`}
+                      </p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">
+                        {selectedJob.location?.state} {selectedJob.location?.postalCode}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Support Required */}
+                <div>
+                  <SectionTitle icon={<Sparkles className="w-3 h-3" style={{ color: "#378ADD" }} />}>
+                    Support Required
+                  </SectionTitle>
+                  <div className="space-y-2">
+                    {selectedJob.supportDetails?.map((item: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-background border border-border/30 rounded-xl p-3.5 flex gap-3 items-start hover:bg-muted/30 transition"
+                      >
+                        <span
+                          className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
+                          style={{
+                            background: idx === 0 ? "#378ADD" : idx === 1 ? "#85B7EB" : "#B5D4F4",
+                          }}
+                        />
+                        <div>
+                          <p className="text-[13px] font-semibold text-foreground capitalize">{item.name}</p>
+                          <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{item.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sessions */}
+                <div>
+                  <SectionTitle>Sessions</SectionTitle>
+                  <div className="space-y-2">
+                    {selectedJob.jobSessions?.map((s: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-muted/50 border border-border/30 rounded-xl px-3.5 py-2.5 flex justify-between items-center hover:bg-muted/70 transition"
+                      >
+                        <p className="text-[13px] font-semibold text-foreground capitalize">{s.day}</p>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {s.period.map((p: any, i: number) => (
+                            <span
+                              key={i}
+                              className="text-[11px] font-semibold px-2.5 py-0.5 rounded-md"
+                              style={{ background: "#E6F1FB", color: "#185FA5" }}
+                            >
+                              {p.startTime} – {p.endTime}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preferences */}
+                <div>
+                  <SectionTitle>Preferences</SectionTitle>
+                  <div className="bg-muted/50 border border-border/30 rounded-xl p-3.5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[12px] text-muted-foreground">Preferred gender</span>
+                      <span className="text-[13px] font-semibold text-foreground capitalize">
+                        {selectedJob.preference?.gender}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedJob.preference?.others?.map((item: string, i: number) => (
+                        <span
+                          key={i}
+                          className="text-[11px] font-semibold px-3 py-1 rounded-full"
+                          style={{ background: "#E6F1FB", color: "#185FA5" }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            <p className="p-6 text-sm text-muted-foreground">No data found</p>
+          )}
+
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-2.5">
+      {icon}
+      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{children}</p>
+      <div className="flex-1 h-px bg-border/40" />
     </div>
   );
 }

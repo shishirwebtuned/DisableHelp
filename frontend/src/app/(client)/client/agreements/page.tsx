@@ -428,7 +428,7 @@ export default function ClientAgreementsPage() {
                         </p>
 
                         <p>
-                            By accepting these terms, worker agrees to provide support services professionally
+                            By accepting these terms, Independent Support Worker and NDIS Providers agrees to provide support services professionally
                             and according to this agreement.
                         </p>
 
@@ -447,17 +447,22 @@ export default function ClientAgreementsPage() {
 
                             <p>
                                 <span className="font-medium text-foreground">Confidentiality:</span>{" "}
-                                All client data must be kept strictly private.
+                                All client information must be treated as strictly confidential and handled
+                                in accordance with privacy obligations. Disclosure or misuse of such information
+                                is not permitted under any circumstances.
                             </p>
 
                             <p>
                                 <span className="font-medium text-foreground">Conduct:</span>{" "}
-                                Maintain professional behavior at all times.
+                                You are expected to maintain professional, respectful, and ethical behavior
+                                at all times while interacting with clients and stakeholders, ensuring a safe
+                                and appropriate working environment.
                             </p>
 
                             <p>
                                 <span className="font-medium text-foreground">Compliance:</span>{" "}
-                                Adhere to NDIS and safety regulations consistently.
+                                All services must be delivered in full compliance with NDIS standards,
+                                organizational policies, and applicable safety regulations at all times.
                             </p>
 
 

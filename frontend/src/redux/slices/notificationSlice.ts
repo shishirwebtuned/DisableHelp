@@ -76,6 +76,26 @@ export const deleteNotification = createAsyncThunk(
   },
 );
 
+export const sendNotificationByAdmin = createAsyncThunk(
+  "notifications/sendByAdmin",
+  async ({
+    recipientId,
+    title,
+    message,
+  }: {
+    recipientId: string;
+    title: string;
+    message: string;
+  }) => {
+    const res = await api.post("/notifications/admin/send", {
+      recipientId,
+      title,
+      message,
+    });
+    return res.data.data.notification;
+  },
+);
+
 const notificationSlice = createSlice({
   name: "notifications",
   initialState,
