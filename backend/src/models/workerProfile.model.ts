@@ -46,7 +46,7 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
     gender: {
       type: String,
       enum: ["male", "female", "other", "prefer not to say"],
-      required: true,
+      required: false,
     },
 
     services: { type: [String], default: [] },

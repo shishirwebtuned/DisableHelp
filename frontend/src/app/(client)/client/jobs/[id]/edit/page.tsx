@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchJobById, updateJobThunk, setSelectedJob } from '@/redux/slices/jobsSlice';
+import { formatDateToInputValue, inputValueToISO } from '@/lib/dateHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +35,7 @@ interface FormState {
     title: string;
     startDate: Date | undefined;
     frequency: string;
-    location: { line1: string; line2: string; state: string; postalCode: string };
+    location: { line1: string; suburb: string; state: string; postalCode: string };
     duration: { session: number; hours: number };
     supportDetails: SupportDetail[];
     jobSessions: SessionDay[];
@@ -55,7 +56,7 @@ export default function EditJobPage() {
         title: '',
         startDate: undefined,
         frequency: 'weekly',
-        location: { line1: '', line2: '', state: '', postalCode: '' },
+        location: { line1: '', suburb: '', state: '', postalCode: '' },
         duration: { session: 1, hours: 2 },
         supportDetails: [],
         jobSessions: [],
@@ -86,7 +87,7 @@ export default function EditJobPage() {
         const rawLoc = job.location;
         const loc = rawLoc && typeof rawLoc === 'object' && 'line1' in rawLoc
             ? rawLoc
-            : { line1: '', line2: '', state: '', postalCode: '' };
+            : { line1: '', suburb: '', state: '', postalCode: '' };
         const jobSessions = job.jobSessions ?? [];
         setForm({
             title: job.title ?? '',
@@ -161,7 +162,7 @@ export default function EditJobPage() {
         const jobSessionByClient = enableJobSessions;
         const payload = {
             title: form.title.trim(),
-            startDate: form.startDate.toISOString(),
+            startDate: inputValueToISO(form.startDate),
             frequency: form.frequency,
             location: form.location,
             duration: form.duration,
@@ -222,7 +223,7 @@ export default function EditJobPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <Label>Start Date <span className="text-destructive">*</span></Label>
-                            <DatePicker className="w-full mt-1.5" value={form.startDate ? form.startDate.toISOString().split('T')[0] : ''} onChange={(d) => setField('startDate', d ?? undefined)} />
+                            <DatePicker className="w-full mt-1.5" value={formatDateToInputValue(form.startDate)} onChange={(d) => setField('startDate', d ?? undefined)} />
                         </div>
                         <div>
                             <Label>Frequency</Label>
@@ -281,8 +282,8 @@ export default function EditJobPage() {
                         <Input className="mt-1.5" value={form.location.line1} onChange={(e) => setLocation('line1', e.target.value)} placeholder="123 Main Street" />
                     </div>
                     <div className="sm:col-span-2">
-                        <Label>Address Line 2</Label>
-                        <Input className="mt-1.5" value={form.location.line2} onChange={(e) => setLocation('line2', e.target.value)} placeholder="Apartment 4B" />
+                        <Label>Suburb</Label>
+                        <Input className="mt-1.5" value={form.location.suburb} onChange={(e) => setLocation('suburb', e.target.value)} placeholder="Apartment 4B" />
                     </div>
                     <div>
                         <Label>State</Label>
@@ -353,70 +354,69 @@ export default function EditJobPage() {
             </Section>
 
             <Section icon={<CalendarDays className="h-4 w-4" />} title="Schedule" description="Pick days, then choose a time group or set custom times">
-                <div className="flex items-center gap-3 mb-4">
+                {/* <div className="flex items-center gap-3 mb-4">
                     <Switch checked={enableJobSessions} onCheckedChange={setEnableJobSessions} id="enable-job-sessions" />
                     <Label htmlFor="enable-job-sessions" className="text-sm">I want to specify job session times</Label>
-                </div>
-                {enableJobSessions && (
-                    <>
-                        <div className="flex flex-wrap gap-2 mb-5">
-                            {DAYS.map((day) => {
-                                const active = form.jobSessions.some((s) => s.day === day);
-                                return (
-                                    <button key={day} type="button" onClick={() => toggleDay(day)}
-                                        className={cn('px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer', active ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/50')}>
-                                        {day.slice(0, 3)}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <div className="space-y-4">
-                            {form.jobSessions.map((session) => (
-                                <div key={session.day} className="pb-4 border-b last:border-b-0">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="font-medium capitalize text-sm flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" />{session.day}</span>
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => addPeriod(session.day)} className="gap-1 text-xs h-7 px-2">
-                                            <Plus className="h-3 w-3" /> Add Slot
-                                        </Button>
-                                    </div>
-                                    {session.period.map((p, pIdx) => (
-                                        <div key={pIdx} className="mb-3">
-                                            <div className="flex flex-wrap gap-1.5 mb-2">
-                                                {TIME_GROUPS.map((tg) => {
-                                                    const active = p.startTime === tg.startTime && p.endTime === tg.endTime;
-                                                    return (
-                                                        <button key={tg.label} type="button"
-                                                            onClick={() => { updatePeriod(session.day, pIdx, 'startTime', tg.startTime); updatePeriod(session.day, pIdx, 'endTime', tg.endTime); }}
-                                                            className={cn('px-2.5 py-0.5 rounded text-xs border transition-all cursor-pointer', active ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border text-muted-foreground hover:border-primary/40')}>
-                                                            {tg.label}
-                                                        </button>
-                                                    );
-                                                })}
+                </div> */}
+
+                <>
+                    <div className="flex flex-wrap gap-2 mb-5">
+                        {DAYS.map((day) => {
+                            const active = form.jobSessions.some((s) => s.day === day);
+                            return (
+                                <button key={day} type="button" onClick={() => toggleDay(day)}
+                                    className={cn('px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer', active ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/50')}>
+                                    {day.slice(0, 3)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="space-y-4">
+                        {form.jobSessions.map((session) => (
+                            <div key={session.day} className="pb-4 border-b last:border-b-0">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="font-medium capitalize text-sm flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" />{session.day}</span>
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => addPeriod(session.day)} className="gap-1 text-xs h-7 px-2">
+                                        <Plus className="h-3 w-3" /> Add Slot
+                                    </Button>
+                                </div>
+                                {session.period.map((p, pIdx) => (
+                                    <div key={pIdx} className="mb-3">
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                            {TIME_GROUPS.map((tg) => {
+                                                const active = p.startTime === tg.startTime && p.endTime === tg.endTime;
+                                                return (
+                                                    <button key={tg.label} type="button"
+                                                        onClick={() => { updatePeriod(session.day, pIdx, 'startTime', tg.startTime); updatePeriod(session.day, pIdx, 'endTime', tg.endTime); }}
+                                                        className={cn('px-2.5 py-0.5 rounded text-xs border transition-all cursor-pointer', active ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border text-muted-foreground hover:border-primary/40')}>
+                                                        {tg.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 items-end">
+                                            <div>
+                                                <Label className="text-xs text-muted-foreground">From</Label>
+                                                <Input type="time" value={p.startTime} onChange={(e) => updatePeriod(session.day, pIdx, 'startTime', e.target.value)} className="mt-1 text-sm" />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3 items-end">
-                                                <div>
-                                                    <Label className="text-xs text-muted-foreground">From</Label>
-                                                    <Input type="time" value={p.startTime} onChange={(e) => updatePeriod(session.day, pIdx, 'startTime', e.target.value)} className="mt-1 text-sm" />
+                                            <div className="flex gap-2 items-end">
+                                                <div className="flex-1">
+                                                    <Label className="text-xs text-muted-foreground">To</Label>
+                                                    <Input type="time" value={p.endTime} onChange={(e) => updatePeriod(session.day, pIdx, 'endTime', e.target.value)} className="mt-1 text-sm" />
                                                 </div>
-                                                <div className="flex gap-2 items-end">
-                                                    <div className="flex-1">
-                                                        <Label className="text-xs text-muted-foreground">To</Label>
-                                                        <Input type="time" value={p.endTime} onChange={(e) => updatePeriod(session.day, pIdx, 'endTime', e.target.value)} className="mt-1 text-sm" />
-                                                    </div>
-                                                    {session.period.length > 1 && (
-                                                        <button type="button" onClick={() => removePeriod(session.day, pIdx)} className="mb-0.5 text-destructive hover:opacity-70">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                {session.period.length > 1 && (
+                                                    <button type="button" onClick={() => removePeriod(session.day, pIdx)} className="mb-0.5 text-destructive hover:opacity-70">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </>
             </Section>
 
             <Section title="Worker Preferences" description="Optional preferences for the ideal support worker">

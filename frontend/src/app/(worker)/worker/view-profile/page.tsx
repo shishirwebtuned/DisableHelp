@@ -80,7 +80,7 @@ export default function PublicProfilePage() {
         profile?.experienceSummary ?? {};
 
     const address = user?.address
-        ? `${user?.address?.line1}, ${user?.address?.line2 ? `${user?.address?.line2}, ` : ''}${user?.address?.state}, ${user?.address?.postalCode}`
+        ? `${user?.address?.line1}, ${user?.address?.suburb ? `${user?.address?.suburb}, ` : ''}${user?.address?.state}, ${user?.address?.postalCode}`
         : 'No address provided';
 
     const languages = [

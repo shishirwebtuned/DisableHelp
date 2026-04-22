@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ interface ProfessionalDetailsProps {
     onSave: (data: ProfessionalDetailsData, navigate?: boolean) => void;
     currentView?: string;
     initialData?: ProfessionalDetailsData;
+    isProvider?: boolean;
 }
 
 export interface ProfessionalDetailsData {
@@ -64,7 +65,7 @@ export interface ProfessionalDetailsData {
     };
 }
 
-export default function ProfessionalDetails({ onSave, currentView = 'experience', initialData }: ProfessionalDetailsProps) {
+export default function ProfessionalDetails({ onSave, currentView = 'experience', initialData, isProvider = false }: ProfessionalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
 
     // Use a ref to track if we've already initialized from initialData
@@ -206,85 +207,127 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         </div>
     );
 
-    const renderWorkHistory = () => (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Work History</h2>
-                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your previous work experience</p>
+    const renderWorkHistory = (): ReactNode => {
+        if (isProvider) {
+            return (
+                <div className="space-y-6">
+                    <div>
+                        <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Work History</h2>
+                        <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Work history is not required for NDIS provider workers.</p>
+                    </div>
+                    <Card className=' border-none p-0'>
+                        <CardContent className="pt-6 p-0 space-y-4">
+                            <p className="text-sm text-muted-foreground">No work history fields are required for your account type.</p>
+                        </CardContent>
+                    </Card>
+                    <div className="flex justify-end">
+                        <Button onClick={handleSave}>Save and Continue</Button>
+                    </div>
                 </div>
-                <Button onClick={() => setIsWorkModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Work History
-                </Button>
-            </div>
-            <Card className=' border-none p-0'>
-                <CardContent className="pt-6 p-0 space-y-4">
-                    {workHistory.map((work) => (
-                        <div key={work.id} className="border-l-2 border-blue-500 pl-4 relative">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="absolute -right-2 top-0"
-                                onClick={() => handleDeleteWork(work.id)}
-                            >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                            <h4 className="font-semibold">{work.jobTitle}</h4>
-                            <p className="text-sm text-muted-foreground">{work.organisation}</p>
-                            <p className="text-xs text-muted-foreground mb-2">
-                                {work.startDate} - {work.currentlyWorkingHere ? 'Present' : work.endDate}
-                            </p>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-            <div className="flex justify-end">
-                <Button onClick={handleSave}>Save and Continue</Button>
-            </div>
-        </div>
-    );
+            );
+        }
 
-    const renderEducation = () => (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-2">Education & Training</h2>
-                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your qualifications</p>
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Work History</h2>
+                        <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your previous work experience</p>
+                    </div>
+                    <Button onClick={() => setIsWorkModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Work History
+                    </Button>
                 </div>
-                <Button onClick={() => setIsEducationModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Education
-                </Button>
+                <Card className=' border-none p-0'>
+                    <CardContent className="pt-6 p-0 space-y-4">
+                        {workHistory.map((work) => (
+                            <div key={work.id} className="border-l-2 border-blue-500 pl-4 relative">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute -right-2 top-0"
+                                    onClick={() => handleDeleteWork(work.id)}
+                                >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                                <h4 className="font-semibold">{work.jobTitle}</h4>
+                                <p className="text-sm text-muted-foreground">{work.organisation}</p>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                    {work.startDate} - {work.currentlyWorkingHere ? 'Present' : work.endDate}
+                                </p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+                <div className="flex justify-end">
+                    <Button onClick={handleSave}>Save and Continue</Button>
+                </div>
             </div>
-            <Card className=' p-0 border-none'>
-                <CardContent className="pt-6 p-0 space-y-4">
-                    {education.map((edu) => (
-                        <div key={edu.id} className="border-l-2 border-blue-600 pl-4 relative">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="absolute -right-2 top-0"
-                                onClick={() => handleDeleteEducation(edu.id)}
-                            >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                            <h4 className="font-semibold">{edu.course}</h4>
-                            <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {edu.startDate} - {edu.currentlyStudyingHere ? 'Present' : edu.endDate}
-                            </p>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-            <div className="flex justify-end">
-                <Button onClick={handleSave}>Save and Continue</Button>
-            </div>
-        </div>
-    );
+        );
+    };
 
-    const renderCredentials = () => (
+    const renderEducation = (): ReactNode => {
+        if (isProvider) {
+            return (
+                <div className="space-y-6">
+                    <div>
+                        <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-2">Education & Training</h2>
+                        <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Education and training details are not required for NDIS provider workers.</p>
+                    </div>
+                    <Card className=' p-0 border-none'>
+                        <CardContent className="pt-6 p-0 space-y-4">
+                            <p className="text-sm text-muted-foreground">No education or training fields are required for your account type.</p>
+                        </CardContent>
+                    </Card>
+                    <div className="flex justify-end">
+                        <Button onClick={handleSave}>Save and Continue</Button>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-2">Education & Training</h2>
+                        <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Add your qualifications</p>
+                    </div>
+                    <Button onClick={() => setIsEducationModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Education
+                    </Button>
+                </div>
+                <Card className=' p-0 border-none'>
+                    <CardContent className="pt-6 p-0 space-y-4">
+                        {education.map((edu) => (
+                            <div key={edu.id} className="border-l-2 border-blue-600 pl-4 relative">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute -right-2 top-0"
+                                    onClick={() => handleDeleteEducation(edu.id)}
+                                >
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                                <h4 className="font-semibold">{edu.course}</h4>
+                                <p className="text-sm text-muted-foreground">{edu.institution}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {edu.startDate} - {edu.currentlyStudyingHere ? 'Present' : edu.endDate}
+                                </p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+                <div className="flex justify-end">
+                    <Button onClick={handleSave}>Save and Continue</Button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderCredentials = (): ReactNode => (
         <div className="space-y-6">
             <div>
                 <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Compliance & Screening</h2>

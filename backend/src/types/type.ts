@@ -19,7 +19,7 @@ export interface IUser extends Document {
   phoneNumber: string;
   address?: {
     line1?: string;
-    line2?: string;
+    suburb?: string;
     state?: string;
     postalCode?: string;
   };
@@ -52,6 +52,8 @@ export interface IUser extends Document {
 
   createdAt?: Date;
   updatedAt?: Date;
+  isSuspended?: boolean;
+
 }
 
 type Rate = {
@@ -60,7 +62,7 @@ type Rate = {
 };
 export interface IWorkerProfile {
   user: mongoose.Types.ObjectId;
-  gender: Gender;
+  gender?: Gender;
 
   services: string[];
   rates: Rate[];

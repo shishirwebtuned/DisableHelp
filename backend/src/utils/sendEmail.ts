@@ -31,7 +31,7 @@ export const sendEmail = async ({
     });
 
     const info = await transporter.sendMail({
-      from: `"Oscar Driving School" <${process.env.SMTP_USER}>`,
+      from: `"Disable Help" <${process.env.SMTP_USER}>`,
       to,
       subject,
       text,

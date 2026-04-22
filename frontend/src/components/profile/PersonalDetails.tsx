@@ -20,6 +20,7 @@ interface PersonalDetailsProps {
     onSave: (data: PersonalDetailsData, navigate?: boolean) => void;
     currentView?: string;
     initialData?: PersonalDetailsData;
+    isProvider?: boolean;
 }
 
 export interface PersonalDetailsData {
@@ -42,8 +43,9 @@ export interface PersonalDetailsData {
     bio: string;
 }
 
-export default function PersonalDetails({ onSave, currentView = 'personal-info', initialData }: PersonalDetailsProps) {
+export default function PersonalDetails({ onSave, currentView = 'personal-info', initialData, isProvider = false }: PersonalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
+    const showGender = !isProvider;
 
     const [personalInfo, setPersonalInfo] = useState({
         firstName: initialData?.personalInfo?.firstName || '',
@@ -161,24 +163,26 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                                 className="mt-2 cursor-not-allowed"
                             />
                         </div>
-                        <div>
-                            <Label>Gender</Label>
-                            <Select
-                                value={personalInfo.gender}
-                                disabled
-                                onValueChange={(value) => setPersonalInfo({ ...personalInfo, gender: value })}
-                            >
-                                <SelectTrigger className="mt-2 w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="male">Male</SelectItem>
-                                    <SelectItem value="female">Female</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                    <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {showGender && (
+                            <div>
+                                <Label>Gender</Label>
+                                <Select
+                                    value={personalInfo.gender}
+                                    disabled
+                                    onValueChange={(value) => setPersonalInfo({ ...personalInfo, gender: value })}
+                                >
+                                    <SelectTrigger className="mt-2 w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                         <div>
                             <Label> Date Of Birth </Label >
                             <DatePicker

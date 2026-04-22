@@ -11,6 +11,7 @@ export interface User {
   isVerified: boolean;
   status: "active" | "pending" | "suspended";
   isNdisProvider?: boolean;
+  isSuspended?: boolean;
   logout?: () => void;
 }
 
@@ -61,6 +62,14 @@ export const login = createAsyncThunk(
       const token = payload?.token;
       const user = payload?.user;
       role = user?.role;
+
+      // Check if user is suspended
+      if (user?.status === "suspended") {
+        return rejectWithValue(
+          "Your account has been suspended. Please contact support.",
+        );
+      }
+
       if (typeof window !== "undefined" && token) {
         localStorage.setItem("token", token);
       }

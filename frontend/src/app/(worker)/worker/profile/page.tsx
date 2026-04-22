@@ -26,6 +26,7 @@ export default function WorkerProfilePage() {
     const dispatch = useAppDispatch();
     const { loading, error } = useAppSelector((state) => state.profile);
     const { mee } = useAppSelector((state) => state.auth);
+    const isProvider = Boolean((mee as any)?.user?.isNdisProvider);
 
     const [currentSection, setCurrentSection] = useState('personal-info');
     const [allProfileData, setAllProfileData] = useState<{
@@ -35,6 +36,20 @@ export default function WorkerProfilePage() {
         additionalDetails?: AdditionalDetailsData;
         profileImage?: { base64: string; binary: Blob | null };
     }>({});
+
+    const visibleSectionOrder = useMemo(() => {
+        return sectionOrder.filter((sectionId) => {
+            if (!isProvider) return true;
+            return !['work-history', 'education-training', 'immunisation'].includes(sectionId);
+        });
+    }, [isProvider]);
+
+    useEffect(() => {
+        if (!visibleSectionOrder.includes(currentSection)) {
+            setCurrentSection(visibleSectionOrder[0] || 'personal-info');
+        }
+    }, [currentSection, visibleSectionOrder]);
+
     useEffect(() => {
         if (mee) {
             const userData = mee as any;
@@ -192,12 +207,12 @@ export default function WorkerProfilePage() {
     }, [mee]);
 
     const handleNextSection = useCallback(() => {
-        const currentIndex = sectionOrder.indexOf(currentSection);
-        if (currentIndex < sectionOrder.length - 1) {
-            setCurrentSection(sectionOrder[currentIndex + 1]);
+        const currentIndex = visibleSectionOrder.indexOf(currentSection);
+        if (currentIndex < visibleSectionOrder.length - 1) {
+            setCurrentSection(visibleSectionOrder[currentIndex + 1]);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, [currentSection]);
+    }, [currentSection, visibleSectionOrder]);
 
     const isSectionCompleted = useCallback((sectionId: string) => {
         const data = allProfileData;
@@ -224,33 +239,45 @@ export default function WorkerProfilePage() {
         }
     }, [allProfileData, mee]);
 
-    const sections = useMemo(() => ({
-        personalDetails: [
+    const sections = useMemo(() => {
+        const personalDetails = [
             { id: 'personal-info', label: 'Personal Information', completed: isSectionCompleted('personal-info') },
             { id: 'photo', label: 'Profile Photo', completed: isSectionCompleted('photo') },
             { id: 'bio', label: 'Bio', completed: isSectionCompleted('bio') },
             { id: 'contact', label: 'Contact Details', completed: isSectionCompleted('contact') },
-        ],
-        jobDetails: [
+        ];
+
+        const jobDetails = [
             { id: 'preferred-hours', label: 'Preferred Hours', completed: isSectionCompleted('preferred-hours') },
             { id: 'indicative-rates', label: 'Indicative Rates', completed: isSectionCompleted('indicative-rates') },
             { id: 'services', label: 'Services Offered', completed: isSectionCompleted('services') },
-        ],
-        professionalDetails: [
+        ];
+
+        const professionalDetails = [
             { id: 'experience', label: 'Experience', completed: isSectionCompleted('experience') },
-            { id: 'work-history', label: 'Work History', completed: isSectionCompleted('work-history') },
-            { id: 'education-training', label: 'Education & Training', completed: isSectionCompleted('education-training') },
+            ...(!isProvider ? [
+                { id: 'work-history', label: 'Work History', completed: isSectionCompleted('work-history') },
+                { id: 'education-training', label: 'Education & Training', completed: isSectionCompleted('education-training') },
+            ] : []),
             { id: 'credentials', label: 'Credentials & Certifications', completed: isSectionCompleted('credentials') },
-        ],
-        additionalDetails: [
+        ];
+
+        const additionalDetails = [
             { id: 'languages', label: 'Languages', completed: isSectionCompleted('languages') },
             { id: 'interests-hobbies', label: 'Interests & Hobbies', completed: isSectionCompleted('interests-hobbies') },
             { id: 'cultural-background', label: 'Cultural Background', completed: isSectionCompleted('cultural-background') },
             { id: 'preferences', label: 'My Preferences', completed: isSectionCompleted('preferences') },
             { id: 'bank-account', label: 'Bank Account', completed: isSectionCompleted('bank-account') },
-            { id: 'immunisation', label: 'Immunisation', completed: isSectionCompleted('immunisation') },
-        ],
-    }), [isSectionCompleted]);
+            ...(!isProvider ? [{ id: 'immunisation', label: 'Immunisation', completed: isSectionCompleted('immunisation') }] : []),
+        ];
+
+        return {
+            personalDetails,
+            jobDetails,
+            professionalDetails,
+            additionalDetails,
+        };
+    }, [isProvider, isSectionCompleted]);
 
     const handlePersonalDetailsSave = useCallback((data: PersonalDetailsData, navigate = true) => {
         setAllProfileData(prev => {
@@ -360,7 +387,7 @@ export default function WorkerProfilePage() {
             case 'personal-info':
             case 'bio':
             case 'contact':
-                return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} initialData={allProfileData.personalDetails} />;
+                return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} initialData={allProfileData.personalDetails} isProvider={isProvider} />;
 
             case 'photo':
                 return <ProfileImageEditor onSave={handleProfileImageSave} initialData={allProfileData.profileImage} />;
@@ -376,7 +403,7 @@ export default function WorkerProfilePage() {
             case 'work-history':
             case 'education-training':
             case 'credentials':
-                return <ProfessionalDetails onSave={handleProfessionalDetailsSave} currentView={currentSection} initialData={allProfileData.professionalDetails} />;
+                return <ProfessionalDetails onSave={handleProfessionalDetailsSave} currentView={currentSection} initialData={allProfileData.professionalDetails} isProvider={isProvider} />;
 
             // Additional Details sections
             case 'languages':
@@ -385,7 +412,7 @@ export default function WorkerProfilePage() {
             case 'preferences':
             case 'bank-account':
             case 'immunisation':
-                return <AdditionalDetails onSave={handleAdditionalDetailsSave} currentView={currentSection} initialData={allProfileData.additionalDetails} />;
+                return <AdditionalDetails onSave={handleAdditionalDetailsSave} currentView={currentSection} initialData={allProfileData.additionalDetails} isProvider={isProvider} />;
 
             default:
                 return (

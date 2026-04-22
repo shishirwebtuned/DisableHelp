@@ -14,7 +14,7 @@ export type JobFormData = {
   title: string;
   startDate: Date | undefined;
   frequency: string;
-  location: { line1: string; line2: string; state: string; postalCode: string };
+  location: { line1: string; suburb: string; state: string; postalCode: string };
   duration: { session: number; hours: number };
   supportDetails: { name: string; details: string[] }[];
   jobSessions: { day: string; period: { startTime: string; endTime: string }[] }[];
@@ -38,7 +38,7 @@ export function JobForm({
     title: initial?.title || '',
     startDate: initial?.startDate ? new Date(initial.startDate) : undefined,
     frequency: initial?.frequency || 'weekly',
-    location: initial?.location || { line1: '', line2: '', state: '', postalCode: '' },
+    location: initial?.location || { line1: '', suburb: '', state: '', postalCode: '' },
     duration: initial?.duration || { session: 1, hours: 2 },
     supportDetails: initial?.supportDetails || [],
     jobSessions: initial?.jobSessions || [],

@@ -40,6 +40,7 @@ interface AdditionalDetailsProps {
     onSave: (data: AdditionalDetailsData, navigate?: boolean) => void;
     currentView?: string;
     initialData?: AdditionalDetailsData;
+    isProvider?: boolean;
 }
 
 export interface AdditionalDetailsData {
@@ -74,7 +75,7 @@ export interface AdditionalDetailsData {
     personality: string;
 }
 
-export default function AdditionalDetails({ onSave, currentView = 'languages', initialData }: AdditionalDetailsProps) {
+export default function AdditionalDetails({ onSave, currentView = 'languages', initialData, isProvider = false }: AdditionalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
 
     // Use a ref to track if we've already initialized from initialData
@@ -556,59 +557,82 @@ export default function AdditionalDetails({ onSave, currentView = 'languages', i
         </div>
     );
 
-    const renderImmunisation = () => (
-        <div className="space-y-6">
-            <div>
-                <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Immunisation Status</h2>
-                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your vaccination status</p>
-            </div>
-            <Card className=' border-none p-0'>
-                <CardContent className="pt-6 p-0 space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id="fluShot"
-                            checked={immunisation.hasSeasonalFluShot}
-                            onChange={(e) => setImmunisation({ ...immunisation, hasSeasonalFluShot: e.target.checked })}
-                            className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
-                        />
-                        <Label htmlFor="fluShot">I have a current seasonal flu shot</Label>
-                    </div>
+    const renderImmunisation = () => {
+        if (isProvider) {
+            return (
+                <div className="space-y-6">
                     <div>
-                        <Label>COVID-19 Vaccine Status</Label>
-                        <Select
-                            value={immunisation.covidVaccineStatus}
-                            onValueChange={(value) => setImmunisation({ ...immunisation, covidVaccineStatus: value })}
-                        >
-                            <SelectTrigger className="mt-2 w-full">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="fullyVaccinated">Fully Vaccinated</SelectItem>
-                                <SelectItem value="medicalCondition">Medical Condition</SelectItem>
-                                <SelectItem value="remoteWorker">Remote Worker</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Immunisation Status</h2>
+                        <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Immunisation details are not required for NDIS provider workers.</p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id="statusConfirmed"
-                            checked={immunisation.statusConfirmed}
-                            onChange={(e) => setImmunisation({ ...immunisation, statusConfirmed: e.target.checked })}
-                            className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
-                        />
-                        <Label htmlFor="statusConfirmed">I confirm this status is accurate</Label>
+                    <Card className=' border-none p-0'>
+                        <CardContent className="pt-6 p-0 space-y-4">
+                            <p className="text-sm text-muted-foreground">No immunisation fields are required for your account type.</p>
+                        </CardContent>
+                    </Card>
+                    <div className="flex justify-end">
+                        <Button onClick={handleSave} className="">
+                            Save and Continue
+                        </Button>
                     </div>
-                </CardContent>
-            </Card>
-            <div className="flex justify-end">
-                <Button onClick={handleSave} className="">
-                    Save and Continue
-                </Button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Immunisation Status</h2>
+                    <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">Your vaccination status</p>
+                </div>
+                <Card className=' border-none p-0'>
+                    <CardContent className="pt-6 p-0 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="fluShot"
+                                checked={immunisation.hasSeasonalFluShot}
+                                onChange={(e) => setImmunisation({ ...immunisation, hasSeasonalFluShot: e.target.checked })}
+                                className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
+                            />
+                            <Label htmlFor="fluShot">I have a current seasonal flu shot</Label>
+                        </div>
+                        <div>
+                            <Label>COVID-19 Vaccine Status</Label>
+                            <Select
+                                value={immunisation.covidVaccineStatus}
+                                onValueChange={(value) => setImmunisation({ ...immunisation, covidVaccineStatus: value })}
+                            >
+                                <SelectTrigger className="mt-2 w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="fullyVaccinated">Fully Vaccinated</SelectItem>
+                                    <SelectItem value="medicalCondition">Medical Condition</SelectItem>
+                                    <SelectItem value="remoteWorker">Remote Worker</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="statusConfirmed"
+                                checked={immunisation.statusConfirmed}
+                                onChange={(e) => setImmunisation({ ...immunisation, statusConfirmed: e.target.checked })}
+                                className="rounded border-border text-blue-600 focus:ring-blue-500 bg-background accent-blue-600"
+                            />
+                            <Label htmlFor="statusConfirmed">I confirm this status is accurate</Label>
+                        </div>
+                    </CardContent>
+                </Card>
+                <div className="flex justify-end">
+                    <Button onClick={handleSave} className="">
+                        Save and Continue
+                    </Button>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <>

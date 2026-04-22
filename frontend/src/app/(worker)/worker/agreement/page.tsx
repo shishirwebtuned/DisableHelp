@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { getAgreementById, getAgreementsByWorker, terminateAgreement, updateAgreementStatus } from '@/redux/slices/agreementsSlice';
+import { getAgreementById, getAgreementsByWorker, terminateAgreement, updateAgreementStatus, editAgreement } from '@/redux/slices/agreementsSlice';
+import { formatDateToInputValue, inputValueToISO } from '@/lib/dateHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,10 @@ import {
     Eye,
     XCircle,
     AlertTriangle,
+    Pen,
+    Plus,
+    Trash2,
+    CalendarDays,
 } from 'lucide-react';
 import axios from '@/lib/axios';
 import Pagination from '@/components/ui/pagination';
@@ -37,6 +42,19 @@ import {
 } from '@/redux/slices/paymentSlice';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+const TIME_GROUPS = [
+    { label: 'Morning', startTime: '07:00', endTime: '12:00' },
+    { label: 'Afternoon', startTime: '12:00', endTime: '17:00' },
+    { label: 'Evening', startTime: '17:00', endTime: '21:00' },
+    { label: 'Night', startTime: '21:00', endTime: '23:00' },
+];
+
+type Period = { startTime: string; endTime: string };
+type ScheduleDay = { day: string; period: Period[] };
 
 
 export default function WorkerAgreementsPage() {
@@ -62,6 +80,14 @@ export default function WorkerAgreementsPage() {
     const [terminateDialogOpen, setTerminateDialogOpen] = useState(false);
     const [terminateReason, setTerminateReason] = useState('');
     const [terminateReasonError, setTerminateReasonError] = useState(false);
+
+    // Edit dialog state
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editingAgreementId, setEditingAgreementId] = useState<string | null>(null);
+    const [editStartDate, setEditStartDate] = useState('');
+    const [editSchedule, setEditSchedule] = useState<any[]>([]);
+    const [editingLoading, setEditingLoading] = useState(false);
+    const [editError, setEditError] = useState('');
 
     const pageSize = 10;
 
@@ -152,6 +178,45 @@ export default function WorkerAgreementsPage() {
         setTerminateDialogOpen(false);
         setSelectedAgreementId(null);
         setTerminateReason('');
+    };
+
+    // Schedule editing functions
+    const toggleScheduleDay = (day: string) => {
+        const exists = editSchedule.find((s) => s.day === day);
+        if (exists) {
+            setEditSchedule(editSchedule.filter((s) => s.day !== day));
+        } else {
+            setEditSchedule([...editSchedule, { day, period: [{ startTime: '09:00', endTime: '11:00' }] }]);
+        }
+    };
+
+    const addSchedulePeriod = (day: string) => {
+        setEditSchedule(editSchedule.map((s) =>
+            s.day === day
+                ? { ...s, period: [...s.period, { startTime: '09:00', endTime: '11:00' }] }
+                : s
+        ));
+    };
+
+    const removeSchedulePeriod = (day: string, periodIdx: number) => {
+        setEditSchedule(editSchedule.map((s) =>
+            s.day === day
+                ? { ...s, period: s.period.filter((_: any, idx: number) => idx !== periodIdx) }
+                : s
+        ));
+    };
+
+    const updateSchedulePeriod = (day: string, periodIdx: number, field: 'startTime' | 'endTime', value: string) => {
+        setEditSchedule(editSchedule.map((s) =>
+            s.day === day
+                ? {
+                    ...s,
+                    period: s.period.map((p: any, idx: number) =>
+                        idx === periodIdx ? { ...p, [field]: value } : p
+                    )
+                }
+                : s
+        ));
     };
 
     return (
@@ -363,6 +428,22 @@ export default function WorkerAgreementsPage() {
                                             >
                                                 <XCircle className="h-3 w-3 mr-1.5" />
                                                 Terminate
+                                            </button>
+                                        )}
+
+                                        {agreement.status === 'pending' && (
+                                            <button
+                                                className="h-7 text-[11px] bg-blue-500 text-white hover:bg-blue-600 px-2.5 flex items-center rounded-sm shadow-sm transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    setEditingAgreementId(agreement._id);
+                                                    setEditStartDate(formatDateToInputValue(agreement.startDate));
+                                                    setEditSchedule(agreement.schedule || []);
+                                                    setEditError('');
+                                                    setEditDialogOpen(true);
+                                                }}
+                                            >
+                                                <Pen className="h-3 w-3 mr-1.5" />
+                                                Edit
                                             </button>
                                         )}
 
@@ -728,7 +809,7 @@ export default function WorkerAgreementsPage() {
 
                                         <p className="text-xs text-muted-foreground">
 
-                                            {agreement.job?.location?.line1}
+                                            {agreement.job?.location?.suburb}
                                             {" • "}
                                             {agreement.job?.location?.state}
 
@@ -985,6 +1066,201 @@ export default function WorkerAgreementsPage() {
 
                         </DialogFooter>
 
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Pen className="h-4 w-4" />
+                                Edit Agreement
+                            </DialogTitle>
+                            <DialogDescription>
+                                Update the start date and schedule for this pending agreement.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-6">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="editStartDate" className="text-xs">
+                                    Start Date <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="editStartDate"
+                                    type="date"
+                                    value={editStartDate}
+                                    onChange={(e) => setEditStartDate(e.target.value)}
+                                    className="text-sm"
+                                />
+                            </div>
+
+                            {/* Schedule Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <CalendarDays className="h-4 w-4" />
+                                    <Label className="text-sm font-medium">Schedule</Label>
+                                </div>
+
+                                {/* Days Selection */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Select Days</Label>
+                                    <div className='flex flex-wrap gap-2'>
+                                        {DAYS.map((day) => {
+                                            const active = editSchedule.some((s) => s.day === day);
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => toggleScheduleDay(day)}
+                                                    className={cn(
+                                                        'px-3 py-1.5 rounded-full text-sm border-2 capitalize transition-all cursor-pointer',
+                                                        active
+                                                            ? 'border-[#6cc5e8] bg-primary/10 text-[#6cc5e8] font-medium'
+                                                            : 'border-2 border-gray-300 bg-muted/30 text-gray-400 hover:border-gray-400'
+                                                    )}
+                                                >
+                                                    {day.slice(0, 3)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Time Slots */}
+                                <div className="space-y-4">
+                                    {editSchedule.map((scheduleDay) => (
+                                        <div key={scheduleDay.day} className="pb-4 border-b last:border-b-0">
+                                            {/* Day header */}
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="font-medium capitalize text-sm flex items-center gap-1.5">
+                                                    <Clock className="h-3.5 w-3.5 text-primary" />{scheduleDay.day}
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => addSchedulePeriod(scheduleDay.day)}
+                                                    className="gap-1 text-xs h-7 px-2"
+                                                >
+                                                    <Plus className="h-3 w-3" /> Add Slot
+                                                </Button>
+                                            </div>
+
+                                            {scheduleDay.period.map((p: any, pIdx: number) => (
+                                                <div key={pIdx} className="mb-3 p-3 bg-muted/30 rounded-md">
+                                                    {/* Quick time-group picker */}
+                                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                                        {TIME_GROUPS.map((tg) => {
+                                                            const active = p.startTime === tg.startTime && p.endTime === tg.endTime;
+                                                            return (
+                                                                <button
+                                                                    key={tg.label}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        updateSchedulePeriod(scheduleDay.day, pIdx, 'startTime', tg.startTime);
+                                                                        updateSchedulePeriod(scheduleDay.day, pIdx, 'endTime', tg.endTime);
+                                                                    }}
+                                                                    className={cn(
+                                                                        'px-2.5 py-0.5 rounded text-xs border transition-all cursor-pointer',
+                                                                        active
+                                                                            ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                                            : 'border-border text-muted-foreground hover:border-primary/40'
+                                                                    )}
+                                                                >
+                                                                    {tg.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Custom from/to */}
+                                                    <div className="grid grid-cols-2 gap-3 items-end">
+                                                        <div>
+                                                            <Label className="text-xs text-muted-foreground">From</Label>
+                                                            <Input
+                                                                type="time"
+                                                                value={p.startTime}
+                                                                onChange={(e) => updateSchedulePeriod(scheduleDay.day, pIdx, 'startTime', e.target.value)}
+                                                                className="mt-1 text-sm"
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2 items-end">
+                                                            <div className="flex-1">
+                                                                <Label className="text-xs text-muted-foreground">To</Label>
+                                                                <Input
+                                                                    type="time"
+                                                                    value={p.endTime}
+                                                                    onChange={(e) => updateSchedulePeriod(scheduleDay.day, pIdx, 'endTime', e.target.value)}
+                                                                    className="mt-1 text-sm"
+                                                                />
+                                                            </div>
+                                                            {scheduleDay.period.length > 1 && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removeSchedulePeriod(scheduleDay.day, pIdx)}
+                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {editError && (
+                                <p className="text-xs text-red-500 bg-red-50 p-2 rounded">{editError}</p>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2 pt-1">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditDialogOpen(false)}
+                                disabled={editingLoading}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={async () => {
+                                    if (!editingAgreementId) return;
+                                    if (!editStartDate) {
+                                        setEditError('Start date is required');
+                                        return;
+                                    }
+                                    setEditingLoading(true);
+                                    setEditError('');
+                                    try {
+                                        await dispatch(editAgreement({
+                                            agreementId: editingAgreementId,
+                                            startDate: inputValueToISO(editStartDate),
+                                            schedule: editSchedule.length > 0 ? editSchedule : undefined
+                                        })).unwrap();
+                                        setEditDialogOpen(false);
+                                        setEditingAgreementId(null);
+                                        setEditStartDate('');
+                                        setEditSchedule([]);
+                                    } catch (err: any) {
+                                        setEditError(err?.message || 'Failed to update agreement');
+                                    } finally {
+                                        setEditingLoading(false);
+                                    }
+                                }}
+                                disabled={editingLoading || !editStartDate}
+                                className={editingLoading ? 'opacity-60' : ''}
+                            >
+                                {editingLoading ? 'Updating...' : 'Update'}
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </PayPalScriptProvider>

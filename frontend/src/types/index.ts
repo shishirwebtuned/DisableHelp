@@ -100,7 +100,7 @@ export interface ClientProfile {
 // Job Types
 export interface JobLocation {
   line1: string;
-  line2: string;
+  suburb: string;
   state: string;
   postalCode: string;
 }

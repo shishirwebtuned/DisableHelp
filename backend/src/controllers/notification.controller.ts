@@ -1,4 +1,5 @@
 // controllers/notification.controller.ts
+import mongoose from "mongoose";
 import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/AppError.js";
 import { catchAsync } from "../utils/catchAsync.js";
@@ -33,8 +34,14 @@ export const markNotificationRead = catchAsync(async (req, res) => {
   const { notificationId } = req.params;
   const userId = req.user._id;
 
+  if (!notificationId || typeof notificationId !== "string") {
+    throw new Error("Invalid notificationId");
+  }
+
+  const _id = new mongoose.Types.ObjectId(notificationId);
+
   const notification = await Notification.findOneAndUpdate(
-    { _id: notificationId, recipient: userId },
+    { _id: _id, recipient: userId },
     { read: true, readAt: new Date() },
     { new: true },
   );
@@ -69,8 +76,13 @@ export const deleteNotification = catchAsync(async (req, res) => {
   const { notificationId } = req.params;
   const userId = req.user._id;
 
+  if (!notificationId || typeof notificationId !== "string") {
+    throw new Error("Invalid notificationId");
+  }
+
+  const _id = new mongoose.Types.ObjectId(notificationId);
   const notification = await Notification.findOneAndDelete({
-    _id: notificationId,
+    _id: _id,
     recipient: userId,
   });
 

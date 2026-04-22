@@ -3,7 +3,7 @@ import type { Gender } from "../types/type.js";
 
 export interface IClientProfile {
   user: mongoose.Types.ObjectId;
-  gender: Gender;
+  gender?: Gender;
 
   participants: mongoose.Types.ObjectId[];
 
@@ -37,7 +37,7 @@ const clientProfileSchema = new Schema<IClientProfile>(
     gender: {
       type: String,
       enum: ["male", "female", "other", "prefer not to say"],
-      required: true,
+      required: false,
     },
 
     participants: [

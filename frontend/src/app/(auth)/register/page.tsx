@@ -1,12 +1,13 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAppDispatch } from '@/hooks/redux';
 import { register as registerAction } from '@/redux/slices/authSlice';
 import { useRouter } from 'next/navigation';
+import { formatDateToInputValue, inputValueToISO } from '@/lib/dateHelpers';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +41,7 @@ const TOTAL_STEPS = STEPS.length;
 const formSchema = z.object({
     firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
     lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-    gender: z.enum(['male', 'female', 'other', 'prefer not to say'], { message: "Please select a gender." }),
+    gender: z.enum(['male', 'female', 'other', 'prefer not to say']).optional(),
     dateOfBirth: z.string().min(1, { message: "Please select a date of birth." })
         .regex(/^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, { message: "Please select a valid date of birth." }),
     role: z.enum(['worker', 'client'], { message: "Please select a role." }),
@@ -54,7 +55,7 @@ const formSchema = z.object({
     confirmPassword: z.string(),
     address: z.object({
         line1: z.string().min(1, { message: "Required." }),
-        line2: z.string().optional(),
+        suburb: z.string().min(1, { message: "Required." }),
         state: z.string().min(1, { message: "Required." }),
         postalCode: z.string().min(1, { message: "Required." }),
     }),
@@ -67,7 +68,10 @@ const formSchema = z.object({
         return d.accountManagerName && d.accountManagerName.length >= 2;
     }
     return true;
-}, { message: "Please enter a valid account manager name.", path: ["accountManagerName"] });
+}, { message: "Please enter a valid account manager name.", path: ["accountManagerName"] }).refine((d) => {
+    if (d.isNdisProvider) return true;
+    return !!d.gender;
+}, { message: "Please select a gender.", path: ["gender"] });
 
 /* Fields validated per step */
 const stepFields: Record<number, string[]> = {
@@ -75,7 +79,7 @@ const stepFields: Record<number, string[]> = {
     2: ['firstName', 'lastName', 'dateOfBirth', 'gender'],
     3: ['email', 'phoneNumber'],
     4: ['password', 'confirmPassword'],
-    5: ['address.line1', 'address.line2', 'address.state', 'address.postalCode', 'termsAccepted'],
+    5: ['address.line1', 'address.suburb', 'address.state', 'address.postalCode', 'termsAccepted'],
     6: [],
 };
 
@@ -104,7 +108,7 @@ export default function RegisterPage() {
         defaultValues: {
             firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
             phoneNumber: '', role: undefined, termsAccepted: false, gender: undefined,
-            dateOfBirth: '', address: { line1: '', line2: '', state: '', postalCode: '' },
+            dateOfBirth: '', address: { line1: '', suburb: '', state: '', postalCode: '' },
             isSelfManaged: true, accountManagerName: '', isNdisProvider: false
         },
         mode: 'onTouched',
@@ -112,6 +116,7 @@ export default function RegisterPage() {
 
     const watchRole = form.watch('role');
     const watchIsSelfManaged = form.watch('isSelfManaged');
+    const watchIsNdisProvider = form.watch('isNdisProvider');
     const allValues = form.watch();
 
     const validateCurrentStep = async () => {
@@ -124,6 +129,13 @@ export default function RegisterPage() {
         if (await validateCurrentStep()) setCurrentStep((p) => Math.min(p + 1, TOTAL_STEPS));
     };
     const handleBack = () => setCurrentStep((p) => Math.max(p - 1, 1));
+
+    // Clear gender when user is an NDIS provider, since it's not required
+    useEffect(() => {
+        if (watchIsNdisProvider) {
+            form.setValue('gender', undefined);
+        }
+    }, [watchIsNdisProvider, form]);
     const goToStep = (s: number) => setCurrentStep(s);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -374,28 +386,30 @@ export default function RegisterPage() {
                                             <FormItem>
                                                 <FormLabel>Date of Birth</FormLabel>
                                                 <FormControl>
-                                                    <DatePicker className="w-full h-10" value={field.value} onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')} />
+                                                    <DatePicker className="w-full h-10" value={formatDateToInputValue(field.value)} onChange={(date) => field.onChange(date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '')} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={form.control} name="gender" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Gender</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="w-full h-10"><SelectValue placeholder="Select" /></SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="male" >Male</SelectItem>
-                                                        <SelectItem value="female">Female</SelectItem>
-                                                        <SelectItem value="other">Other</SelectItem>
-                                                        <SelectItem value="prefer not to say">Prefer not to say</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
+                                        {!watchIsNdisProvider && (
+                                            <FormField control={form.control} name="gender" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Gender</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="male">Male</SelectItem>
+                                                            <SelectItem value="female">Female</SelectItem>
+                                                            <SelectItem value="other">Other</SelectItem>
+                                                            <SelectItem value="prefer not to say">Prefer not to say</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        )}
                                     </div>
                                 </div>
 
@@ -477,10 +491,10 @@ export default function RegisterPage() {
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={form.control} name="address.line2" render={({ field }) => (
+                                        <FormField control={form.control} name="address.suburb" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Address Line 2</FormLabel>
-                                                <FormControl><Input placeholder="Apt, Suite, Unit" className='h-10' {...field} /></FormControl>
+                                                <FormLabel>Suburb</FormLabel>
+                                                <FormControl><Input placeholder="Sydney" className='h-10' {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -549,7 +563,7 @@ export default function RegisterPage() {
                                             <h3 className="text-sm font-semibold text-foreground">Address</h3>
                                             <button type="button" onClick={() => goToStep(5)} className="text-xs text-[#8ac6dd] hover:underline flex items-center gap-1"><Pencil className="h-3 w-3" />Edit</button>
                                         </div>
-                                        <ReviewRow label="Street" value={[allValues.address?.line1, allValues.address?.line2].filter(Boolean).join(', ')} />
+                                        <ReviewRow label="Street" value={[allValues.address?.line1, allValues.address?.suburb].filter(Boolean).join(', ')} />
                                         <ReviewRow label="State" value={allValues.address?.state || ''} />
                                         <ReviewRow label="Postal Code" value={allValues.address?.postalCode || ''} />
                                     </div>

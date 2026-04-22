@@ -181,7 +181,7 @@ export default function CALDSupportPage() {
             const updatedWorkers = await Promise.all(
                 workers.map(async (worker) => {
                     if (!worker.address) return worker;
-                    const fullAddress = `${worker.address.line1}, ${worker.address.line2 || ''}, ${worker.address.state} ${worker.address.postalCode}, Australia`;
+                    const fullAddress = `${worker.address.line1}, ${worker.address.suburb || ''}, ${worker.address.state} ${worker.address.postalCode}, Australia`;
                     const normalizedAddress = fullAddress.replace(/\s+/g, ' ').trim();
                     try {
                         const res = await fetch(

@@ -24,3 +24,26 @@ export const approveUser = catchAsync(async (req, res) => {
     data: userResponse,
   });
 });
+
+export const suspendUser = catchAsync(async (req, res) => {
+  const { userId } = req.params;
+
+  const { suspended } = req.body;
+
+  const user = await User.findById(userId);
+
+  if (!user) throw new AppError("User not found", 400);
+
+  if (suspended !== undefined) user.isSuspended = suspended;
+
+  await user.save({ validateModifiedOnly: true });
+
+  const { password, ...userResponse } = user.toObject();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "User suspension updated successfully",
+    data: userResponse,
+  });
+});

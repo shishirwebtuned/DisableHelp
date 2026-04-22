@@ -26,7 +26,6 @@ export const registerUser = catchAsync(async (req, res) => {
     role,
     address,
     phoneNumber,
-    gender,
     dateOfBirth,
     termsAccepted,
     accountManagerName,
@@ -96,7 +95,6 @@ export const registerUser = catchAsync(async (req, res) => {
 
   await profileModel.create({
     user: newUser._id,
-    gender,
   });
 
   const verifyUrl = `${process.env.FRONTEND_URL}/info?token=${rawToken}`;
@@ -106,9 +104,95 @@ export const registerUser = catchAsync(async (req, res) => {
       to: email,
       subject: "Verify Your Email",
       html: `
-    <p>Hi ${firstName},</p>
-    <p>Click the button below to verify your email:</p>
-    <a href="${verifyUrl}" style="padding:10px 20px; background:#4CAF50; color:white; text-decoration:none;">Verify Email</a>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  </head>
+
+  <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:40px 0;">
+      <tr>
+        <td align="center">
+
+          <!-- Card -->
+          <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:10px; padding:40px 30px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            
+            <!-- Title -->
+            <tr>
+              <td>
+                <h2 style="margin:0; color:#333; font-size:22px;">
+                  Verify Your Email
+                </h2>
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="20"></td></tr>
+
+            <!-- Message -->
+            <tr>
+              <td style="color:#555; font-size:15px; line-height:1.6;">
+                Hi <b>${firstName}</b>,<br/><br/>
+                Thanks for signing up! Please confirm your email address by clicking the button below.
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="30"></td></tr>
+
+            <!-- Button -->
+            <tr>
+              <td>
+                <a href="${verifyUrl}"
+                  style="
+                    display:inline-block;
+                    padding:14px 28px;
+                    background-color:#4CAF50;
+                    color:#ffffff;
+                    font-size:15px;
+                    font-weight:bold;
+                    text-decoration:none;
+                    border-radius:6px;
+                  ">
+                  Verify Email
+                </a>
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="30"></td></tr>
+
+            <!-- Fallback -->
+            <tr>
+              <td style="font-size:13px; color:#888;">
+                If the button doesn't work, copy and paste this link into your browser:
+                <br/>
+                <a href="${verifyUrl}" style="color:#4CAF50; word-break:break-all;">
+                  ${verifyUrl}
+                </a>
+              </td>
+            </tr>
+
+          </table>
+
+          <!-- Footer -->
+          <table width="480" style="margin-top:20px;">
+            <tr>
+              <td align="center" style="font-size:12px; color:#aaa;">
+                © ${new Date().getFullYear()} Your Company. All rights reserved.
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </body>
+  </html>
   `,
     });
   } catch (err: any) {
@@ -165,12 +249,96 @@ export const resendVerificationEmail = catchAsync(async (req, res) => {
       to: user.email,
       subject: "Verify Your Email",
       html: `
-      <p>Hi ${user.firstName},</p>
-      <p>Please verify your email by clicking the button below:</p>
-      <a href="${verifyUrl}" style="padding:10px 20px; background:#4CAF50; color:white; text-decoration:none;">
-        Verify Email
-      </a>
-    `,
+      <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  </head>
+
+  <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:40px 0;">
+      <tr>
+        <td align="center">
+
+          <!-- Card -->
+          <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:10px; padding:40px 30px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            
+            <!-- Title -->
+            <tr>
+              <td>
+                <h2 style="margin:0; color:#333; font-size:22px;">
+                  Verify Your Email
+                </h2>
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="20"></td></tr>
+
+            <!-- Message -->
+            <tr>
+              <td style="color:#555; font-size:15px; line-height:1.6;">
+                Hi <b>${user.firstName}</b>,<br/><br/>
+                Thanks for signing up! Please confirm your email address by clicking the button below.
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="30"></td></tr>
+
+            <!-- Button -->
+            <tr>
+              <td>
+                <a href="${verifyUrl}"
+                  style="
+                    display:inline-block;
+                    padding:14px 28px;
+                    background-color:#4CAF50;
+                    color:#ffffff;
+                    font-size:15px;
+                    font-weight:bold;
+                    text-decoration:none;
+                    border-radius:6px;
+                  ">
+                  Verify Email
+                </a>
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td height="30"></td></tr>
+
+            <!-- Fallback -->
+            <tr>
+              <td style="font-size:13px; color:#888;">
+                If the button doesn't work, copy and paste this link into your browser:
+                <br/>
+                <a href="${verifyUrl}" style="color:#4CAF50; word-break:break-all;">
+                  ${verifyUrl}
+                </a>
+              </td>
+            </tr>
+
+          </table>
+
+          <!-- Footer -->
+          <table width="480" style="margin-top:20px;">
+            <tr>
+              <td align="center" style="font-size:12px; color:#aaa;">
+                © ${new Date().getFullYear()} Your Company. All rights reserved.
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </body>
+  </html>
+  `,
     });
   } catch (err: any) {
     const message = getEmailErrorMessage(err);
@@ -231,6 +399,10 @@ export const loginUser = catchAsync(async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) throw new AppError("Incorrect Password", 401);
+
+  if (user.isSuspended) {
+    throw new AppError("Account is suspended. Please contact support.", 403);
+  }
 
   if (!["admin", "client", "worker"].includes(user.role)) {
     throw new AppError("Invalid user role", 403);

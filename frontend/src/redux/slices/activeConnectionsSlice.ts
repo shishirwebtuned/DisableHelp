@@ -10,7 +10,7 @@ export interface ActiveUser {
   avatar?: string;
   address?: {
     line1?: string;
-    line2?: string;
+    suburb?: string;
     state?: string;
     postalCode?: string;
   };

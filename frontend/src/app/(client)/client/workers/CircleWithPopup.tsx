@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Circle, Popup } from 'react-leaflet';
-import { WorkerPopup } from './page';
+import { WorkerPopup } from './WorkerPopup';
 
 export function CircleWithPopup({
     worker,

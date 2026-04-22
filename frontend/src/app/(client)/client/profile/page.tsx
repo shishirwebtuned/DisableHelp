@@ -247,8 +247,8 @@ export default function ClientProfilePage() {
                                         {user.address?.line1 ? (
                                             <>
                                                 <p className="font-medium lg:text-base md:text-[14px] text-[13px]">{user.address.line1}</p>
-                                                {user.address.line2 && (
-                                                    <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground">{user.address.line2}</p>
+                                                {user.address.suburb && (
+                                                    <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground">{user.address.suburb}</p>
                                                 )}
                                                 <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground mt-1">
                                                     {user.address.state} {user.address.postalCode}

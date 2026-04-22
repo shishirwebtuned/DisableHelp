@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowLeft, Mail, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Mail, Phone, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 
 import { RootState } from '@/redux/store';
 import { getuserbyid, approveUser, fetchUsers } from '@/redux/slices/usersSlice';
@@ -215,6 +215,13 @@ export default function AdminProfilePage() {
                                 <Badge className="border-2 border-green-600 text-green-600">
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Verified
+                                </Badge>
+                            )}
+
+                            {user?.isSuspended && (
+                                <Badge className="border-2 border-red-600 text-red-600">
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    Suspended
                                 </Badge>
                             )}
                         </div>

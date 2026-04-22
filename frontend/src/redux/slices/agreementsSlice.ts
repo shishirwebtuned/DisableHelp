@@ -22,7 +22,7 @@ export interface Agreement {
     title: string;
     location?: {
       line1?: string;
-      line2?: string;
+      suburb?: string;
       state?: string;
       postalCode?: string;
     };
@@ -37,7 +37,7 @@ export interface Agreement {
     dateOfBirth?: string;
     address?: {
       line1?: string;
-      line2?: string;
+      suburb?: string;
       state?: string;
       postalCode?: string;
     };
@@ -220,6 +220,19 @@ export const getAgreementById = createAsyncThunk(
   },
 );
 
+export const editAgreement = createAsyncThunk(
+  "agreements/editAgreement",
+  async (payload: {
+    agreementId: string;
+    startDate?: string;
+    schedule?: ScheduleDay[];
+  }) => {
+    const { agreementId, ...updates } = payload;
+    const response = await api.patch(`agreement/edit/${agreementId}`, updates);
+    return response.data.data;
+  },
+);
+
 export const agreementsSlice = createSlice({
   name: "agreements",
   initialState,
@@ -305,6 +318,21 @@ export const agreementsSlice = createSlice({
       .addCase(getAgreementById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch agreement";
+      })
+      .addCase(editAgreement.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(editAgreement.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload;
+        state.items = state.items.map((agreement) =>
+          agreement._id === updated._id ? updated : agreement,
+        );
+      })
+      .addCase(editAgreement.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to edit agreement";
       });
   },
 });

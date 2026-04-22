@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { createJob } from '@/redux/slices/jobsSlice';
+import { formatDateToInputValue, inputValueToISO } from '@/lib/dateHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,7 +42,7 @@ interface FormState {
     title: string;
     startDate: Date | undefined;
     frequency: string;
-    location: { line1: string; line2: string; state: string; postalCode: string };
+    location: { line1: string; suburb: string; state: string; postalCode: string };
     duration: { session: number; hours: number };
     supportDetails: SupportDetail[];
     jobSessions: SessionDay[];
@@ -75,7 +76,7 @@ export default function NewJobPage() {
         title: '',
         startDate: undefined,
         frequency: 'weekly',
-        location: { line1: '', line2: '', state: '', postalCode: '' },
+        location: { line1: '', suburb: '', state: '', postalCode: '' },
         duration: { session: 1, hours: 2 },
         supportDetails: [],
         jobSessions: [],
@@ -184,7 +185,7 @@ export default function NewJobPage() {
         const payload = {
             title: form.title.trim(),
             // hourlyRate: form.hourlyRate,
-            startDate: form.startDate.toISOString(),
+            startDate: inputValueToISO(form.startDate),
             frequency: form.frequency,
             location: form.location,
             duration: form.duration,
@@ -256,7 +257,7 @@ export default function NewJobPage() {
                             <RequiredLabel>Start Date</RequiredLabel>
                             <DatePicker
                                 className="w-full mt-1.5"
-                                value={form.startDate ? form.startDate.toISOString().split('T')[0] : ''}
+                                value={formatDateToInputValue(form.startDate)}
                                 onChange={(d) => setField('startDate', d ?? undefined)}
                             />
                         </div>
@@ -322,8 +323,8 @@ export default function NewJobPage() {
                         <Input className="mt-1.5" value={form.location.line1} onChange={(e) => setLocation('line1', e.target.value)} placeholder="123 Main Street" />
                     </div>
                     <div className="sm:col-span-2">
-                        <Label>Address Line 2</Label>
-                        <Input className="mt-1.5" value={form.location.line2} onChange={(e) => setLocation('line2', e.target.value)} placeholder="Apartment 4B" />
+                        <Label>Suburb</Label>
+                        <Input className="mt-1.5" value={form.location.suburb} onChange={(e) => setLocation('suburb', e.target.value)} placeholder="Sydney" />
                     </div>
                     <div>
                         <RequiredLabel>State</RequiredLabel>

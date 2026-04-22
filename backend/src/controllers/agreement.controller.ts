@@ -36,8 +36,14 @@ export const acceptAgreementByWorker = catchAsync(async (req, res) => {
   const rawWorkerId = agreement.worker;
 
   await agreement.populate([
-    { path: "client", select: "firstName lastName email phoneNumber" },
-    { path: "worker", select: "firstName lastName email phoneNumber" },
+    {
+      path: "client",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
+    {
+      path: "worker",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
     { path: "job", select: "title" },
   ]);
 
@@ -110,8 +116,14 @@ export const terminateAgreement = catchAsync(async (req, res) => {
   await agreement.save();
 
   await agreement.populate([
-    { path: "client", select: "firstName lastName email phoneNumber" },
-    { path: "worker", select: "firstName lastName email phoneNumber" },
+    {
+      path: "client",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
+    {
+      path: "worker",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
     { path: "job", select: "title" },
   ]);
 
@@ -157,8 +169,14 @@ export const getAllAgreements = catchAsync(async (req, res) => {
 
   const agreements = await Agreement.find(filter)
     .populate("job", "title")
-    .populate("client", "firstName lastName email")
-    .populate("worker", "firstName lastName email")
+    .populate(
+      "client",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
+    .populate(
+      "worker",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -194,8 +212,14 @@ export const getAgreementById = catchAsync(async (req, res) => {
 
   const agreement = await Agreement.findById(agreementId)
     .populate("job", "title location supportDetails")
-    .populate("client", "firstName lastName email")
-    .populate("worker", "firstName lastName email")
+    .populate(
+      "client",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
+    .populate(
+      "worker",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
     .sort({ createdAt: -1 });
 
   if (!agreement) {
@@ -547,8 +571,14 @@ export const getAgreementByJob = catchAsync(async (req, res) => {
 
   const { jobId } = req.params;
   const agreements = await Agreement.find({ ...filter, job: jobId })
-    .populate("client", "firstName lastName email")
-    .populate("worker", "firstName lastName email")
+    .populate(
+      "client",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
+    .populate(
+      "worker",
+      "firstName lastName email phoneNumber dateOfBirth address",
+    )
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -577,5 +607,69 @@ export const getAgreementByJob = catchAsync(async (req, res) => {
         totalPages: Math.ceil(total / limit),
       },
     },
+  });
+});
+
+export const editAgreement = catchAsync(async (req, res) => {
+  const { agreementId } = req.params;
+  const { schedule, startDate } = req.body;
+
+  const allowedUpdates = ["schedule", "startDate"];
+  const invalidFields = Object.keys(req.body).filter(
+    (field) => !allowedUpdates.includes(field),
+  );
+
+  if (invalidFields.length > 0) {
+    throw new AppError(
+      `Only schedule and startDate can be edited. Invalid fields: ${invalidFields.join(", ")}`,
+      400,
+    );
+  }
+
+  if (schedule === undefined && startDate === undefined) {
+    throw new AppError(
+      "At least one of schedule or startDate must be provided",
+      400,
+    );
+  }
+
+  const agreement = await Agreement.findById(agreementId);
+
+  if (!agreement) {
+    throw new AppError("Agreement not found", 404);
+  }
+
+  if (agreement.status !== "pending") {
+    throw new AppError("Only pending agreements can be edited", 400);
+  }
+
+  if (schedule !== undefined) {
+    agreement.schedule = schedule;
+  }
+
+  if (startDate !== undefined) {
+    agreement.startDate = startDate;
+  }
+
+  await agreement.save();
+
+  // Populate the agreement before returning
+  await agreement.populate([
+    {
+      path: "client",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
+    {
+      path: "worker",
+      select: "firstName lastName email phoneNumber dateOfBirth address",
+    },
+    { path: "job", select: "title location supportDetails" },
+  ]);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Agreement updated successfully",
+    data: agreement,
   });
 });

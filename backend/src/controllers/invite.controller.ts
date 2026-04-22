@@ -1,6 +1,15 @@
+import mongoose from "mongoose";
 import { Notification } from "../models/notification.model.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { sendResponse } from "../utils/sendResponse.js";
+
+// helper
+const toObjectId = (id: string) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid ObjectId");
+  }
+  return new mongoose.Types.ObjectId(id);
+};
 
 export const sendInvite = catchAsync(async (req, res) => {
   const { jobId, receiverId } = req.body;
@@ -14,11 +23,16 @@ export const sendInvite = catchAsync(async (req, res) => {
     });
   }
 
+  // ✅ convert to ObjectId
+  const jobObjectId = toObjectId(jobId);
+  const receiverObjectId = toObjectId(receiverId);
+
+  // ✅ typed query
   const existing = await Notification.findOne({
-    recipient: receiverId,
-    job: jobId,
+    recipient: receiverObjectId,
+    job: jobObjectId,
     type: "job",
-  });
+  } as any);
 
   if (existing) {
     return sendResponse(res, {
@@ -29,16 +43,16 @@ export const sendInvite = catchAsync(async (req, res) => {
   }
 
   await Notification.create({
-    recipient: receiverId,
+    recipient: receiverObjectId,
     sender: senderId,
     type: "job",
     title: "Job Invitation",
-    message: `You have been invited to apply for a job.`,
-    job: jobId,
+    message: "You have been invited to apply for a job.",
+    job: jobObjectId,
     actionUrl: `/worker/jobs?jobId=${jobId}`,
   });
 
-  sendResponse(res, {
+  return sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Job Invite sent successfully.",
@@ -48,21 +62,25 @@ export const sendInvite = catchAsync(async (req, res) => {
 export const checkInvitation = catchAsync(async (req, res) => {
   const { jobId, receiverId } = req.query;
 
-  if (!jobId || !receiverId) {
+  // ✅ strict validation
+  if (typeof jobId !== "string" || typeof receiverId !== "string") {
     return sendResponse(res, {
       success: false,
       statusCode: 400,
-      message: "jobId and receiverId are required",
+      message: "Invalid query params",
     });
   }
 
-  const existing = await Notification.findOne({
-    recipient: receiverId,
-    job: jobId,
-    type: "job",
-  });
+  const jobObjectId = toObjectId(jobId);
+  const receiverObjectId = toObjectId(receiverId);
 
-  sendResponse(res, {
+  const existing = await Notification.findOne({
+    recipient: receiverObjectId,
+    job: jobObjectId,
+    type: "job",
+  } as any);
+
+  return sendResponse(res, {
     success: true,
     statusCode: 200,
     message: "Invitation status fetched successfully.",

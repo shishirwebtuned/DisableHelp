@@ -132,16 +132,14 @@ export default function WorkerCard({
             .toLocaleDateString()
         : null;
 
-    const location =
-        worker.address?.state ||
-        worker.address?.line1 ||
-        worker.timezone?.split('/')[1] ||
-
-        null;
+    const location = `
+    ${worker.address?.suburb}, 
+    ${worker.address?.state}
+    `;
 
     const address = `
 ${worker?.address?.line1 || ''}
-${worker?.address?.line2 || ''},
+${worker?.address?.suburb || ''},
 ${worker?.address?.state || ''},
 ${worker?.address?.postalCode || ''}
 `;
@@ -323,7 +321,7 @@ ${worker.approved
 
                     </span> */}
 
-                    {age !== null && (
+                    {/* {age !== null && (
 
                         <span>
 
@@ -337,7 +335,7 @@ ${worker.approved
 
                         </span>
 
-                    )}
+                    )} */}
 
                     {joinedDate && (
 

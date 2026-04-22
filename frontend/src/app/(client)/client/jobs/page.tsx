@@ -41,7 +41,7 @@ import { formatTime } from '@/lib/formatTime';
 function formatLocation(loc: Job['location']): string {
     if (!loc) return '';
     if (typeof loc === 'string') return loc;
-    return [loc.line1, loc.line2, loc.state, loc.postalCode].filter(Boolean).join(', ');
+    return [loc.suburb, loc.state, loc.postalCode].filter(Boolean).join(', ');
 }
 
 function formatDate(iso: string) {
@@ -334,7 +334,7 @@ export default function ClientJobsPage() {
         if (applicantCoords[applicant._id]) return;
 
         if (!applicant.address) return;
-        const fullAddress = `${applicant.address.line1}, ${applicant.address.line2 || ''}, ${applicant.address.state} ${applicant.address.postalCode}, Australia`;
+        const fullAddress = `${applicant.address.line1}, ${applicant.address.suburb || ''}, ${applicant.address.state} ${applicant.address.postalCode}, Australia`;
         const normalizedAddress = fullAddress.replace(/\s+/g, ' ').trim();
 
         try {

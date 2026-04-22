@@ -16,7 +16,7 @@ export interface User {
   phoneNumber?: string;
   address?: {
     line1?: string;
-    line2?: string;
+    suburb?: string;
     state?: string;
     postalCode?: string;
   };
@@ -236,6 +236,28 @@ export const fetchMyClients = createAsyncThunk(
   },
 );
 
+export const suspendUser = createAsyncThunk(
+  "users/suspendUser",
+  async (
+    { userId, suspended }: { userId: string; suspended: boolean },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.patch(`/admin/suspend/${userId}`, {
+        suspended,
+      });
+
+      return response.data.data;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update suspension status";
+      return rejectWithValue(message);
+    }
+  },
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -382,6 +404,34 @@ const usersSlice = createSlice({
       .addCase(fetchMyClients.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(suspendUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(suspendUser.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = (action.payload &&
+          (action.payload.user || action.payload)) as any;
+        if (!updated) return;
+
+        const updatedId = updated.id || updated._id || null;
+
+        if (state.selectedUser?.user) {
+          state.selectedUser.user = { ...state.selectedUser.user, ...updated };
+        }
+
+        const index = state.items.findIndex(
+          (u) => u._id === updatedId || (u as any)._id === updatedId,
+        );
+        if (index !== -1) {
+          state.items[index] = { ...state.items[index], ...updated } as any;
+        }
+      })
+      .addCase(suspendUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to update suspension status";
       });
   },
 });

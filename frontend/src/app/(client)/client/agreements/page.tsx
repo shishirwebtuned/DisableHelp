@@ -527,7 +527,7 @@ export default function ClientAgreementsPage() {
 
                                     <p className="text-xs text-muted-foreground">
 
-                                        {agreement.job?.location?.line1}
+                                        {agreement.job?.location?.suburb}
                                         {" • "}
                                         {agreement.job?.location?.state}
 

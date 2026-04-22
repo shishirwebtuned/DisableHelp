@@ -41,7 +41,7 @@ export default function WorkerProfile({ user, profile }: WorkerProfileProps) {
     const interests = profile?.interests ?? [];
 
     // const address = user?.address
-    //     ? `${user.address.line1}, ${user.address.line2 ? `${user.address.line2}, ` : ''}${user.address.state}, ${user.address.postalCode}`
+    //     ? `${user.address.line1}, ${user.address.suburb ? `${user.address.suburb}, ` : ''}${user.address.state}, ${user.address.postalCode}`
     //     : null;
 
     return (

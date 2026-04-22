@@ -39,7 +39,7 @@ export default function ClientDocumentsPage() {
             status: 'verified',
         },
     ]);
-    
+
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<{ [key: string]: string }>({});
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -49,7 +49,7 @@ export default function ClientDocumentsPage() {
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        
+
         files.forEach((file) => {
             // Create preview for images
             if (file.type.startsWith('image/')) {
@@ -63,7 +63,7 @@ export default function ClientDocumentsPage() {
                 reader.readAsDataURL(file);
             }
         });
-        
+
         setSelectedFiles((prev) => [...prev, ...files]);
     };
 
@@ -75,7 +75,7 @@ export default function ClientDocumentsPage() {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const files = Array.from(e.dataTransfer.files);
         files.forEach((file) => {
             if (file.type.startsWith('image/')) {
@@ -89,7 +89,7 @@ export default function ClientDocumentsPage() {
                 reader.readAsDataURL(file);
             }
         });
-        
+
         setSelectedFiles((prev) => [...prev, ...files]);
     };
 
@@ -128,7 +128,7 @@ export default function ClientDocumentsPage() {
                 category: selectedCategory,
                 file: file,
                 preview: previews[file.name],
-                uploadDate: new Date().toISOString().split('T')[0],
+                uploadDate: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
                 status: 'pending' as const,
             }));
 
@@ -136,7 +136,7 @@ export default function ClientDocumentsPage() {
             setSelectedFiles([]);
             setPreviews({});
             setSelectedCategory('');
-            
+
             alert('Documents uploaded successfully!');
         } catch (error) {
             alert('Upload failed. Please try again.');
@@ -169,13 +169,13 @@ export default function ClientDocumentsPage() {
 
     return (
         <div className="space-y-6">
-<CardHeader>
-                    <CardTitle>Upload New Documents</CardTitle>
-                    <CardDescription>Upload NDIS plans, medical reports, and other important documents</CardDescription>
-                </CardHeader>
+            <CardHeader>
+                <CardTitle>Upload New Documents</CardTitle>
+                <CardDescription>Upload NDIS plans, medical reports, and other important documents</CardDescription>
+            </CardHeader>
             {/* Upload Section */}
             <Card>
-                
+
                 <CardContent className="space-y-6">
                     {/* Category Selection */}
                     <div className="space-y-6">
@@ -350,7 +350,7 @@ export default function ClientDocumentsPage() {
                                         {getFileIcon(doc.name)}
                                     </div>
                                 )}
-                                
+
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold truncate">{doc.name}</h4>
                                     <div className="flex items-center gap-2 mt-1">

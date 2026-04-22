@@ -1,6 +1,20 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const notificationSchema = new Schema(
+export interface INotification extends Document {
+  recipient: mongoose.Types.ObjectId;
+  sender: mongoose.Types.ObjectId;
+  type: "message" | "invoice" | "application" | "agreement" | "job" | "system";
+  title: string;
+  message: string;
+  read: boolean;
+  readAt?: Date;
+  actionUrl?: string;
+  chat?: mongoose.Types.ObjectId;
+  job?: mongoose.Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+const notificationSchema = new Schema<INotification>(
   {
     recipient: {
       type: Schema.Types.ObjectId,
@@ -30,4 +44,7 @@ const notificationSchema = new Schema(
 
 notificationSchema.index({ recipient: 1, read: 1 });
 
-export const Notification = mongoose.model("Notification", notificationSchema);
+export const Notification = mongoose.model<INotification>(
+  "Notification",
+  notificationSchema,
+);

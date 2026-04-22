@@ -46,7 +46,7 @@ const userSchema = new Schema<IUser>(
     },
     address: {
       line1: String,
-      line2: String,
+      suburb: String,
       state: String,
       postalCode: String,
     },
@@ -79,6 +79,7 @@ const userSchema = new Schema<IUser>(
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
     timezone: { type: String, default: "Australia/Perth" },
+    isSuspended: {type: Boolean, default: false}
   },
   { timestamps: true },
 );

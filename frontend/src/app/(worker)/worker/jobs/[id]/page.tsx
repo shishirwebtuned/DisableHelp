@@ -179,7 +179,7 @@ export default function JobDetailPage() {
                                     <div className="font-semibold">{
                                         typeof job.location === 'string'
                                             ? job.location
-                                            : [job.location.line1, job.location.line2, job.location.state, job.location.postalCode]
+                                            : [job.location.line1, job.location.suburb, job.location.state, job.location.postalCode]
                                                 .filter(Boolean)
                                                 .join(', ')
                                     }</div>

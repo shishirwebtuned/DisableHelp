@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchUsers } from '@/redux/slices/usersSlice';
+import { fetchUsers, suspendUser } from '@/redux/slices/usersSlice';
 import { sendNotificationByAdmin } from '@/redux/slices/notificationSlice';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,6 +78,9 @@ export default function AdminUsersPage() {
     const [notificationTitle, setNotificationTitle] = useState('');
     const [notificationMessage, setNotificationMessage] = useState('');
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+    const [suspendAction, setSuspendAction] = useState<'suspend' | 'unsuspend'>('suspend');
+    const [selectedUserForSuspend, setSelectedUserForSuspend] = useState<any>(null);
     // Reset to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -145,6 +148,7 @@ export default function AdminUsersPage() {
             avatar: u.avatar ?? null,
             raw: u,
             isNdisProvider: typeof u.isNdisProvider !== 'undefined' ? u.isNdisProvider : false,
+            isSuspended: u.isSuspended ?? false,
         };
     });
 
@@ -281,6 +285,7 @@ export default function AdminUsersPage() {
                             <TableHead>Role</TableHead>
                             <TableHead>Approved</TableHead>
                             <TableHead>Verified (Email)</TableHead>
+                            <TableHead>Suspended</TableHead>
                             <TableHead>Type</TableHead>
 
                             <TableHead>Joined Date</TableHead>
@@ -319,6 +324,13 @@ export default function AdminUsersPage() {
                                         <div className="flex items-center text-xs font-medium">
                                             <span className="capitalize">{user.isVerified ? 'Verified' : 'Not Verified'}</span>
                                         </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${user.isSuspended ? 'border-red-300 bg-red-50 text-red-700' : 'border-green-300 bg-green-50 text-green-700'}`}>
+                                            {user.isSuspended ? 'Yes' : 'No'}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
                                         {user.role === "worker" ? (
@@ -365,19 +377,47 @@ export default function AdminUsersPage() {
                                                 <DropdownMenuSeparator />
                                                 {user.approved ? (
                                                     <DropdownMenuItem
-                                                        className="text-destructive cursor-pointer"
+                                                        className="text-yellow-600 cursor-pointer group"
                                                         onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
-                                                        <UserX className="mr-2 h-4 w-4" />
-                                                        Remove Approval (Suspend)
+                                                        <UserX className="mr-2 h-4 w-4 text-yellow-600 group-hover:text-black-700" />
+                                                        Unapprove
                                                     </DropdownMenuItem>
                                                 ) : (
                                                     <DropdownMenuItem
-                                                        className="text-green-600 cursor-pointer"
+                                                        className="text-green-600 cursor-pointer group"
                                                         onClick={() => { router.push(`/admin/users/${user.id}#scroll-bottom`) }}
                                                     >
-                                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                        Approve User
+                                                        <CheckCircle2 className="mr-2 h-4 w-4 text-green-600 group-hover:text-black-700" />
+                                                        Approve
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {user.isSuspended ? (
+
+                                                    <DropdownMenuItem
+                                                        className='text-green-600 cursor-pointer group'
+                                                        onClick={() => {
+                                                            setSelectedUserForSuspend(user);
+                                                            setSuspendAction('unsuspend');
+                                                            setSuspendDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <UserCheck className="mr-2 h-4 w-4 text-green-600 group-hover:text-black-700" />
+                                                        Unsuspend
+                                                    </DropdownMenuItem>
+                                                ) : (
+
+
+                                                    <DropdownMenuItem
+                                                        className='text-red-600 cursor-pointer group'
+                                                        onClick={() => {
+                                                            setSelectedUserForSuspend(user);
+                                                            setSuspendAction('suspend');
+                                                            setSuspendDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <AlertTriangle className="mr-2 h-4 w-4 text-red-600" />
+                                                        Suspend
                                                     </DropdownMenuItem>
                                                 )}
                                             </DropdownMenuContent>
@@ -434,6 +474,31 @@ export default function AdminUsersPage() {
                         <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleSendNotification} disabled={!notificationTitle.trim() || !notificationMessage.trim()}>
                             Send Message
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Action</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to <strong className={`capitalize ${suspendAction === 'suspend' ? "text-red-500" : "text-green-500"}`}>{suspendAction}</strong> the user {selectedUserForSuspend?.name}? {suspendAction === 'suspend' ? "The user won't be able to login or access his/her dashboard." : "The user will be able to login and access his/her dashboard again."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" className='cursor-pointer' onClick={() => setSuspendDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            className={`cursor-pointer ${suspendAction === 'suspend' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white`}
+                            onClick={() => {
+                                setSuspendDialogOpen(false);
+                                dispatch(suspendUser({
+                                    userId: selectedUserForSuspend.id,
+                                    suspended: suspendAction === 'suspend'
+                                }));
+                            }}>
+                            Confirm
                         </Button>
                     </DialogFooter>
                 </DialogContent>

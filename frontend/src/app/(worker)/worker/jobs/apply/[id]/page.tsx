@@ -94,8 +94,8 @@ export default function Page() {
     const parts: string[] = [`hii ${clientName} ,`];
     // Do not include "My name is {worker}", only include age/gender descriptor if available
     const descriptorParts: string[] = [];
-    if (workerAge) descriptorParts.push(`${workerAge} year old`);
-    if (workerGender) descriptorParts.push(workerGender);
+    // if (workerAge) descriptorParts.push(`${workerAge} year old`);
+    // if (workerGender) descriptorParts.push(workerGender);
     if (descriptorParts.length > 0) {
       parts.push(` I am a ${descriptorParts.join(' ')} support worker.`);
     } else {
@@ -729,7 +729,6 @@ export default function Page() {
 
                   <h2
                     className="text-[21px] leading-snug text-white mb-3"
-                    style={{ fontFamily: "'Instrument Serif', serif" }}
                   >
                     {selectedJob.title}
                   </h2>
@@ -788,11 +787,10 @@ export default function Page() {
                     </div>
                     <div>
                       <p className="text-[13px] font-medium text-foreground leading-snug">
-                        {selectedJob.location?.line1}
-                        {selectedJob.location?.line2 && `, ${selectedJob.location.line2}`}
+                        {selectedJob.location?.suburb && ` ${selectedJob.location.suburb}`}
                       </p>
                       <p className="text-[12px] text-muted-foreground mt-0.5">
-                        {selectedJob.location?.state} {selectedJob.location?.postalCode}
+                        {selectedJob.location?.state} , {selectedJob.location?.postalCode}
                       </p>
                     </div>
                   </div>

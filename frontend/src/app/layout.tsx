@@ -45,7 +45,7 @@ export default function RootLayout({
             richColors
             closeButton
             expand={true}
-            duration={4000}
+            duration={1000}
             theme="light"
             toastOptions={{
               unstyled: false,

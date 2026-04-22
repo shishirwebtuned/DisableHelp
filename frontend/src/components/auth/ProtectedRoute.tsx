@@ -44,8 +44,14 @@ export default function ProtectedRoute({ children, allowedRole }: ProtectedRoute
         }
 
         if (!isLoading && user) {
+
+            if (user.isSuspended) {
+                localStorage.removeItem('token');
+                router.push('/login');
+                return;
+            }
+
             if (allowedRole && user.role !== allowedRole) {
-                // Redirect unauthorized users to their correct dashboard
                 router.push(`/${user.role}`);
             }
         }
