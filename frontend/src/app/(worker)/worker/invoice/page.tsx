@@ -37,8 +37,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatTime } from '@/lib/formatTime';
-import { RequiredLabel } from '@/app/(client)/client/jobs/new/page';
 import { fetchMyClients } from '@/redux/slices/usersSlice';
+import { RequiredLabel } from '@/app/(client)/client/jobs/new/RequiredLabel';
 
 const statusConfig: Record<string, {
     label: string;

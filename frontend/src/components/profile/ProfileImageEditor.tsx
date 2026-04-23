@@ -32,7 +32,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const imageRef = useRef<HTMLImageElement>(null);
+    const imageRef = useRef<HTMLImageElement | null>(null);
 
     const { user } = useAppSelector((state) => state.auth);
 

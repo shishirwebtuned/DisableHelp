@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '@/redux/store';
 import { fetchWorkersWithProfile } from '@/redux/slices/usersSlice';
+import dynamic from 'next/dynamic';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,11 +16,6 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
-} from '@/components/ui/avatar';
-import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
@@ -28,83 +24,16 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Languages, ChevronDown, BadgeCheck, MapPin } from 'lucide-react';
+import { Languages, ChevronDown } from 'lucide-react';
 import WorkerCard from '../workers/WorkerCard';
-
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { Input } from '@/components/ui/input';
 import { getJobByClient } from '@/redux/slices/jobsSlice';
 import { checkInvitation, sendInvite } from '@/redux/slices/inviteSlice';
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatDistance(km: number): string {
-    if (km < 1) return `${Math.round(km * 1000)}m away`;
-    if (km < 10) return `${km.toFixed(1)}km away`;
-    return `${Math.round(km)}km away`;
-}
-
-
-
-function FocusWorker({ worker }: { worker: any }) {
-    const map = useMap();
-    useEffect(() => {
-        if (worker?.coords) {
-            map.flyTo(worker.coords as [number, number], 14, { duration: 1.2 });
-        }
-    }, [worker, map]);
-    return null;
-}
-
-
-
-const WorkerPopup = ({
-    worker,
-    clientCoords,
-}: {
-    worker: any;
-    clientCoords: [number, number] | null;
-}) => (
-    <div className="flex flex-row items-center gap-2 md:gap-3">
-        <Avatar className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10">
-            <AvatarImage src={worker.avatar} />
-            <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
-        </Avatar>
-        <div>
-            <strong className="flex flex-row mb-0.5 items-center">
-                {worker.firstName} {worker.lastName}
-                {worker.approved && (
-                    <BadgeCheck className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1" />
-                )}
-            </strong>
-            <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">
-                {worker.address?.state}, {worker.address?.postalCode}
-            </span>
-            {clientCoords && worker.coords && (
-                <div className="text-[10px] md:text-[11px] lg:text-xs text-blue-500 mt-0.5">
-                    {formatDistance(getDistanceKm(
-                        clientCoords[0], clientCoords[1],
-                        worker.coords[0], worker.coords[1]
-                    ))}
-                </div>
-            )}
-        </div>
-    </div>
-);
+const CALDMapDialog = dynamic(() => import('./CaldMapDialog'), {
+    ssr: false,
+    loading: () => null,
+});
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -123,34 +52,23 @@ const LANGUAGE_OPTIONS = [
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-
 export default function CALDSupportPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { items: workers, loading } = useSelector((state: RootState) => state.users);
-
-    const { jobs, loading: jobsLoading } = useSelector(
-        (state: RootState) => state.jobs
-    );
+    const { jobs, loading: jobsLoading } = useSelector((state: RootState) => state.jobs);
 
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
     const [workerType, setWorkerType] = useState('all');
     const [clientCoords, setClientCoords] = useState<[number, number] | null>(null);
     const [workersWithCoords, setWorkersWithCoords] = useState<any[]>([]);
-    const [isClient, setIsClient] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [languageSearch, setLanguageSearch] = useState('');
 
     const [inviteDialog, setInviteDialog] = useState(false);
-
     const [selectedWorker, setSelectedWorker] = useState<any>(null);
-
     const [selectedJob, setSelectedJob] = useState("");
-
     const [invitedJobIds, setInvitedJobIds] = useState<string[]>([]);
-
     const [mapDialogWorker, setMapDialogWorker] = useState<any>(null);
-
-    useEffect(() => { setIsClient(true); }, []);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 900);
@@ -174,7 +92,6 @@ export default function CALDSupportPage() {
         }));
     }, [dispatch, selectedLanguages]);
 
-    // Geocode all worker addresses
     useEffect(() => {
         if (workers.length === 0) return;
         const fetchCoords = async () => {
@@ -204,8 +121,6 @@ export default function CALDSupportPage() {
         fetchCoords();
     }, [workers]);
 
-    // If the dialog is open but geocoding wasn't done yet when it opened,
-    // update the focused worker object once coords arrive
     useEffect(() => {
         if (!mapDialogWorker) return;
         const updated = workersWithCoords.find(w => w._id === mapDialogWorker._id);
@@ -214,25 +129,9 @@ export default function CALDSupportPage() {
         }
     }, [workersWithCoords]);
 
-    const workerIcon = useMemo(() => new L.Icon({
-        iconUrl: '/marker-icon-2xa.png',
-        iconRetinaUrl: '/marker-icon-2xa.png',
-        shadowUrl: '/marker-shadow.png',
-        iconSize: isMobile ? [22, 34] : [32, 48],
-        iconAnchor: isMobile ? [11, 34] : [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: isMobile ? [30, 30] : [41, 41],
-    }), [isMobile]);
-
-    const ndisIcon = useMemo(() => new L.Icon({
-        iconUrl: '/marker-icon-2xb.png',
-        iconRetinaUrl: '/marker-icon-2xb.png',
-        shadowUrl: '/marker-shadow.png',
-        iconSize: isMobile ? [22, 34] : [31, 50],
-        iconAnchor: isMobile ? [11, 34] : [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: isMobile ? [30, 30] : [41, 41],
-    }), [isMobile]);
+    useEffect(() => {
+        dispatch(getJobByClient({}));
+    }, [dispatch]);
 
     const toggleLanguage = (lang: string) => {
         setSelectedLanguages(prev =>
@@ -246,31 +145,25 @@ export default function CALDSupportPage() {
         return true;
     });
 
-    // Filter language options based on search
     const filteredLanguageOptions = useMemo(() => {
         if (!languageSearch.trim()) return LANGUAGE_OPTIONS;
-        return LANGUAGE_OPTIONS.filter(lang => lang.toLowerCase().includes(languageSearch.trim().toLowerCase()));
+        return LANGUAGE_OPTIONS.filter(lang =>
+            lang.toLowerCase().includes(languageSearch.trim().toLowerCase())
+        );
     }, [languageSearch]);
 
-    // Always use the geocoded version for the dialog (has coords)
     const dialogWorker = mapDialogWorker
         ? (workersWithCoords.find(w => w._id === mapDialogWorker._id) ?? mapDialogWorker)
         : null;
 
     const handleViewMap = (worker: any) => {
-        // Prefer the geocoded version immediately if available
         const geocoded = workersWithCoords.find(w => w._id === worker._id);
         setMapDialogWorker(geocoded ?? worker);
     };
 
-    useEffect(() => {
-        dispatch(getJobByClient({}));
-    }, [dispatch]);
-
     const handleInviteClick = async (worker: any) => {
         setSelectedWorker(worker);
         setInviteDialog(true);
-
         try {
             const result = await Promise.all(
                 jobs.map(async (job: any) => {
@@ -285,7 +178,8 @@ export default function CALDSupportPage() {
             console.error("Error fetching invitations", err);
             setInvitedJobIds([]);
         }
-    }
+    };
+
     return (
         <div className="space-y-5">
             <div>
@@ -296,11 +190,10 @@ export default function CALDSupportPage() {
             </div>
 
             <div className="space-y-3">
-
                 {/* Toolbar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="font-semibold text-black">Support Workers List</div>
-                    <div className="flex sm:flex-row flex-col  gap-4">
+                    <div className="flex sm:flex-row flex-col gap-4">
                         <Select value={workerType} onValueChange={setWorkerType}>
                             <SelectTrigger className="md:w-[150px] w-[115px] lg:w-[180px] h-8 text-xs">
                                 <SelectValue placeholder="Filter workers" />
@@ -364,14 +257,12 @@ export default function CALDSupportPage() {
                 {/* Worker cards */}
                 <div className="grid md:grid-cols-2 gap-4">
                     {loading && <div>Loading workers...</div>}
-
                     {!loading && filteredWorkers.length === 0 && (
                         <div className="col-span-2 text-center py-10 text-muted-foreground">
                             <Languages className="h-8 w-8 mx-auto mb-2 opacity-40" />
                             <p>No workers found{selectedLanguages.length > 0 && ` speaking ${selectedLanguages.join(', ')}`}</p>
                         </div>
                     )}
-
                     {filteredWorkers.map(worker => {
                         const workerWithCoord = workersWithCoords.find(w => w._id === worker._id);
                         return (
@@ -383,174 +274,77 @@ export default function CALDSupportPage() {
                                 onViewMap={() => handleViewMap(worker)}
                                 onInvite={handleInviteClick}
                                 showLanguages={true}
-
                             />
                         );
                     })}
                 </div>
             </div>
 
-            {/* ─── Map Dialog ───────────────────────────────────────────────── */}
-            <Dialog
-                open={!!mapDialogWorker}
-                onOpenChange={(open) => { if (!open) setMapDialogWorker(null); }}
-            >
-                <DialogContent className="max-w-2xl w-full p-0 overflow-hidden gap-0">
+            {/* ─── Map Dialog (SSR-safe) ─────────────────────────────────── */}
+            <CALDMapDialog
+                dialogWorker={dialogWorker}
+                clientCoords={clientCoords}
+                isMobile={isMobile}
+                onClose={() => setMapDialogWorker(null)}
+            />
 
-                    {/* Header */}
-                    <DialogHeader className="px-4 pt-4 pb-3 border-b">
-                        <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
-                            <Avatar className="h-7 w-7 md:h-8 md:w-8">
-                                <AvatarImage src={dialogWorker?.avatar} />
-                                <AvatarFallback>
-                                    {dialogWorker?.firstName?.[0]}{dialogWorker?.lastName?.[0]}
-                                </AvatarFallback>
-                            </Avatar>
-                            <span>{dialogWorker?.firstName} {dialogWorker?.lastName}</span>
-                            {dialogWorker?.approved && (
-                                <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />
-                            )}
-                            {dialogWorker?.address && (
-                                <span className="text-xs text-muted-foreground font-normal flex items-center gap-1 ml-1">
-                                    <MapPin className="h-3 w-3 shrink-0" />
-                                    {dialogWorker.address.state}, {dialogWorker.address.postalCode}
-                                </span>
-                            )}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    {/* Map body */}
-                    <div className="w-full h-[320px] md:h-[420px] relative">
-                        {isClient && (
-                            !dialogWorker?.coords ? (
-                                // Geocoding still in progress
-                                <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-sm">
-                                    <div className="text-center space-y-1">
-                                        <MapPin className="h-6 w-6 mx-auto animate-pulse" />
-                                        <p>Locating worker on map…</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <MapContainer
-                                    center={dialogWorker.coords as [number, number]}
-                                    zoom={13}
-                                    minZoom={12}
-                                    maxZoom={14}
-                                    scrollWheelZoom={false}
-                                    doubleClickZoom={false}
-                                    dragging={true}
-                                    className="w-full h-full"
-                                    key={dialogWorker._id}
-                                >
-                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-                                    {/* Show a circle for privacy */}
-                                    <Circle
-                                        center={dialogWorker.coords as [number, number]}
-                                        radius={1000} // 1km radius, adjust as needed
-                                        pathOptions={{ color: '#2563eb', fillColor: '#60a5fa', fillOpacity: 0.25 }}
-                                    />
-                                    {/* Show the icon in the middle, but no popup */}
-                                    <Marker
-                                        position={dialogWorker.coords as [number, number]}
-                                        icon={dialogWorker.isNdisProvider ? ndisIcon : workerIcon}
-                                        interactive={false}
-                                    />
-
-                                    {/* Fly to the focused worker */}
-                                    <FocusWorker worker={dialogWorker} />
-                                </MapContainer>
-                            )
-                        )}
-                    </div>
-
-                    {/* Footer distance strip */}
-                    {dialogWorker?.coords && clientCoords && (
-                        <div className="px-4 py-2 border-t bg-muted/40 text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-blue-500 shrink-0" />
-                            <span className="text-blue-500 font-medium">
-                                {formatDistance(getDistanceKm(
-                                    clientCoords[0], clientCoords[1],
-                                    dialogWorker.coords[0], dialogWorker.coords[1]
-                                ))}
-                            </span>
-                            <span className="ml-1">from your location</span>
-                        </div>
-                    )}
-
-                </DialogContent>
-            </Dialog>
-
+            {/* ─── Invite Dialog ────────────────────────────────────────── */}
             <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Invite Worker to Apply</DialogTitle>
                     </DialogHeader>
-
                     <div className="space-y-3">
                         <p className="text-sm text-muted-foreground">
                             Select a job to invite{" "}
                             <b>{selectedWorker?.firstName} {selectedWorker?.lastName}</b>
                         </p>
-
-                        {/* Loading state */}
                         {jobsLoading ? (
                             <p className="text-center text-sm text-muted-foreground">Loading jobs...</p>
+                        ) : jobs?.filter((job: any) => !invitedJobIds.includes(job._id)).length > 0 ? (
+                            <Select value={selectedJob} onValueChange={setSelectedJob}>
+                                <SelectTrigger className="w-full text-sm">
+                                    <SelectValue placeholder="Select job" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {jobs
+                                        ?.filter((job: any) => !invitedJobIds.includes(job._id))
+                                        .map((job: any) => {
+                                            const startDate = new Date(job.startDate).toLocaleDateString('en-US', {
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short',
+                                            });
+                                            return (
+                                                <SelectItem
+                                                    key={job._id}
+                                                    value={job._id}
+                                                    className="flex flex-col items-start gap-0.5 py-2"
+                                                >
+                                                    <span className="font-medium text-sm">{job.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{startDate}</span>
+                                                </SelectItem>
+                                            );
+                                        })}
+                                </SelectContent>
+                            </Select>
                         ) : (
-                            // Check if any jobs left to invite
-                            jobs?.filter(job => !invitedJobIds.includes(job._id)).length > 0 ? (
-                                <Select value={selectedJob} onValueChange={(val) => setSelectedJob(val)}>
-                                    <SelectTrigger className="w-full text-sm">
-                                        <SelectValue placeholder="Select job" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {jobs
-                                            ?.filter(job => !invitedJobIds.includes(job._id))
-                                            .map((job: any) => {
-                                                const startDate = new Date(job.startDate).toLocaleDateString('en-US', {
-                                                    weekday: 'short',
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                });
-
-                                                return (
-                                                    <SelectItem
-                                                        key={job._id}
-                                                        value={job._id}
-                                                        className="flex flex-col items-start gap-0.5 py-2"
-                                                    >
-                                                        <span className="font-medium text-sm">{job.title}</span>
-                                                        <span className="text-xs text-muted-foreground">{startDate}</span>
-                                                    </SelectItem>
-                                                );
-                                            })}
-                                    </SelectContent>
-                                </Select>
-                            ) : (
-                                <p className="text-center text-sm lg:text-base font-medium pt-2 mb-2 text-red-500">
-                                    No jobs left to invite this worker.
-                                </p>
-                            )
+                            <p className="text-center text-sm lg:text-base font-medium pt-2 mb-2 text-red-500">
+                                No jobs left to invite this worker.
+                            </p>
                         )}
                     </div>
-
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setInviteDialog(false)} className='cursor-pointer'>
+                        <Button variant="outline" onClick={() => setInviteDialog(false)} className="cursor-pointer">
                             Cancel
                         </Button>
-
                         <Button
                             disabled={
                                 !selectedJob ||
-                                jobs?.filter(job => !invitedJobIds.includes(job._id)).length === 0
+                                jobs?.filter((job: any) => !invitedJobIds.includes(job._id)).length === 0
                             }
                             onClick={() => {
-                                dispatch(
-                                    sendInvite({
-                                        jobId: selectedJob,
-                                        receiverId: selectedWorker._id,
-                                    })
-                                );
+                                dispatch(sendInvite({ jobId: selectedJob, receiverId: selectedWorker._id }));
                                 setInviteDialog(false);
                                 setSelectedJob("");
                             }}

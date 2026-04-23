@@ -17,6 +17,7 @@ import {
     Plus, Trash2, ChevronLeft, Loader2, Clock, MapPin, CalendarDays, LayoutList, ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RequiredLabel } from './RequiredLabel';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -53,15 +54,6 @@ interface FormState {
 }
 
 const PREFERENCE_OPTIONS = ['non-smoker', 'experienced', 'has-car', 'pet-friendly', 'bilingual'];
-
-export function RequiredLabel({ children }: { children: React.ReactNode }) {
-    return (
-        <Label className="flex items-center gap-1">
-            {children}
-            <span className="text-destructive font-semibold">*</span>
-        </Label>
-    );
-}
 
 export default function NewJobPage() {
     const dispatch = useAppDispatch();

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Mail, Clock  ,ArrowDown} from 'lucide-react';
+import { Mail, Clock, ArrowDown } from 'lucide-react';
 import {
     Card,
     CardContent,
@@ -155,7 +155,7 @@ const InfoPage = () => {
                             )}
                         </Button>
                     )}
-                    <Link    href="/login">
+                    <Link href="/login">
                         <Button>
                             <ArrowDown className="mr-2 h-4 w-4" /> Back to Login
                         </Button>
