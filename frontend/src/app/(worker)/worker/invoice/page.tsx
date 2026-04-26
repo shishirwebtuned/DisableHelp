@@ -416,12 +416,12 @@ function InvoiceForm({
                                             <Avatar className="h-6 w-6">
                                                 <AvatarImage src={client.avatar} />
                                                 <AvatarFallback className="text-xs">
-                                                    {client.firstName?.[0]}{client.lastName?.[0]}
+                                                    {client?.firstName?.[0]}{client?.lastName?.[0]}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-medium">
-                                                    {client.firstName} {client.lastName}
+                                                    {client?.firstName} {client?.lastName}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground">
                                                     {client.email}

@@ -35,7 +35,6 @@ const CALDMapDialog = dynamic(() => import('./CaldMapDialog'), {
     loading: () => null,
 });
 
-// ─── constants ────────────────────────────────────────────────────────────────
 
 const LANGUAGE_OPTIONS = [
     'English', 'Mandarin', 'Cantonese', 'Hindi', 'Bengali', 'Spanish', 'French', 'Arabic', 'Portuguese', 'Russian',
@@ -152,6 +151,16 @@ export default function CALDSupportPage() {
         );
     }, [languageSearch]);
 
+    const showAddCustom = useMemo(() => {
+        const trimmed = languageSearch.trim();
+        if (!trimmed) return false;
+        return !LANGUAGE_OPTIONS.some(
+            lang => lang.toLowerCase() === trimmed.toLowerCase()
+        ) && !selectedLanguages.some(
+            lang => lang.toLowerCase() === trimmed.toLowerCase()
+        );
+    }, [languageSearch, selectedLanguages]);
+
     const dialogWorker = mapDialogWorker
         ? (workersWithCoords.find(w => w._id === mapDialogWorker._id) ?? mapDialogWorker)
         : null;
@@ -219,16 +228,71 @@ export default function CALDSupportPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-52 max-h-72 overflow-y-auto">
-                                <DropdownMenuLabel>Filter by language</DropdownMenuLabel>
+                                <DropdownMenuLabel className="flex items-center justify-between">
+                                    Filter by language
+                                    {selectedLanguages.length > 0 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedLanguages([]);
+                                            }}
+                                            className="text-xs text-red-500 hover:underline cursor-pointer"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </DropdownMenuLabel>
                                 <div className="px-2 py-1">
                                     <Input
                                         placeholder="Search language..."
                                         value={languageSearch}
                                         onChange={e => setLanguageSearch(e.target.value)}
+                                        onKeyDown={e => e.stopPropagation()}
                                         className="h-7 md:text-[13px] text-xs lg:text-sm px-2"
+                                        autoFocus
                                     />
                                 </div>
                                 <DropdownMenuSeparator />
+
+                                {selectedLanguages.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
+                                        {selectedLanguages.map(lang => (
+                                            <span
+                                                key={lang}
+                                                onClick={() => toggleLanguage(lang)}
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors bg-[#61c0e8]/15 text-[#61c0e8] border border-[#61c0e8]/40 hover:bg-[#61c0e8]/25"
+                                            >
+                                                {lang}
+                                                <span className="opacity-50 hover:opacity-100 text-[10px]">✕</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {showAddCustom && (
+                                    <>
+                                        <div className="px-2 py-1.5">
+                                            <button
+                                                onClick={(e: any) => {
+                                                    e.stopPropagation();
+                                                    toggleLanguage(languageSearch.trim());
+                                                    setLanguageSearch('');
+                                                }}
+                                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#61c0e8]/10 hover:bg-[#61c0e8]/20 border border-[#61c0e8]/30 border-dashed transition-colors group cursor-pointer"
+                                            >
+                                                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#61c0e8] text-white text-xs font-bold shrink-0 group-hover:scale-110 transition-transform">
+                                                    +
+                                                </span>
+                                                <span className="text-xs text-left">
+                                                    <span className="text-muted-foreground">Add </span>
+                                                    <span className="font-semibold text-[#61c0e8]">"{languageSearch.trim()}"</span>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        {filteredLanguageOptions.length > 0 && <DropdownMenuSeparator />}
+                                    </>
+                                )}
+
                                 {filteredLanguageOptions.length === 0 && (
                                     <div className="px-3 py-2 text-xs text-muted-foreground">No languages found</div>
                                 )}

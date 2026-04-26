@@ -15,7 +15,7 @@ export interface WorkerProfile {
   userId: string;
   personalInfo: {
     firstName: string;
-    lastName: string;
+    lastName?: string;
     phone: string;
     dateOfBirth: string;
     gender?: string;

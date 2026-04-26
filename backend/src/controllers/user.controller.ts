@@ -58,11 +58,14 @@ export const registerUser = catchAsync(async (req, res) => {
   const verificationToken = hashedToken;
   const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+  const cleanedLastName =
+    isNdisProvider && role === "worker" ? undefined : lastName;
+
   const userData: any = {
     email,
     password,
     firstName,
-    lastName,
+    lastName: cleanedLastName,
     role,
     phoneNumber,
     dateOfBirth,
@@ -368,26 +371,49 @@ export const verifyEmail = catchAsync(async (req, res) => {
     .update(token as string)
     .digest("hex");
 
-  const user = await User.findOne({
+  // Try to find user with valid token
+  let user = await User.findOne({
     verificationToken: hashedToken,
     verificationTokenExpiry: { $gt: new Date() },
   });
 
-  if (!user) throw new AppError("Invalid or expired token", 400);
+  if (user) {
+    // Token is valid, verify the user
+    user.isVerified = true;
+    user.verificationToken = null;
+    user.verificationTokenExpiry = null;
+    await user.save();
 
-  user.isVerified = true;
-  user.verificationToken = null;
-  user.verificationTokenExpiry = null;
-  await user.save();
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "Email verified successfully",
+      data: {
+        email: user.email,
+      },
+    });
+  }
 
-  sendResponse(res, {
-    success: true,
-    statusCode: 200,
-    message: "Email verified successfully",
-    data: {
-      email: user.email,
-    },
+  // If no user found with valid token, check if user is already verified
+  // This handles the case where the token was already used
+  user = await User.findOne({
+    verificationToken: hashedToken,
   });
+
+  if (user && user.isVerified) {
+    // User is already verified, return success
+    return sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "Email already verified",
+      data: {
+        email: user.email,
+      },
+    });
+  }
+
+  // Token is invalid or expired
+  throw new AppError("Invalid or expired token", 400);
 });
 
 export const loginUser = catchAsync(async (req, res) => {
@@ -420,7 +446,7 @@ export const loginUser = catchAsync(async (req, res) => {
         name:
           user.role === "admin"
             ? "Admin"
-            : `${user.firstName} ${user.lastName}`,
+            : `${user.firstName} ${user?.lastName}`,
         email: user.email,
         role: user.role,
         address: user.address,
@@ -618,6 +644,7 @@ export const getWorkersWithProfile = catchAsync(async (req, res) => {
   // Build User filter
   const userFilter: any = {
     role: "worker",
+    approved: true,
     _id: { $in: matchingUserIds },
   };
 

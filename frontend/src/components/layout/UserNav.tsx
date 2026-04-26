@@ -54,9 +54,9 @@ export function UserNav() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full flex items-center justify-center p-0 hover:bg-muted transition-colors">
                         <Avatar className="h-9 w-9 border shadow-sm ring-offset-2 ring-transparent transition-all hover:ring-2 hover:ring-blue-500/20">
-                            <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                            <AvatarImage src={user.avatar} alt={`${user?.firstName} ${user?.lastName}`} />
                             <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">
-                                {(user.firstName?.[0] || user.email?.[0] || 'U')?.toUpperCase()}
+                                {(user?.firstName?.[0] || user?.email?.[0] || 'U')?.toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
                     </Button>
@@ -64,7 +64,7 @@ export function UserNav() {
                 <DropdownMenuContent className="w-56 mt-2 z-100" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal p-2">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-semibold leading-none">{user.firstName} {user.lastName}</p>
+                            <p className="text-sm font-semibold leading-none">{user?.firstName} {user?.lastName}</p>
                             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                             <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="secondary" className="text-[10px] px-2 py-0 h-4 uppercase tracking-tighter">

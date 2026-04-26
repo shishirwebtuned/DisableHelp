@@ -222,7 +222,7 @@ export default function WorkerInboxPage() {
 
     const filteredChats = chats.filter((c) => {
         const other = getOtherParticipant(c);
-        return `${other.firstName} ${other.lastName}`
+        return `${other?.firstName} ${other?.lastName}`
             .toLowerCase()
             .includes(search.toLowerCase());
     });
@@ -272,13 +272,13 @@ export default function WorkerInboxPage() {
                                     >
                                         <Avatar className="w-8 h-8 md:w-8.5 md:h-8.5 lg:h-9 lg:w-9 shrink-0 ">
                                             <AvatarFallback className="bg-gray-200 text-[8px] md:text-[10px] lg:text-xs">
-                                                {other.firstName[0]}{other.lastName[0]}
+                                                {other?.firstName[0]}{other?.lastName[0]}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between gap-1">
                                                 <span className="text-xs md:text-[13px] lg:text-sm font-medium truncate">
-                                                    {other.firstName} {other.lastName}
+                                                    {other?.firstName} {other?.lastName}
                                                 </span>
                                                 <span className="text-[8px] md:text-[9px] lg:text-[10px] text-muted-foreground shrink-0">
                                                     {chat.lastMessage
@@ -309,14 +309,14 @@ export default function WorkerInboxPage() {
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8 md:h-9 md:w-9">
                                     <AvatarFallback className="text-xs">
-                                        {getOtherParticipant(activeChat).firstName[0]}
-                                        {getOtherParticipant(activeChat).lastName[0]}
+                                        {getOtherParticipant(activeChat)?.firstName[0]}
+                                        {getOtherParticipant(activeChat)?.lastName[0]}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <p className="text-[12px] md:text-[13px] lg:text-sm font-semibold leading-tight">
-                                        {getOtherParticipant(activeChat).firstName}{" "}
-                                        {getOtherParticipant(activeChat).lastName}
+                                        {getOtherParticipant(activeChat)?.firstName}{" "}
+                                        {getOtherParticipant(activeChat)?.lastName}
                                     </p>
                                     <p className="text-[9px] md:text-[10px] lg:text-[11px] text-muted-foreground leading-tight">
                                         {getOtherParticipant(activeChat).email ?? ""}

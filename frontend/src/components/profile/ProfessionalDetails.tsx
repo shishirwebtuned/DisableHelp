@@ -63,6 +63,7 @@ export interface ProfessionalDetailsData {
         firstAid: { expiryDate: string; };
         driverLicense: { expiryDate: string; };
     };
+    abnNumber: string;
 }
 
 export default function ProfessionalDetails({ onSave, currentView = 'experience', initialData, isProvider = false }: ProfessionalDetailsProps) {
@@ -81,6 +82,8 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
     const [workHistory, setWorkHistory] = useState<ProfessionalDetailsData['workHistory']>([]);
     const [isWorkModalOpen, setIsWorkModalOpen] = useState(false);
     const [currentWork, setCurrentWork] = useState({ jobTitle: '', organisation: '', startDate: '', endDate: '', currentlyWorkingHere: false });
+
+    const [abnNumber, setAbnNumber] = useState('');
 
     const [education, setEducation] = useState<ProfessionalDetailsData['education']>([]);
     const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
@@ -119,6 +122,7 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
             setNdisWorkerScreening(prev => JSON.stringify(initialData.ndisWorkerScreening) === JSON.stringify(prev) ? prev : initialData.ndisWorkerScreening || prev);
             setWwcc(prev => JSON.stringify(initialData.wwcc) === JSON.stringify(prev) ? prev : initialData.wwcc || prev);
             setAdditionalTraining(prev => JSON.stringify(initialData.additionalTraining) === JSON.stringify(prev) ? prev : initialData.additionalTraining || prev);
+            setAbnNumber(prev => initialData.abnNumber === prev ? prev : initialData.abnNumber || '');
 
             isInitialized.current = true;
         }
@@ -130,8 +134,9 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         education,
         ndisWorkerScreening,
         wwcc,
-        additionalTraining
-    }), [experience, workHistory, education, ndisWorkerScreening, wwcc, additionalTraining]);
+        additionalTraining,
+        abnNumber,
+    }), [experience, workHistory, education, ndisWorkerScreening, wwcc, additionalTraining, abnNumber]);
 
     useEffect(() => {
         // Sync data to parent only if we have initialData and it's different
@@ -331,11 +336,26 @@ export default function ProfessionalDetails({ onSave, currentView = 'experience'
         <div className="space-y-6">
             <div>
                 <h2 className="md:text-xl text-lg lg:text-2xl font-bold mb-1 md:mb-2">Compliance & Screening</h2>
-                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">NDIS Check, WWCC and other certifications</p>
+                <p className="text-muted-foreground lg:text-base md:text-[15px] text-sm">NDIS Check, WWCC, ABN and other certifications</p>
             </div>
 
             <Card className=' p-0 border-none space-y-6'>
                 <CardContent className="pt-6 p-0 space-y-6">
+
+                    {/* ABN Number - NDIS Providers only */}
+                    <div className="space-y-4 border border-border p-4 rounded-lg bg-card">
+                        <h3 className="font-semibold text-sm md:text-base lg:text-lg text-foreground">ABN Details</h3>
+                        <div>
+                            <Label>ABN Number</Label>
+                            <Input
+                                value={abnNumber}
+                                onChange={(e) => setAbnNumber(e.target.value)}
+                                placeholder="e.g. 51 824 753 556"
+                                className="mt-1 max-w-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Your Australian Business Number</p>
+                        </div>
+                    </div>
                     {/* NDIS Worker Screening */}
                     <div className="space-y-4 border border-border p-4 rounded-lg bg-card">
                         <h3 className="font-semibold text-sm md:text-base lg:text-lg text-foreground">NDIS Worker Screening</h3>

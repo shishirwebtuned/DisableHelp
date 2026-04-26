@@ -254,6 +254,13 @@ export default function AdminProfilePage() {
                                 </Badge>
                             )}
                         </div>
+
+                        {profile?.abnNumber && (
+                            <div className='flex flex-row items-center gap-1 md:text-[13px] text-xs lg:text-sm text-muted-foreground mt-1'>
+                                <h2>ABN :</h2>
+                                <p className="text-gray-600">{profile?.abnNumber}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -138,7 +138,7 @@ export default function ClientWorkersPage() {
                 {focusedWorker && (
                     <div className="px-3 py-2 border-b flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                            Showing: <span className="font-medium text-foreground">{focusedWorker.firstName} {focusedWorker.lastName}</span>
+                            Showing: <span className="font-medium text-foreground">{focusedWorker?.firstName} {focusedWorker?.lastName}</span>
                         </span>
                         <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={onClear}>
                             Show All

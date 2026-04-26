@@ -4,7 +4,7 @@ import api from "@/lib/axios";
 interface UserBasic {
   _id: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email?: string;
 }
 export interface Payment {

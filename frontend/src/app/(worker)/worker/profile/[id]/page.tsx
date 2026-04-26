@@ -90,18 +90,18 @@ export default function WorkerProfilePage() {
             size: imageData.binary?.size,
             type: imageData.binary?.type
         });
-        console.log(JSON.stringify({ 
-            ...updatedData, 
-            profileImage: { 
-                base64: '[BASE64_DATA]', 
-                binary: imageData.binary ? '[BINARY_DATA]' : null 
-            } 
+        console.log(JSON.stringify({
+            ...updatedData,
+            profileImage: {
+                base64: '[BASE64_DATA]',
+                binary: imageData.binary ? '[BINARY_DATA]' : null
+            }
         }, null, 2));
     };
 
     const handleSubmitAll = async () => {
         console.log('=== SUBMITTING ALL PROFILE DATA ===');
-        
+
         // Here you would send the data to your API
         // The binary image can be sent using FormData
         if (allProfileData.profileImage?.binary) {
@@ -127,13 +127,13 @@ export default function WorkerProfilePage() {
                 jobDetails: allProfileData.jobDetails,
                 additionalDetails: allProfileData.additionalDetails,
             });
-            
+
             // Uncomment to send to API:
             // const response = await fetch('/api/worker/profile', { 
             //     method: 'POST', 
             //     body: formData 
             // });
-            
+
             alert('Profile data ready! Binary image included in FormData. Check console for details.');
         } else {
             console.log('No profile image binary available');
@@ -154,23 +154,23 @@ export default function WorkerProfilePage() {
             case 'bio':
             case 'contact':
                 return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} />;
-            
+
             case 'photo':
                 return <ProfileImageEditor onSave={handleProfileImageSave} />;
-            
+
             // Job Details sections
             case 'preferred-hours':
             case 'indicative-rates':
             case 'services':
                 return <JobDetails onSave={handleJobDetailsSave} currentView={currentSection} />;
-            
+
             // Professional Details sections
             case 'experience':
             case 'work-history':
             case 'education-training':
             case 'credentials':
                 return <ProfessionalDetails onSave={handleProfessionalDetailsSave} currentView={currentSection} />;
-            
+
             // Additional Details sections
             case 'languages':
             case 'interests-hobbies':
@@ -178,7 +178,7 @@ export default function WorkerProfilePage() {
             case 'preferences':
             case 'bank-account':
                 return <AdditionalDetails onSave={handleAdditionalDetailsSave} currentView={currentSection} />;
-            
+
             default:
                 return (
                     <div className="space-y-6">
@@ -197,7 +197,7 @@ export default function WorkerProfilePage() {
 
     const id = params.id;
 
-    
+
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950">

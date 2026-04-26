@@ -61,6 +61,7 @@ export const createWorkerProfile = catchAsync(async (req, res) => {
     aboutMe,
     preferences,
     personalDetails,
+    abnNumber,
   } = req.body;
 
   const files = req.files as Record<string, Express.Multer.File[]>;
@@ -196,6 +197,7 @@ export const createWorkerProfile = catchAsync(async (req, res) => {
     interests,
     aboutMe,
     preferences,
+    abnNumber,
     personalDetails: personalDetailsData,
   });
 
@@ -397,6 +399,12 @@ export const updateWorkerProfile = catchAsync(async (req, res) => {
   // Update bio
   if (parsedPersonalDetails?.bio !== undefined) {
     personalDetailsData.bio = parsedPersonalDetails.bio;
+  }
+
+  if (body.abnNumber === "undefined" || body.abnNumber === undefined) {
+    delete updatedData.abnNumber;
+  } else {
+    updatedData.abnNumber = body.abnNumber;
   }
 
   // Update WWCC

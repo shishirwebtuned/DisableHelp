@@ -216,7 +216,7 @@ function JobDetailView({ job, onBack, onApply, appliedJobs, applyingJobId }: {
                         <h3 className="text-base font-bold mb-3">Client Details</h3>
                         <div className="flex flex-row justify-between items-center rounded-xl border p-4 space-y-1 font-medium lg:text-sm md:text-[13px] text-xs">
                             <div>
-                                <p> Name: {job.client.firstName} {job.client.lastName} </p>
+                                <p> Name: {job.client?.firstName} {job.client?.lastName} </p>
                                 <p> Email: {job.client.email} </p>
                             </div>
                             {/* <div className='flex flex-col items-center'>

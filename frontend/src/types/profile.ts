@@ -9,7 +9,7 @@
 export interface PersonalDetailsData {
   personalInfo: {
     firstName: string;
-    lastName: string;
+    lastName?: string;
     gender: string;
   };
   contactInfo: {
@@ -65,6 +65,7 @@ export interface ProfessionalDetailsData {
     firstAid: { expiryDate: string };
     driverLicense: { expiryDate: string };
   };
+  abnNumber?: string;
 }
 
 // ==================== JOB DETAILS ====================

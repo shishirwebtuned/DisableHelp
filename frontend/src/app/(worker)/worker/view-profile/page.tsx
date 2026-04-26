@@ -54,6 +54,8 @@ export default function PublicProfilePage() {
     const lastName =
         user?.lastName ?? '';
 
+    const abnNumber = profile?.abnNumber ?? '';
+
     const fullName =
         `${firstName} ${lastName}`.trim() ||
         'Unknown user';
@@ -116,13 +118,13 @@ export default function PublicProfilePage() {
                     <Avatar className="md:w-28 md:h-28 w-24 h-24 lg:h-32 lg:w-32 border-2 border-border">
                         <AvatarImage src={profile?.personalDetails?.avatar?.url} />
                         <AvatarFallback className="md:text-2xl text-xl lg:text-3xl font-semibold bg-muted text-muted-foreground">
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                            {user?.firstName?.[0]}{user?.lastName?.[0]}
                         </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 text-center md:text-left space-y-2 md:space-y-3">
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                            <h1 className="md:text-2xl text-[22px] lg:text-3xl font-bold text-foreground">{user.firstName} {user.lastName}</h1>
+                            <h1 className="md:text-2xl text-[22px] lg:text-3xl font-bold text-foreground">{user?.firstName} {user?.lastName}</h1>
                             <div className="flex gap-2">
 
 
@@ -159,6 +161,15 @@ export default function PublicProfilePage() {
                                 {profile?.gender}
                             </p>
                         </div>
+
+                        <div className='flex flex-row items-center gap-1 md:text-[13px] text-xs lg:text-sm text-muted-foreground'>
+                            <h2>ABN :</h2>
+                            <p className="text-gray-600 capitalize">
+                                {profile?.abnNumber}
+                            </p>
+                        </div>
+
+
                         <div className='flex flex-row items-center gap-3'>
                             {/* <p className='border-2 border-indigo-400 text-indigo-500 rounded-full px-3 py-1 w-fit text-xs md:text-[13px] lg:text-xs'>Worker</p> */}
 

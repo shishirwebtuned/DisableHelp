@@ -11,13 +11,13 @@ export interface Session {
   client: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
   };
   worker: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
   };
   date: string;

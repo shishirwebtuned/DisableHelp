@@ -40,7 +40,7 @@ const TOTAL_STEPS = STEPS.length;
 /* Schema */
 const formSchema = z.object({
     firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
-    lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
+    lastName: z.string().optional(),
     gender: z.enum(['male', 'female', 'other', 'prefer not to say']).optional(),
     dateOfBirth: z.string().min(1, { message: "Please select a date of birth." })
         .regex(/^(19|20)\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, { message: "Please select a valid date of birth." }),
@@ -76,7 +76,7 @@ const formSchema = z.object({
 /* Fields validated per step */
 const stepFields: Record<number, string[]> = {
     1: ['role', 'isSelfManaged', 'accountManagerName', 'isNdisProvider'],
-    2: ['firstName', 'lastName', 'dateOfBirth', 'gender'],
+    2: ['firstName', 'dateOfBirth', 'gender'],
     3: ['email', 'phoneNumber'],
     4: ['password', 'confirmPassword'],
     5: ['address.line1', 'address.suburb', 'address.state', 'address.postalCode', 'termsAccepted'],
@@ -122,7 +122,13 @@ export default function RegisterPage() {
     const validateCurrentStep = async () => {
         const fields = stepFields[currentStep];
         if (!fields || fields.length === 0) return true;
-        return form.trigger(fields as any);
+
+        let activeFields = fields;
+        if (currentStep === 2 && watchIsNdisProvider) {
+            activeFields = fields.filter(f => f !== 'lastName' && f !== 'gender');
+        }
+
+        return form.trigger(activeFields as any);
     };
 
     const handleNext = async () => {
@@ -130,12 +136,15 @@ export default function RegisterPage() {
     };
     const handleBack = () => setCurrentStep((p) => Math.max(p - 1, 1));
 
-    // Clear gender when user is an NDIS provider, since it's not required
     useEffect(() => {
+        form.setValue('lastName', '');
+
         if (watchIsNdisProvider) {
             form.setValue('gender', undefined);
         }
     }, [watchIsNdisProvider, form]);
+
+
     const goToStep = (s: number) => setCurrentStep(s);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -177,7 +186,12 @@ export default function RegisterPage() {
         6: { title: 'Review & confirm', subtitle: 'Make sure everything looks good' },
     };
 
-    const roleLabel = watchRole === 'client' ? 'Client' : watchRole === 'worker' ? 'Support Worker' : '\u2014';
+    const roleLabel = watchRole === 'client'
+        ? 'Client'
+        : watchRole === 'worker'
+            ? watchIsNdisProvider ? 'NDIS Provider' : 'Individual Support Worker'
+            : '\u2014';
+
     const genderLabel = allValues.gender ? allValues.gender.charAt(0).toUpperCase() + allValues.gender.slice(1) : '\u2014';
 
     return (
@@ -259,30 +273,42 @@ export default function RegisterPage() {
                                                 <FormLabel className="text-sm">I want to register as a</FormLabel>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                                     {[
-                                                        { value: 'client', label: 'Client', desc: 'I need support services' },
-                                                        { value: 'worker', label: 'Support Worker', desc: 'I provide services' },
-                                                    ].map((opt) => (
-                                                        <button
-                                                            key={opt.value}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                field.onChange(opt.value);
-                                                                if (opt.value === 'worker') {
-                                                                    form.setValue('isSelfManaged', true);
-                                                                    form.setValue('accountManagerName', '');
-                                                                }
-                                                            }}
-                                                            className={cn(
-                                                                "rounded p-6 cursor-pointer sm:p-6 text-left transition-all border-2 outline-none",
-                                                                field.value === opt.value
-                                                                    ? "theme text-primary-foreground"
-                                                                    : ""
-                                                            )}
-                                                        >
-                                                            <span className="text-xl font-semibold text-foreground">{opt.label}</span>
-                                                            <p className="text-sm text-muted-foreground mt-0.5">{opt.desc}</p>
-                                                        </button>
-                                                    ))}
+                                                        { value: 'client', label: 'Client', desc: 'I need support services', isNdis: undefined },
+                                                        { value: 'worker', label: 'NDIS Provider', desc: 'I am a registered NDIS provider', isNdis: true },
+                                                        { value: 'worker-individual', label: 'Individual Support Worker', desc: 'I am an independent support worker', isNdis: false },
+                                                    ].map((opt) => {
+                                                        const isSelected =
+                                                            opt.value === 'client'
+                                                                ? field.value === 'client'
+                                                                : opt.isNdis === true
+                                                                    ? field.value === 'worker' && watchIsNdisProvider === true
+                                                                    : field.value === 'worker' && watchIsNdisProvider === false;
+
+                                                        return (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (opt.value === 'client') {
+                                                                        field.onChange('client');
+                                                                        form.setValue('isNdisProvider', false);
+                                                                    } else {
+                                                                        field.onChange('worker');
+                                                                        form.setValue('isNdisProvider', opt.isNdis as boolean);
+                                                                        form.setValue('isSelfManaged', true);
+                                                                        form.setValue('accountManagerName', '');
+                                                                    }
+                                                                }}
+                                                                className={cn(
+                                                                    "rounded p-6 cursor-pointer sm:p-6 text-left transition-all border-2 outline-none",
+                                                                    isSelected ? "theme text-primary-foreground border-[#8ac6dd] bg-[#8ac6dd]/10" : "border-muted"
+                                                                )}
+                                                            >
+                                                                <span className="text-xl font-semibold text-foreground">{opt.label}</span>
+                                                                <p className="text-sm text-muted-foreground mt-0.5">{opt.desc}</p>
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <FormMessage />
                                             </FormItem>
@@ -331,7 +357,7 @@ export default function RegisterPage() {
                                     )}
 
                                     {/* Worker-only: NDIS Provider / Independent Worker */}
-                                    {watchRole === 'worker' && (
+                                    {/* {watchRole === 'worker' && (
                                         <div className="rounded-xl bg-muted/40 p-4 space-y-3">
                                             <FormField
                                                 control={form.control}
@@ -356,35 +382,55 @@ export default function RegisterPage() {
                                                 )}
                                             />
                                         </div>
-                                    )}
+                                    )} */}
 
                                 </div>
 
                                 {/* Step 2 - Create your account (personal details) */}
                                 <div className={cn(currentStep !== 2 && "hidden", "space-y-5")}>
                                     {/* Name row */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                                    {/* Name row */}
+                                    {watchIsNdisProvider ? (
                                         <FormField control={form.control} name="firstName" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>First Name</FormLabel>
-                                                <FormControl><Input placeholder="John" className='h-10' {...field} /></FormControl>
+                                                <FormLabel>Company Name</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="e.g. Sunrise Care Pty Ltd"
+                                                        className="h-10"
+                                                        {...field}
+
+                                                    />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={form.control} name="lastName" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Last Name</FormLabel>
-                                                <FormControl><Input placeholder="Doe" className='h-10' {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                                            <FormField control={form.control} name="firstName" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>First Name</FormLabel>
+                                                    <FormControl><Input placeholder="John" className="h-10" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="lastName" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Last Name</FormLabel>
+                                                    <FormControl><Input placeholder="Doe" className="h-10" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    )}
 
                                     {/* DOB + Gender row */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                                         <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Date of Birth</FormLabel>
+                                                <FormLabel>
+                                                    {watchIsNdisProvider ? 'Date of Registration' : 'Date of Birth'}
+                                                </FormLabel>
                                                 <FormControl>
                                                     <DatePicker className="w-full h-10" value={formatDateToInputValue(field.value)} onChange={(date) => field.onChange(date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '')} />
                                                 </FormControl>
@@ -539,9 +585,17 @@ export default function RegisterPage() {
                                             <button type="button" onClick={() => goToStep(2)} className="text-xs text-[#8ac6dd] cursor-pointer hover:underline flex items-center gap-1"><Pencil className="h-3 w-3" />Edit</button>
                                         </div>
                                         <ReviewRow label="Role" value={roleLabel} />
-                                        <ReviewRow label="Name" value={`${allValues.firstName || ''} ${allValues.lastName || ''}`.trim()} />
-                                        <ReviewRow label="Date of Birth" value={allValues.dateOfBirth || '\u2014'} />
-                                        <ReviewRow label="Gender" value={genderLabel} />
+                                        <ReviewRow
+                                            label={watchIsNdisProvider ? "Company Name" : "Name"}
+                                            value={watchIsNdisProvider
+                                                ? allValues.firstName
+                                                : `${allValues.firstName || ''} ${allValues.lastName || ''}`.trim()
+                                            }
+                                        />
+                                        <ReviewRow label={watchIsNdisProvider ? "Date of Registration" : "Date of Birth"} value={allValues.dateOfBirth || '\u2014'} />
+                                        {!watchIsNdisProvider && (
+                                            <ReviewRow label="Gender" value={genderLabel} />
+                                        )}
                                         {watchRole === 'client' && !watchIsSelfManaged && (
                                             <ReviewRow label="Account Manager" value={allValues.accountManagerName || '\u2014'} />
                                         )}

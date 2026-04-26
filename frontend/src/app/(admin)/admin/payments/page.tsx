@@ -26,7 +26,7 @@ export default function AdminPaymentsPage() {
 
     const getUserName = (user: any) => {
         if (typeof user === "object") {
-            return `${user.firstName} ${user.lastName}`;
+            return `${user?.firstName} ${user?.lastName}`;
         }
         return "Unknown";
     }

@@ -32,7 +32,7 @@ const rr = (
 
 const getUserName = (user: any) => {
   if (user && typeof user === "object") {
-    return `${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A";
+    return `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "N/A";
   }
   return "Unknown";
 };

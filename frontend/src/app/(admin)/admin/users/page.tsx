@@ -122,8 +122,8 @@ export default function AdminUsersPage() {
 
     // Normalize incoming user objects so the UI can handle different API shapes
     const normalizedUsers = users.map((u: any) => {
-        const firstName = u.firstName ?? u.name?.split?.(' ')?.[0] ?? '';
-        const lastName = u.lastName ?? (u.name ? u.name.split(' ').slice(1).join(' ') : '');
+        const firstName = u?.firstName ?? u.name?.split?.(' ')?.[0] ?? '';
+        const lastName = u?.lastName ?? (u.name ? u.name.split(' ').slice(1).join(' ') : '');
         const fullName = ((u.name) ? u.name : `${firstName} ${lastName}`).trim();
 
         // createdAt may be unix seconds or milliseconds or string
@@ -138,8 +138,8 @@ export default function AdminUsersPage() {
         return {
             id: u.id ?? u._id,
             name: fullName || 'Unknown',
-            firstName,
-            lastName,
+            firstName: firstName || 'Unknown',
+            lastName: lastName || 'Unknown',
             email: u.email ?? '',
             role: (u.role ?? 'unknown') as UserRole,
             approved: typeof u.approved !== 'undefined' ? u.approved : (u.isVerified ?? false),

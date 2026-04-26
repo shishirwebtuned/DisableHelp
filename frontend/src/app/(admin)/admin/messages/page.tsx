@@ -332,7 +332,7 @@ export default function AdminMessagesPage() {
                                                 <div className={`flex flex-col ${isWorker ? 'items-end' : 'items-start'}`}>
                                                     {/* Sender label */}
                                                     <span className="text-[9px] text-muted-foreground px-1 mb-0.5">
-                                                        {msg.sender.firstName} {msg.sender.lastName}
+                                                        {msg.sender?.firstName} {msg.sender?.lastName}
                                                         {' · '}
                                                         <span className="italic">
                                                             {isWorker ? 'Worker' : 'Client'}

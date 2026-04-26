@@ -32,7 +32,7 @@ export interface Agreement {
     _id: string;
     email: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     phoneNumber?: string;
     dateOfBirth?: string;
     address?: {
@@ -47,7 +47,7 @@ export interface Agreement {
         _id: string;
         email: string;
         firstName: string;
-        lastName: string;
+        lastName?: string;
       }
     | string;
   application: string;

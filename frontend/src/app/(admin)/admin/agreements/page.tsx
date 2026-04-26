@@ -79,8 +79,8 @@ export default function AdminAgreementsPage() {
     // Filter agreements based on search term
     const filteredAgreements = agreements.filter((agreement) => {
         const searchLower = searchTerm.toLowerCase();
-        const workerName = typeof agreement.worker === 'string' ? '' : `${agreement.worker.firstName} ${agreement.worker.lastName}`.toLowerCase();
-        const clientName = `${agreement.client.firstName} ${agreement.client.lastName}`.toLowerCase();
+        const workerName = typeof agreement.worker === 'string' ? '' : `${agreement.worker?.firstName} ${agreement.worker?.lastName}`.toLowerCase();
+        const clientName = `${agreement.client?.firstName} ${agreement.client?.lastName}`.toLowerCase();
         const jobTitle = agreement.job?.title?.toLowerCase() || '';
         return (
             agreement._id.toLowerCase().includes(searchLower) ||
@@ -191,9 +191,9 @@ export default function AdminAgreementsPage() {
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-medium">
-                                                    Worker: {typeof agreement.worker === 'string' ? 'N/A' : `${agreement.worker.firstName} ${agreement.worker.lastName}`}
+                                                    Worker: {typeof agreement.worker === 'string' ? 'N/A' : `${agreement.worker.firstName} ${agreement.worker?.lastName}`}
                                                 </span>
-                                                <span className="text-xs text-muted-foreground">Client: {agreement.client.firstName} {agreement.client.lastName}</span>
+                                                <span className="text-xs text-muted-foreground">Client: {agreement.client?.firstName} {agreement.client?.lastName}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -382,7 +382,7 @@ export default function AdminAgreementsPage() {
 
                                     <p className="font-medium">
 
-                                        {agreement.client.firstName}
+                                        {agreement.client?.firstName}
                                         {" "}
                                         {agreement.client.lastName}
 
@@ -405,7 +405,7 @@ export default function AdminAgreementsPage() {
 
                                         <p className="font-medium">
 
-                                            {agreement.worker.firstName}
+                                            {agreement.worker?.firstName}
                                             {" "}
                                             {agreement.worker.lastName}
 

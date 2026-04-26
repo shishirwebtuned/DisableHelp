@@ -6,14 +6,14 @@ export interface Invoice {
   worker: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
     avatar?: string;
   };
   client: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
     avatar?: string;
   };

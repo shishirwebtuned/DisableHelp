@@ -38,7 +38,7 @@ export default function ClientDashboard() {
 
     const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled')?.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())?.slice(0, 3)?.map((s) => ({
         id: s._id,
-        worker: s.worker?.firstName ? `${s.worker.firstName} ${s.worker.lastName ?? ''}` : 'Worker',
+        worker: s.worker?.firstName ? `${s.worker?.firstName} ${s.worker?.lastName ?? ''}` : 'Worker',
         date: s.date ? `${new Date(s.date).toLocaleDateString()} ${s.startTime ?? ''}`.trim() : 'Date TBD',
         status: s.status,
         type: s.job?.title ?? 'Session',

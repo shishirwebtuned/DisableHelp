@@ -299,7 +299,7 @@ export default function WorkerAgreementsPage() {
                                             <>
                                                 <div className="flex items-center gap-2 text-sm font-medium">
                                                     <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    {agreement.client.firstName} {agreement.client.lastName}
+                                                    {agreement?.client?.firstName} {agreement?.client?.lastName}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Mail className="h-3 w-3 shrink-0" />
@@ -331,7 +331,7 @@ export default function WorkerAgreementsPage() {
                                             <>
                                                 <div className="flex items-center gap-2 text-sm font-medium">
                                                     <Briefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    {agreement.worker.firstName} {agreement.worker.lastName}
+                                                    {agreement?.worker?.firstName} {agreement?.worker?.lastName}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Mail className="h-3 w-3 shrink-0" />
@@ -346,7 +346,7 @@ export default function WorkerAgreementsPage() {
                                                 {('dateOfBirth' in agreement.worker) && (agreement.worker as any).dateOfBirth && (
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Calendar className="h-3 w-3 shrink-0" />
-                                                        DOB: {new Date((agreement.worker as any).dateOfBirth).toLocaleDateString()}
+                                                        {(agreement.worker as any).isNdisProvider ? 'Registered' : 'DOB'}: {new Date((agreement.worker as any).dateOfBirth).toLocaleDateString()}
                                                     </div>
                                                 )}
                                             </>
@@ -881,9 +881,9 @@ export default function WorkerAgreementsPage() {
 
                                         <p className="font-medium">
 
-                                            {agreement.client.firstName}
+                                            {agreement?.client?.firstName}
                                             {" "}
-                                            {agreement.client.lastName}
+                                            {agreement?.client?.lastName}
 
                                         </p>
 
@@ -904,9 +904,9 @@ export default function WorkerAgreementsPage() {
 
                                             <p className="font-medium">
 
-                                                {agreement.worker.firstName}
+                                                {agreement?.worker?.firstName}
                                                 {" "}
-                                                {agreement.worker.lastName}
+                                                {agreement?.worker?.lastName}
 
                                             </p>
 

@@ -286,7 +286,7 @@ export const acceptApplication = (io: any) =>
       client: {
         _id: string;
         firstName: string;
-        lastName: string;
+        lastName?: string;
         email: string;
       };
       frequency: string;
@@ -346,7 +346,7 @@ export const acceptApplication = (io: any) =>
       { path: "worker", select: "firstName lastName email" },
     ]);
 
-    const senderName = `${job.client.firstName} ${job.client.lastName}`;
+    const senderName = `${job.client?.firstName} ${job.client?.lastName}`;
     const acceptedNotification = await Notification.create({
       recipient: application.applicant,
       sender: clientId,
@@ -417,7 +417,7 @@ export const rejectApplication = (io: any) =>
       client: {
         _id: string;
         firstName: string;
-        lastName: string;
+        lastName?: string;
         email: string;
       };
       frequency: string;
@@ -440,7 +440,7 @@ export const rejectApplication = (io: any) =>
     application.status = "rejected";
     await application.save({ session });
 
-    const senderName = `${job.client.firstName} ${job.client.lastName}`;
+    const senderName = `${job.client?.firstName} ${job.client?.lastName}`;
 
     const rejectedNotification = await Notification.create({
       recipient: application.applicant,

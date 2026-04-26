@@ -135,6 +135,9 @@ export function transformToAPISchema(
 
   // 3. Professional Details (Work History, Education, NDIS)
   if (uiData.professionalDetails) {
+    if (uiData.professionalDetails.abnNumber) {
+      apiData.abnNumber = uiData.professionalDetails.abnNumber;
+    }
     if (uiData.professionalDetails.workHistory) {
       apiData.workHistory = uiData.professionalDetails.workHistory.map(
         (work) => ({

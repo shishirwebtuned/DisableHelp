@@ -156,7 +156,7 @@ export const downloadAgreementPDF = (agreement: any) => {
   doc.setFontSize(10);
   rgb(doc, GRAY_DARK);
   doc.text(
-    `${agreement.client.firstName} ${agreement.client.lastName}`,
+    `${agreement.client?.firstName} ${agreement.client?.lastName}`,
     MARGIN + 4,
     y + 18,
   );
@@ -179,7 +179,7 @@ export const downloadAgreementPDF = (agreement: any) => {
     doc.setFontSize(10);
     rgb(doc, GRAY_DARK);
     doc.text(
-      `${agreement.worker.firstName} ${agreement.worker.lastName}`,
+      `${agreement.worker?.firstName} ${agreement.worker?.lastName}`,
       wx + 4,
       y + 18,
     );

@@ -87,14 +87,14 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
                 <DropdownMenuTrigger asChild>
                     <div className="flex items-center gap-2 cursor-pointer group">
                         <Avatar className={`${avatarSize} border shadow-sm ring-offset-2 ring-transparent transition-all group-hover:ring-2 group-hover:ring-[#8ac6dd]/20`}>
-                            <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
+                            <AvatarImage src={user.avatar} alt={`${user?.firstName} ${user?.lastName}`} />
                             <AvatarFallback className="bg-[#8ac6dd] text-[#042a2d] font-bold text-sm">
                                 {(user.firstName?.[0] || user.email?.[0] || 'U')?.toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
                         {showName && (
                             <div className="hidden lg:block overflow-hidden">
-                                <p className="text-sm capitalize font-medium truncate">{user.firstName} {user.lastName}</p>
+                                <p className="text-sm capitalize font-medium truncate">{user?.firstName} {user?.lastName}</p>
                                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                             </div>
                         )}
@@ -103,7 +103,7 @@ export function UserButton({ variant = 'default', showName = false }: UserButton
                 <DropdownMenuContent className="w-56 mt-2 z-100" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal p-2">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm  capitalize font-semibold leading-none">{user.firstName} {user.lastName}</p>
+                            <p className="text-sm  capitalize font-semibold leading-none">{user.firstName} {user?.lastName}</p>
                             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                             <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="secondary" className="text-[10px] px-2 py-0 h-4 uppercase tracking-tighter">

@@ -37,11 +37,11 @@ export function WorkerPopup({
         <div className="flex flex-row items-center gap-2 md:gap-3">
             <Avatar className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10">
                 <AvatarImage src={worker.avatar} />
-                <AvatarFallback>{worker.firstName?.[0]}{worker.lastName?.[0]}</AvatarFallback>
+                <AvatarFallback>{worker?.firstName?.[0]}{worker?.lastName?.[0]}</AvatarFallback>
             </Avatar>
             <div>
                 <strong className="flex flex-row mb-0.5 items-center">
-                    {worker.firstName} {worker.lastName}
+                    {worker?.firstName} {worker?.lastName}
                     {worker.approved ? <BadgeCheck className="md:h-3 md:w-3 h-2.5 w-2.5 lg:h-4 lg:w-4 text-green-500 ml-1" /> : ""}
                 </strong>
                 <span className="text-[10px] md:text-[11px] lg:text-xs text-gray-500">

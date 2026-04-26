@@ -15,7 +15,7 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   phoneNumber: string;
   address?: {
     line1?: string;
@@ -53,7 +53,6 @@ export interface IUser extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   isSuspended?: boolean;
-
 }
 
 type Rate = {
@@ -130,6 +129,8 @@ export interface IWorkerProfile {
     expiry_date: Date;
     status: string;
   };
+
+  abnNumber?: string;
 
   lgbtqiaPlusFriendly: boolean;
 

@@ -113,7 +113,7 @@ export default function ClientProfilePage() {
                             <Avatar className="h-20 w-20 md:h-26 md:w-26 lg:h-32 lg:w-32">
                                 <AvatarImage src={profileImage || ''} />
                                 <AvatarFallback className="text-lg md:text-xl lg:text-2xl">
-                                    {user.firstName?.[0]}{user.lastName?.[0]}
+                                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
@@ -121,9 +121,9 @@ export default function ClientProfilePage() {
                     </div>
 
                     <div className="flex-1 text-center md:text-left -mt-4 md:mt-0">
-                        <h1 className="text-[20px] md:text-[26px] lg:text-3xl font-bold md:font-extrabold">{user.firstName} {user.lastName}</h1>
+                        <h1 className="text-[20px] md:text-[26px] lg:text-3xl font-bold md:font-extrabold">{user?.firstName} {user?.lastName}</h1>
                         <p className="text-xs md:text-[13px] lg:text-sm text-muted-foreground mt-1">
-                            NDIS Participant • {user.address?.state ?? ''}
+                            NDIS Participant • {user?.address?.state ?? ''}
                         </p>
                         {/* <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
                             <Button variant="ghost" onClick={() => setActiveTab('edit')}>
@@ -346,11 +346,11 @@ export default function ClientProfilePage() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label>First Name</Label>
-                                        <Input value={user.firstName} disabled className="bg-muted/40" />
+                                        <Input value={user?.firstName} disabled className="bg-muted/40" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Last Name</Label>
-                                        <Input value={user.lastName} disabled className="bg-muted/40" />
+                                        <Input value={user?.lastName} disabled className="bg-muted/40" />
                                     </div>
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-2">

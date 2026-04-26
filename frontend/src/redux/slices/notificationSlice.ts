@@ -13,7 +13,7 @@ export interface Notification {
   sender?: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     avatar?: string;
   };
   createdAt: string;

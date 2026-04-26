@@ -28,9 +28,6 @@ const userSchema = new Schema<IUser>(
     },
     lastName: {
       type: String,
-      required: function (): boolean {
-        return this.role === "client" || this.role === "worker";
-      },
     },
     phoneNumber: {
       type: String,
@@ -79,7 +76,7 @@ const userSchema = new Schema<IUser>(
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
     timezone: { type: String, default: "Australia/Perth" },
-    isSuspended: {type: Boolean, default: false}
+    isSuspended: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

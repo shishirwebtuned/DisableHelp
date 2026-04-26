@@ -127,12 +127,12 @@ export default function ApplicantMapDialog({ worker, clientCoords, onClose }: Ap
                                     <div className="flex items-center gap-2">
                                         <Avatar className="h-8 w-8">
                                             <AvatarFallback>
-                                                {worker.firstName?.[0]}{worker.lastName?.[0]}
+                                                {worker?.firstName?.[0]}{worker?.lastName?.[0]}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div>
                                             <strong className="flex items-center text-sm">
-                                                {worker.firstName} {worker.lastName}
+                                                {worker?.firstName} {worker?.lastName}
                                                 {worker.approved && (
                                                     <BadgeCheck className="h-3 w-3 text-green-500 ml-1" />
                                                 )}

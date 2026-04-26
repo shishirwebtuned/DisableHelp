@@ -4,7 +4,7 @@ import api from "@/lib/axios";
 export interface ApplicationApplicant {
   _id: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phoneNumber?: string;
   address?: {

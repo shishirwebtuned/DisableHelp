@@ -38,7 +38,7 @@ export default function WorkerOverview() {
 
     const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled')?.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())?.slice(0, 3)?.map((s) => ({
         id: s._id,
-        client: s.client?.firstName ? `${s.client.firstName} ${s.client.lastName ?? ''}` : 'Client',
+        client: s.client?.firstName ? `${s.client?.firstName} ${s.client?.lastName ?? ''}` : 'Client',
         date: s.date ? `${new Date(s.date).toLocaleDateString()} ${s.startTime ?? ''}`.trim() : "Date TBD",
         status: s.status,
         type: s.job?.title ?? 'Session',

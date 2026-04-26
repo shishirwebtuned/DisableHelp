@@ -405,14 +405,14 @@ export default function WorkerSessionsPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    <Button
+                                    {/* <Button
                                         variant="secondary"
                                         size="sm"
                                         className="w-full mt-1 bg-white text-blue-700 hover:bg-white/90 border-none font-bold"
                                         onClick={() => nextSession?.client?._id && router.push(`/profile/${nextSession?.client?._id}`)}
                                     >
                                         View Client Profile
-                                    </Button>
+                                    </Button> */}
                                 </div>
                             </Card>
                         )}
@@ -517,12 +517,12 @@ export default function WorkerSessionsPage() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-48 p-1">
-                                                                <DropdownMenuItem
+                                                                {/* <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
                                                                     onClick={() => session?.client?._id && router.push(`/profile/${session?.client?._id}`)}
                                                                 >
                                                                     View Client Profile
-                                                                </DropdownMenuItem>
+                                                                </DropdownMenuItem> */}
                                                                 {/* <DropdownMenuItem
                                                                     className="cursor-pointer py-2"
                                                                     onClick={() => router.push(`/client/inbox/${session.client_.mnde}`)}

@@ -191,19 +191,19 @@ export default function ClientAgreementsPage() {
                                             <>
                                                 <div className="flex items-center gap-2 text-sm font-medium">
                                                     <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    {agreement.client.firstName} {agreement.client.lastName}
+                                                    {agreement?.client?.firstName} {agreement?.client?.lastName}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Mail className="h-3 w-3 shrink-0" />
-                                                    {agreement.client.email}
+                                                    {agreement?.client?.email}
                                                 </div>
-                                                {agreement.client.phoneNumber && (
+                                                {agreement?.client?.phoneNumber && (
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Phone className="h-3 w-3 shrink-0" />
-                                                        {agreement.client.phoneNumber}
+                                                        {agreement?.client?.phoneNumber}
                                                     </div>
                                                 )}
-                                                {agreement.client.dateOfBirth && (
+                                                {agreement?.client?.dateOfBirth && (
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Calendar className="h-3 w-3 shrink-0" />
                                                         DOB: {new Date(agreement.client.dateOfBirth).toLocaleDateString()}
@@ -224,11 +224,11 @@ export default function ClientAgreementsPage() {
                                             <>
                                                 <div className="flex items-center gap-2 text-sm font-medium">
                                                     <Briefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    {agreement.worker.firstName} {agreement.worker.lastName}
+                                                    {agreement.worker?.firstName} {agreement.worker?.lastName}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Mail className="h-3 w-3 shrink-0" />
-                                                    {agreement.worker.email}
+                                                    {agreement.worker?.email}
                                                 </div>
                                                 {('phoneNumber' in agreement.worker) && (agreement.worker as any).phoneNumber && (
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -239,7 +239,7 @@ export default function ClientAgreementsPage() {
                                                 {('dateOfBirth' in agreement.worker) && (agreement.worker as any).dateOfBirth && (
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Calendar className="h-3 w-3 shrink-0" />
-                                                        DOB: {new Date((agreement.worker as any).dateOfBirth).toLocaleDateString()}
+                                                        {(agreement.worker as any)?.isNdisProvider ? 'Registered' : 'DOB'}: {new Date((agreement.worker as any).dateOfBirth).toLocaleDateString()}
                                                     </div>
                                                 )}
                                             </>
@@ -599,9 +599,9 @@ export default function ClientAgreementsPage() {
 
                                     <p className="font-medium">
 
-                                        {agreement.client.firstName}
+                                        {agreement.client?.firstName}
                                         {" "}
-                                        {agreement.client.lastName}
+                                        {agreement.client?.lastName}
 
                                     </p>
 
@@ -622,9 +622,9 @@ export default function ClientAgreementsPage() {
 
                                         <p className="font-medium">
 
-                                            {agreement.worker.firstName}
+                                            {agreement.worker?.firstName}
                                             {" "}
-                                            {agreement.worker.lastName}
+                                            {agreement.worker?.lastName}
 
                                         </p>
 

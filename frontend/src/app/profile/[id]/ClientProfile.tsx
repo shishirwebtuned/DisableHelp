@@ -97,7 +97,7 @@ export default function ClientProfile({ user, profile }: ClientProfileProps) {
                                 {participants.map((p: any, i: number) => {
                                     // participant may be a populated user object or just an ObjectId string
                                     const name = p?.firstName
-                                        ? `${p.firstName} ${p.lastName ?? ''}`.trim()
+                                        ? `${p?.firstName} ${p?.lastName ?? ''}`.trim()
                                         : p?.toString?.() ?? `Participant ${i + 1}`;
                                     const email = p?.email ?? null;
                                     return (

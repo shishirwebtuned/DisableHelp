@@ -20,13 +20,13 @@ interface PersonalDetailsProps {
     onSave: (data: PersonalDetailsData, navigate?: boolean) => void;
     currentView?: string;
     initialData?: PersonalDetailsData;
-    isProvider?: boolean;
+    isNdisProvider?: boolean;
 }
 
 export interface PersonalDetailsData {
     personalInfo: {
         firstName: string;
-        lastName: string;
+        lastName?: string;
         gender: string;
         dateOfBirth: string;
         bio: string;
@@ -43,9 +43,9 @@ export interface PersonalDetailsData {
     bio: string;
 }
 
-export default function PersonalDetails({ onSave, currentView = 'personal-info', initialData, isProvider = false }: PersonalDetailsProps) {
+export default function PersonalDetails({ onSave, currentView = 'personal-info', initialData, isNdisProvider = false }: PersonalDetailsProps) {
     const [currentSection, setCurrentSection] = useState(currentView);
-    const showGender = !isProvider;
+    const showGender = !isNdisProvider;
 
     const [personalInfo, setPersonalInfo] = useState({
         firstName: initialData?.personalInfo?.firstName || '',
@@ -146,7 +146,7 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                 <CardContent className="pt-6 p-0 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label>First Name</Label>
+                            <Label>{isNdisProvider ? 'Company Name' : 'First Name'}</Label>
                             <Input
                                 value={personalInfo.firstName}
                                 disabled
@@ -154,15 +154,17 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                                 className="mt-2 cursor-not-allowed"
                             />
                         </div>
-                        <div>
-                            <Label>Last Name</Label>
-                            <Input
-                                value={personalInfo.lastName}
-                                disabled
-                                onChange={(e) => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
-                                className="mt-2 cursor-not-allowed"
-                            />
-                        </div>
+                        {!isNdisProvider && (
+                            <div>
+                                <Label>Last Name</Label>
+                                <Input
+                                    value={personalInfo?.lastName}
+                                    disabled
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
+                                    className="mt-2 cursor-not-allowed"
+                                />
+                            </div>
+                        )}
                         {showGender && (
                             <div>
                                 <Label>Gender</Label>
@@ -184,7 +186,7 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                             </div>
                         )}
                         <div>
-                            <Label> Date Of Birth </Label >
+                            <Label>{isNdisProvider ? 'Date of Registration' : 'Date of Birth'}</Label>
                             <DatePicker
                                 value={personalInfo.dateOfBirth}
                                 disabled

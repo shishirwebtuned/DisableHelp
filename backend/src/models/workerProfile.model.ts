@@ -130,6 +130,8 @@ const workerProfileSchema = new Schema<IWorkerProfile>(
       status: String,
     },
 
+    abnNumber: { type: String, default: "" },
+
     lgbtqiaPlusFriendly: { type: Boolean, default: false },
 
     immunisation: {

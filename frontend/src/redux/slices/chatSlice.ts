@@ -9,14 +9,14 @@ export interface Chat {
   client: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
   };
 
   worker: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     email: string;
   };
 

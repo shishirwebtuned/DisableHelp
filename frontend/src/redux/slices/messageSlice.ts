@@ -7,7 +7,7 @@ export interface Message {
   sender: {
     _id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
   };
   message: string;
   read: boolean;

@@ -4,7 +4,7 @@ import api from "@/lib/axios";
 export interface User {
   _id: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   role: "admin" | "worker" | "client";
   avatar?: string;

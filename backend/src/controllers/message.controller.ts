@@ -56,7 +56,7 @@ export const sendMessage = (io: any) =>
       chat.client.toString() === userId ? chat.worker : chat.client;
 
     const sender = populatedMessage.sender as any;
-    const senderName = `${sender.firstName} ${sender.lastName}`;
+    const senderName = `${sender?.firstName} ${sender?.lastName}`;
 
     const notification = await Notification.create({
       recipient: recipientId,

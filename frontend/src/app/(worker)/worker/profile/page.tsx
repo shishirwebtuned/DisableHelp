@@ -77,6 +77,7 @@ export default function WorkerProfilePage() {
 
             // Map Professional Details
             const mappedProfessionalDetails: ProfessionalDetailsData = {
+                abnNumber: profile?.abnNumber || '',
                 experience: {
                     years: profile?.experienceSummary?.disability?.experience?.[0]?.replace(/[^0-9]/g, '') ||
                         profile?.experienceSummary?.agedCare?.experience?.[0]?.replace(/[^0-9]/g, '') || '',
@@ -218,9 +219,9 @@ export default function WorkerProfilePage() {
         const data = allProfileData;
         const profile = (mee as any)?.profile;
         switch (sectionId) {
-            case 'personal-info': return !!(data.personalDetails?.personalInfo.firstName && data.personalDetails?.personalInfo.lastName);
+            case 'personal-info': return !!(data.personalDetails?.personalInfo?.firstName && data.personalDetails?.personalInfo?.lastName);
             case 'bio': return !!data.personalDetails?.bio;
-            case 'contact': return !!(data.personalDetails?.contactInfo.email && data.personalDetails?.contactInfo.phone);
+            case 'contact': return !!(data.personalDetails?.contactInfo?.email && data.personalDetails?.contactInfo?.phone);
             case 'photo': return !!(data.profileImage?.base64 || profile?.personalDetails?.avatar?.url);
             case 'preferred-hours': return !!(data.jobDetails?.preferredHours && Object.keys(data.jobDetails.preferredHours).length > 0);
             case 'indicative-rates': return !!(data.jobDetails?.rates && data.jobDetails.rates.standard > 0);
@@ -228,7 +229,7 @@ export default function WorkerProfilePage() {
             case 'experience': return !!data.professionalDetails?.experience?.years;
             case 'work-history': return !!(data.professionalDetails?.workHistory && data.professionalDetails.workHistory.length > 0);
             case 'education-training': return !!(data.professionalDetails?.education && data.professionalDetails.education.length > 0);
-            case 'credentials': return !!(data.professionalDetails?.ndisWorkerScreening?.screening_number || data.professionalDetails?.wwcc?.wwccNumber);
+            case 'credentials': return !!(data.professionalDetails?.ndisWorkerScreening?.screening_number || data.professionalDetails?.wwcc?.wwccNumber || data.professionalDetails?.abnNumber);
             case 'languages': return !!(data.additionalDetails?.languages?.firstLanguages && data.additionalDetails.languages.firstLanguages.length > 0);
             case 'interests-hobbies': return !!(data.additionalDetails?.selectedInterests && data.additionalDetails.selectedInterests.length > 0);
             case 'cultural-background': return !!(data.additionalDetails?.culturalInfo?.background && data.additionalDetails.culturalInfo.background.length > 0);
@@ -387,7 +388,7 @@ export default function WorkerProfilePage() {
             case 'personal-info':
             case 'bio':
             case 'contact':
-                return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} initialData={allProfileData.personalDetails} isProvider={isProvider} />;
+                return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} initialData={allProfileData.personalDetails} isNdisProvider={isProvider} />;
 
             case 'photo':
                 return <ProfileImageEditor onSave={handleProfileImageSave} initialData={allProfileData.profileImage} />;
