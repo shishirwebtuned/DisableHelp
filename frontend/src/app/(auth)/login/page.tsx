@@ -99,21 +99,21 @@ export default function DisabilityLoginPortal() {
                         </div>
                     </div>
 
-                    <div className="md:hidden">
+                    {/* <div className="md:hidden">
                         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-600">
                             {mobileMenuOpen ? <X /> : <Menu />}
                         </button>
-                    </div>
+                    </div> */}
 
-                    <nav className="hidden md:flex space-x-6 text-sm font-medium">
+                    {/* <nav className="hidden md:flex space-x-6 text-sm font-medium">
                         <Link href="#" className="text-slate-600 hover:text-[#8ac6dd]">Resources</Link>
                         <Link href="#" className="text-slate-600 hover:text-[#8ac6dd]">Accessibility</Link>
                         <Link href="#" className="text-slate-600 hover:text-[#8ac6dd]">Contact</Link>
-                    </nav>
+                    </nav> */}
                 </div>
 
                 {/* Mobile menu (backdrop + panel) */}
-                {mobileMenuOpen && (
+                {/* {mobileMenuOpen && (
                     <div className=' relative'>
                         <div
                             className="fixed  inset-0 bg-black/30 z-40 md:hidden"
@@ -132,7 +132,7 @@ export default function DisabilityLoginPortal() {
                             </nav>
                         </div>
                     </div>
-                )}
+                )} */}
             </header>
 
             {/* Main Content */}
@@ -273,13 +273,13 @@ export default function DisabilityLoginPortal() {
 
             {/* Footer */}
             <footer className="bg-slate-50 border-t border-slate-200 py-6 px-4">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-center items-center gap-4 text-xs text-slate-500">
                     <p className="font-medium text-slate-700">© {new Date().getFullYear()} Disable Help </p>
-                    <div className="flex gap-6">
+                    {/* <div className="flex gap-6">
                         <Link href="#" className="hover:text-[#8ac6dd]">Privacy</Link>
                         <Link href="#" className="hover:text-[#8ac6dd]">Terms</Link>
                         <Link href="#" className="hover:text-[#8ac6dd]">Accessibility Policy</Link>
-                    </div>
+                    </div> */}
                 </div>
             </footer>
         </div>
