@@ -441,7 +441,7 @@ export default function WorkerJobsPage() {
     const hasActiveFilters = statusFilter !== 'all' || !!hourlyRate || !!startDateFilter;
 
     const appliedJobIds = useMemo(
-        () => new Set(mySelfItems.map((app) => app.job._id)),
+        () => new Set(mySelfItems.map((app) => app.job?._id)),
         [mySelfItems]
     );
 

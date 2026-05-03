@@ -55,6 +55,7 @@ export default function WorkerPaymentsPage() {
                                 <TableHead>Status</TableHead>
                                 <TableHead>Method</TableHead>
                                 <TableHead>Payment Date</TableHead>
+                                <TableHead>Next Payment Date</TableHead>
                                 <TableHead className='text-center'>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -72,7 +73,8 @@ export default function WorkerPaymentsPage() {
                                         {payment.status}
                                     </TableCell>
                                     <TableCell>{payment.paymentMethod}</TableCell>
-                                    <TableCell>{new Date(payment.paymentDate).toLocaleDateString()} {new Date(payment.paymentDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}</TableCell>
+                                    <TableCell>{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>{payment.nextPaymentDate ? new Date(payment.nextPaymentDate).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-4">
                                             {/* View */}
@@ -217,13 +219,28 @@ export default function WorkerPaymentsPage() {
 
                                     <span className="font-medium">
                                         {new Date(selectedPayment.paymentDate).toLocaleDateString()}{" "}
-                                        {new Date(selectedPayment.paymentDate).toLocaleTimeString([], {
+                                        {/* {new Date(selectedPayment.paymentDate).toLocaleTimeString([], {
                                             hour: 'numeric',
                                             minute: '2-digit',
                                             hour12: true
-                                        })}
+                                        })} */}
                                     </span>
 
+                                </div>
+
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">
+                                        Next Payment Date
+                                    </span>
+
+                                    <span className="font-medium">
+                                        {new Date(selectedPayment.nextPaymentDate).toLocaleDateString()}{" "}
+                                        {/* {new Date(selectedPayment.nextPaymentDate).toLocaleTimeString([], {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        })} */}
+                                    </span>
                                 </div>
 
                             </div>

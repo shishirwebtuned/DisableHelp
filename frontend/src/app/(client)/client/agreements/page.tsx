@@ -19,6 +19,7 @@ import {
     XCircle,
     AlertTriangle,
     Eye,
+    AlertCircle,
 } from 'lucide-react';
 import Pagination from '@/components/ui/pagination';
 import Loading from '@/components/ui/loading';
@@ -282,8 +283,18 @@ export default function ClientAgreementsPage() {
                                         </div>
                                     </div>
 
+                                    {agreement.status === 'terminated' && (
+                                        <div className="mt-3 mb-2 flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg">
+                                            <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-red-500 mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] md:text-[11px] font-semibold text-red-600 uppercase tracking-wide">Termination Reason</p>
+                                                <p className="text-[12px] md:text-[13px] text-red-700 mt-0.5">{agreement.terminationReason || 'No reason provided'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Last updated */}
-                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1 border-t">
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1">
                                         <Clock className="h-3 w-3" />
                                         Last updated: {new Date(agreement.updatedAt).toLocaleDateString()} at {new Date(agreement.updatedAt).toLocaleTimeString()}
                                     </div>
@@ -754,6 +765,35 @@ export default function ClientAgreementsPage() {
 
                                 </div>
 
+                            )}
+
+                            {agreement.status === 'terminated' && (
+                                <div className="mt-3 flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
+                                    <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Termination Details</p>
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs text-red-700">
+                                                <span className="font-medium">Terminated by: </span>
+                                                {agreement?.terminatedBy === agreement?.client?._id
+                                                    ? `${agreement?.client?.firstName} ${agreement?.client?.lastName}`
+                                                    : typeof agreement?.worker !== 'string'
+                                                        ? `${agreement?.worker?.firstName} ${agreement?.worker?.lastName}`
+                                                        : 'Worker'}
+                                            </p>
+                                            {agreement.terminatedAt && (
+                                                <p className="text-xs text-red-700">
+                                                    <span className="font-medium">Terminated on: </span>
+                                                    {new Date(agreement.terminatedAt).toLocaleDateString()}
+                                                </p>
+                                            )}
+                                            <p className="text-xs text-red-700">
+                                                <span className="font-medium">Reason: </span>
+                                                {agreement.terminationReason || 'No reason provided'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                         </div>

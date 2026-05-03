@@ -54,7 +54,6 @@ export default function WorkerProfilePage() {
         if (mee) {
             const userData = mee as any;
             const profile = userData.profile;
-            // Map Personal Details
             const mappedPersonalDetails: PersonalDetailsData = {
                 personalInfo: {
                     firstName: userData.user?.firstName || '',
@@ -75,13 +74,12 @@ export default function WorkerProfilePage() {
                 bio: profile?.personalDetails?.bio || profile?.bio || '',
             };
 
-            // Map Professional Details
             const mappedProfessionalDetails: ProfessionalDetailsData = {
                 abnNumber: profile?.abnNumber || '',
                 experience: {
                     years: profile?.experienceSummary?.disability?.experience?.[0]?.replace(/[^0-9]/g, '') ||
                         profile?.experienceSummary?.agedCare?.experience?.[0]?.replace(/[^0-9]/g, '') || '',
-                    totalHours: '', // Field not in API schema
+                    totalHours: '',
                     specializations: profile?.experienceSummary?.disability?.description ||
                         profile?.experienceSummary?.agedCare?.description || '',
                 },
@@ -92,7 +90,7 @@ export default function WorkerProfilePage() {
                     startDate: work.startDate,
                     endDate: work.endDate,
                     currentlyWorkingHere: work.currentlyWorkingHere,
-                    desc: '', // Field not in API schema
+                    desc: '',
                 })) || [],
                 education: profile?.educationAndTraining?.map((edu: any, index: number) => ({
                     id: index + 1,
@@ -120,12 +118,10 @@ export default function WorkerProfilePage() {
                 },
             };
 
-            // Map Job Details
             const mapAvailabilityToUI = (availability: any) => {
                 if (!availability) return {};
                 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
                 const result: any = {};
-
                 days.forEach(day => {
                     const key = day.toLowerCase();
                     const dayData = availability[key];
@@ -159,7 +155,6 @@ export default function WorkerProfilePage() {
                 freeMeetAndGreet: profile?.freeMeetAndGreet || false,
             };
 
-            // Map Additional Details
             const mappedAdditionalDetails: AdditionalDetailsData = {
                 languages: {
                     firstLanguages: profile?.languages?.firstLanguages || [],
@@ -215,14 +210,21 @@ export default function WorkerProfilePage() {
         }
     }, [currentSection, visibleSectionOrder]);
 
+    // ✅ CHANGED: tightened completion checks for bio, photo, and contact
+    // to match the actual required fields (bio non-empty, real photo, suburb + state)
     const isSectionCompleted = useCallback((sectionId: string) => {
         const data = allProfileData;
-        const profile = (mee as any)?.profile;
         switch (sectionId) {
             case 'personal-info': return !!(data.personalDetails?.personalInfo?.firstName && data.personalDetails?.personalInfo?.lastName);
-            case 'bio': return !!data.personalDetails?.bio;
-            case 'contact': return !!(data.personalDetails?.contactInfo?.email && data.personalDetails?.contactInfo?.phone);
-            case 'photo': return !!(data.profileImage?.base64 || profile?.personalDetails?.avatar?.url);
+            // ✅ CHANGED: was `!!data.personalDetails?.bio` — now trims to prevent whitespace-only passing
+            case 'bio': return !!(data.personalDetails?.bio?.trim());
+            // ✅ CHANGED: was checking email + phone (both read-only/always filled) — now checks suburb + state (the actual required editable fields)
+            case 'contact': return !!(
+                data.personalDetails?.contactInfo?.suburb?.trim() &&
+                data.personalDetails?.contactInfo?.state?.trim()
+            );
+            // ✅ CHANGED: was accepting any base64 including the default placeholder — now excludes '/profileImg.jpg'
+            case 'photo': return !!(data.profileImage?.base64 && data.profileImage.base64 !== '/profileImg.jpg');
             case 'preferred-hours': return !!(data.jobDetails?.preferredHours && Object.keys(data.jobDetails.preferredHours).length > 0);
             case 'indicative-rates': return !!(data.jobDetails?.rates && data.jobDetails.rates.standard > 0);
             case 'services': return !!(data.jobDetails?.selectedServices && data.jobDetails.selectedServices.length > 0);
@@ -238,7 +240,7 @@ export default function WorkerProfilePage() {
             case 'immunisation': return !!data.additionalDetails?.immunisation?.covidVaccineStatus;
             default: return false;
         }
-    }, [allProfileData, mee]);
+    }, [allProfileData]);
 
     const sections = useMemo(() => {
         const personalDetails = [
@@ -272,12 +274,7 @@ export default function WorkerProfilePage() {
             ...(!isProvider ? [{ id: 'immunisation', label: 'Immunisation', completed: isSectionCompleted('immunisation') }] : []),
         ];
 
-        return {
-            personalDetails,
-            jobDetails,
-            professionalDetails,
-            additionalDetails,
-        };
+        return { personalDetails, jobDetails, professionalDetails, additionalDetails };
     }, [isProvider, isSectionCompleted]);
 
     const handlePersonalDetailsSave = useCallback((data: PersonalDetailsData, navigate = true) => {
@@ -320,34 +317,53 @@ export default function WorkerProfilePage() {
         if (navigate) handleNextSection();
     }, [handleNextSection]);
 
+    // ✅ CHANGED: added required field validation before submitting;
+    // previously fired with no checks — now blocks and navigates to the offending section
     const handleSubmitAll = async () => {
+        const profileImage = allProfileData.profileImage;
+        const hasPhoto = profileImage?.base64 && profileImage.base64 !== '/profileImg.jpg';
+        const hasBio = (allProfileData.personalDetails?.bio?.trim().length ?? 0) > 0;
+        const hasSuburb = (allProfileData.personalDetails?.contactInfo?.suburb?.trim().length ?? 0) > 0;
+        const hasState = (allProfileData.personalDetails?.contactInfo?.state?.trim().length ?? 0) > 0;
+
+        if (!hasPhoto) {
+            toast.error('Profile photo is required');
+            setCurrentSection('photo');
+            return;
+        }
+        if (!hasBio) {
+            toast.error('Bio is required');
+            setCurrentSection('bio');
+            return;
+        }
+        if (!hasSuburb || !hasState) {
+            toast.error('Suburb and State are required');
+            setCurrentSection('contact');
+            return;
+        }
+        // ✅ END CHANGED
+
         try {
             const apiData = transformToAPISchema(allProfileData);
-
             const formData = new FormData();
 
-            // Append binary avatar if exists
             if (allProfileData.profileImage?.binary) {
                 console.log('Appending binary avatar to FormData');
                 formData.append('avatar', allProfileData.profileImage.binary, 'profile-image.png');
             }
 
-            // Recursive function to append JSON data as FormData fields
             const appendToFormData = (data: any, rootKey: string) => {
                 if (data === null || data === undefined) return;
-
                 if (data instanceof File || data instanceof Blob) {
                     formData.append(rootKey, data);
                     return;
                 }
-
                 if (Array.isArray(data)) {
                     data.forEach((item, index) => {
                         appendToFormData(item, `${rootKey}[${index}]`);
                     });
                     return;
                 }
-
                 if (typeof data === 'object' && !(data instanceof Date)) {
                     Object.keys(data).forEach(key => {
                         const value = data[key];
@@ -356,13 +372,10 @@ export default function WorkerProfilePage() {
                     });
                     return;
                 }
-
                 formData.append(rootKey, String(data));
             };
 
-            // Append all fields from apiData
             console.log('API Payload (Pre-FormData):', JSON.stringify(apiData, null, 2));
-
             Object.keys(apiData).forEach(key => {
                 appendToFormData((apiData as any)[key], key);
             });
@@ -373,8 +386,6 @@ export default function WorkerProfilePage() {
             });
 
             console.log('Submitting FormData payload...');
-            // Cast formData to any because the thunk expects Partial<WorkerProfile> but we modified it to accept FormData too
-            // TypeScript might not have picked up the thunk type change in this file's context yet
             await dispatch(updateWorkerProfile(formData as any)).unwrap();
         } catch (error: any) {
             console.error('Failed to submit profile:', error);
@@ -384,29 +395,21 @@ export default function WorkerProfilePage() {
 
     const renderSection = () => {
         switch (currentSection) {
-            // Personal Details sections
             case 'personal-info':
             case 'bio':
             case 'contact':
                 return <PersonalDetails onSave={handlePersonalDetailsSave} currentView={currentSection} initialData={allProfileData.personalDetails} isNdisProvider={isProvider} />;
-
             case 'photo':
                 return <ProfileImageEditor onSave={handleProfileImageSave} initialData={allProfileData.profileImage} />;
-
-            // Job Details sections
             case 'preferred-hours':
             case 'indicative-rates':
             case 'services':
                 return <JobDetails onSave={handleJobDetailsSave} currentView={currentSection} initialData={allProfileData.jobDetails} />;
-
-            // Professional Details sections
             case 'experience':
             case 'work-history':
             case 'education-training':
             case 'credentials':
                 return <ProfessionalDetails onSave={handleProfessionalDetailsSave} currentView={currentSection} initialData={allProfileData.professionalDetails} isProvider={isProvider} />;
-
-            // Additional Details sections
             case 'languages':
             case 'interests-hobbies':
             case 'cultural-background':
@@ -414,7 +417,6 @@ export default function WorkerProfilePage() {
             case 'bank-account':
             case 'immunisation':
                 return <AdditionalDetails onSave={handleAdditionalDetailsSave} currentView={currentSection} initialData={allProfileData.additionalDetails} isProvider={isProvider} />;
-
             default:
                 return (
                     <div className="space-y-6">
@@ -434,7 +436,6 @@ export default function WorkerProfilePage() {
     return (
         <div className="min-h-screen ">
             <div className="container mx-auto">
-                {/* Header */}
                 <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-base md:text-lg lg:text-xl font-bold mb-2">My Profile</h1>
@@ -470,11 +471,9 @@ export default function WorkerProfilePage() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    {/* Left Sidebar - Navigation (Desktop only) */}
                     <div className="hidden lg:block lg:col-span-1 ">
-                        <div className="sticky shadow-none border-none  top-6 ">
-                            <div className=" space-y-2">
-                                {/* Personal Details */}
+                        <div className="sticky shadow-none border-none top-6 ">
+                            <div className="space-y-2">
                                 <div>
                                     <Card className=''>
                                         <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Personal Details</h3>
@@ -483,13 +482,7 @@ export default function WorkerProfilePage() {
                                                 <button
                                                     key={section.id}
                                                     onClick={() => setCurrentSection(section.id)}
-                                                    className={`
-                                                    w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
-                                                    ${currentSection === section.id
-                                                            ? ' text-[#8ac6dd]  font-medium '
-                                                            : ''
-                                                        }
-                                                `}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${currentSection === section.id ? 'text-[#8ac6dd] font-medium' : ''}`}
                                                 >
                                                     {section.completed ? (
                                                         <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
@@ -503,7 +496,6 @@ export default function WorkerProfilePage() {
                                     </Card>
                                 </div>
 
-                                {/* Job Details */}
                                 <Card>
                                     <div>
                                         <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Job Details</h3>
@@ -512,13 +504,7 @@ export default function WorkerProfilePage() {
                                                 <button
                                                     key={section.id}
                                                     onClick={() => setCurrentSection(section.id)}
-                                                    className={`
-                                                    w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
-                                                    ${currentSection === section.id
-                                                            ? ' text-[#8ac6dd] bg-[#8ac6dd]/5 '
-                                                            : ''
-                                                        }
-                                                `}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${currentSection === section.id ? 'text-[#8ac6dd] bg-[#8ac6dd]/5' : ''}`}
                                                 >
                                                     {section.completed ? (
                                                         <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
@@ -532,7 +518,6 @@ export default function WorkerProfilePage() {
                                     </div>
                                 </Card>
 
-                                {/* Professional Details */}
                                 <Card>
                                     <div>
                                         <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Professional Details</h3>
@@ -541,13 +526,7 @@ export default function WorkerProfilePage() {
                                                 <button
                                                     key={section.id}
                                                     onClick={() => setCurrentSection(section.id)}
-                                                    className={`
-                                                    w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
-                                                    ${currentSection === section.id
-                                                            ? ' text-[#8ac6dd] font-medium '
-                                                            : ''
-                                                        }
-                                                `}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${currentSection === section.id ? 'text-[#8ac6dd] font-medium' : ''}`}
                                                 >
                                                     {section.completed ? (
                                                         <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
@@ -561,7 +540,6 @@ export default function WorkerProfilePage() {
                                     </div>
                                 </Card>
 
-                                {/* Additional Details */}
                                 <Card>
                                     <div>
                                         <h3 className="font-semibold text-sm px-3 mb-2 text-muted-foreground uppercase tracking-wider">Additional Details</h3>
@@ -570,16 +548,10 @@ export default function WorkerProfilePage() {
                                                 <button
                                                     key={section.id}
                                                     onClick={() => setCurrentSection(section.id)}
-                                                    className={`
-                                                    w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors
-                                                    ${currentSection === section.id
-                                                            ? ' text-[#8ac6dd font-medium'
-                                                            : ''
-                                                        }
-                                                `}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${currentSection === section.id ? 'text-[#8ac6dd] font-medium' : ''}`}
                                                 >
                                                     {section.completed ? (
-                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : ' text-[#8ac6dd]'}`} />
+                                                        <CheckCircle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-[#8ac6dd]'}`} />
                                                     ) : (
                                                         <Circle className={`h-4 w-4 ${currentSection === section.id ? 'text-[#8ac6dd]' : 'text-gray-400'}`} />
                                                     )}
@@ -593,12 +565,8 @@ export default function WorkerProfilePage() {
                         </div>
                     </div>
 
-
-
-                    {/* Main Content */}
                     <div className="lg:col-span-3">
                         <Card>
-                            {/* Horizontal Scrollable Navigation (Mobile/Tablet only) */}
                             <div className="lg:hidden border-b sticky top-0 bg-white z-20">
                                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800" style={{ maxHeight: '4rem' }}>
                                     <div className="flex gap-1 p-2 min-w-max items-center">
@@ -606,13 +574,7 @@ export default function WorkerProfilePage() {
                                             <button
                                                 key={section.id}
                                                 onClick={() => setCurrentSection(section.id)}
-                                                className={`
-                                                    flex items-center gap-2 px-4 py-2 rounded-md md:text-[13px] text-xs lg:text-sm whitespace-nowrap transition-colors
-                                                    ${currentSection === section.id
-                                                        ? ' bg-[#8ac6dd] text-white shadow-sm border border-[#8ac6dd]'
-                                                        : 'bg-white border border-[#8ac6dd]  hover:bg-gray-100 '
-                                                    }
-                                                `}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-md md:text-[13px] text-xs lg:text-sm whitespace-nowrap transition-colors ${currentSection === section.id ? 'bg-[#8ac6dd] text-white shadow-sm border border-[#8ac6dd]' : 'bg-white border border-[#8ac6dd] hover:bg-gray-100'}`}
                                             >
                                                 {section.completed ? (
                                                     <CheckCircle className="h-4 w-4" />

@@ -24,8 +24,13 @@ function FitBounds({ markers }: { markers: [number, number][] }) {
 function ZoomLimiter({ active }: { active: boolean }) {
     const map = useMap();
     useEffect(() => {
-        if (active) { map.setMinZoom(12); map.setMaxZoom(14); }
-        else { map.setMinZoom(2); map.setMaxZoom(18); }
+        if (active) {
+            map.setMinZoom(12);
+            map.setMaxZoom(14);
+        } else {
+            map.setMinZoom(2);
+            map.setMaxZoom(15);
+        }
     }, [active, map]);
     return null;
 }

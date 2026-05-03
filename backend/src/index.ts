@@ -9,6 +9,8 @@ import { initApplicationRoutes } from "./routes/application.routes.js";
 import { initNotificationRoutes } from "./routes/notification.routes.js";
 
 import { errorHandler } from "./middleware/error.middleware.js";
+import { initSessionRoutes } from "./routes/session.routes.js";
+import { startPaymentReminderJob } from "./utils/paymentReminderJob.js";
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -23,7 +25,7 @@ connectDB().then(async () => {
 
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: process.env.FRONTEND_URL || "http://localhost:3000",
       methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
       credentials: true,
     },
@@ -56,8 +58,11 @@ connectDB().then(async () => {
   app.use("/api/v1/en/chat", initChatRoutes(io));
   app.use("/api/v1/en/application", initApplicationRoutes(io));
   app.use("/api/v1/en/notifications", initNotificationRoutes(io));
+  app.use("/api/v1/en/session", initSessionRoutes(io));
 
   app.use(errorHandler);
+
+  startPaymentReminderJob(io);
 
   server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

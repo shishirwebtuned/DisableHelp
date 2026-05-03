@@ -25,6 +25,7 @@ import {
     Plus,
     Trash2,
     CalendarDays,
+    AlertCircle,
 } from 'lucide-react';
 import axios from '@/lib/axios';
 import Pagination from '@/components/ui/pagination';
@@ -88,6 +89,11 @@ export default function WorkerAgreementsPage() {
     const [editSchedule, setEditSchedule] = useState<any[]>([]);
     const [editingLoading, setEditingLoading] = useState(false);
     const [editError, setEditError] = useState('');
+
+    const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+    const [paymentAgreementId, setPaymentAgreementId] = useState<string | null>(null);
+    const [monthlyPaymentCompleted, setMonthlyPaymentCompleted] = useState(false);
+    const [paymentDueLoading, setPaymentDueLoading] = useState(false);
 
     const pageSize = 10;
 
@@ -392,9 +398,17 @@ export default function WorkerAgreementsPage() {
                                             </div>
                                         </div>
                                     </div>
-
+                                    {agreement.status === 'terminated' && (
+                                        <div className="mt-3 mb-2 flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg">
+                                            <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-red-500 mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] md:text-[11px] font-semibold text-red-600 uppercase tracking-wide">Termination Reason</p>
+                                                <p className="text-[12px] md:text-[13px] text-red-700 mt-0.5">{agreement.terminationReason || 'No reason provided'}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Updated Date */}
-                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1 border-t">
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1">
                                         <Clock className="h-3 w-3" />
                                         Last updated: {new Date(agreement.updatedAt).toLocaleDateString()} at {new Date(agreement.updatedAt).toLocaleTimeString()}
                                     </div>
@@ -496,7 +510,29 @@ export default function WorkerAgreementsPage() {
                                                         Accept Terms</span>
                                                 </button>
                                             )}
+
+
                                         </div>
+
+                                        {agreement.status === 'active' && agreement.termsAcceptedByWorker && (
+                                            <button
+                                                className="md:h-6.5 h-6 lg:h-7 md:text-[11px] text-[11px] lg:text-[12px] bg-green-600 text-white hover:bg-green-700 px-2.5 flex items-center rounded-sm transition-colors cursor-pointer shadow-sm"
+                                                onClick={() => {
+                                                    setPaymentAgreementId(agreement._id);
+                                                    setMonthlyPaymentCompleted(false);
+                                                    setPaymentDialogOpen(true);
+                                                    dispatch(fetchPaymentDue({
+                                                        workerId: typeof agreement.worker === "string"
+                                                            ? agreement.worker
+                                                            : agreement.worker._id,
+                                                        clientId: agreement.client._id
+                                                    }));
+                                                }}
+                                            >
+                                                <DollarSign className="w-3 h-3 mr-1" />
+                                                Pay Monthly
+                                            </button>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1038,6 +1074,35 @@ export default function WorkerAgreementsPage() {
 
                                 )}
 
+                                {agreement.status === 'terminated' && (
+                                    <div className="mt-3 flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
+                                        <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Termination Details</p>
+                                            <div className="space-y-0.5">
+                                                <p className="text-xs text-red-700">
+                                                    <span className="font-medium">Terminated by: </span>
+                                                    {agreement?.terminatedBy === agreement?.client?._id
+                                                        ? `${agreement?.client?.firstName} ${agreement?.client?.lastName}`
+                                                        : typeof agreement?.worker !== 'string'
+                                                            ? `${agreement?.worker?.firstName} ${agreement?.worker?.lastName}`
+                                                            : 'Worker'}
+                                                </p>
+                                                {agreement.terminatedAt && (
+                                                    <p className="text-xs text-red-700">
+                                                        <span className="font-medium">Terminated on: </span>
+                                                        {new Date(agreement.terminatedAt).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-red-700">
+                                                    <span className="font-medium">Reason: </span>
+                                                    {agreement.terminationReason || 'No reason provided'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                             </div>
 
                         ) : (
@@ -1259,6 +1324,138 @@ export default function WorkerAgreementsPage() {
                                 className={editingLoading ? 'opacity-60' : ''}
                             >
                                 {editingLoading ? 'Updating...' : 'Update'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-base">Monthly Payment</DialogTitle>
+                            <DialogDescription className="text-xs">
+                                Pay your monthly subscription fee for this client.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                            {/* Payment status info */}
+                            {paymentDue && (
+                                <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground text-xs">Base Amount</span>
+                                        <span className="font-medium">${paymentDue.baseAmount}</span>
+                                    </div>
+                                    {(paymentDue.lateFee ?? 0) > 0 && (
+                                        <div className="flex justify-between items-center text-red-600">
+                                            <span className="text-xs flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" />
+                                                Late Fee (1 days overdue)
+                                            </span>
+                                            <span className="font-medium">+${paymentDue.lateFee}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center border-t pt-2">
+                                        <span className="text-xs font-semibold">Total Due</span>
+                                        <span className="font-bold text-green-600 text-base">
+                                            ${paymentDue.amountDue}
+                                        </span>
+                                    </div>
+                                    {paymentDue.nextPaymentDate && (
+                                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                            <span>Next payment due</span>
+                                            <span>{new Date(paymentDue.nextPaymentDate).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
+                                    {/* Already paid guard */}
+                                    {paymentDue.amountDue === 0 && (
+                                        <div className="flex items-center gap-2 text-green-600 text-xs bg-green-50 p-2 rounded">
+                                            <CheckCircle className="h-3.5 w-3.5" />
+                                            Payment is up to date. Next payment due on{' '}
+                                            {paymentDue.nextPaymentDate
+                                                ? new Date(paymentDue.nextPaymentDate).toLocaleDateString()
+                                                : '—'}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* PayPal button — only show if payment is actually due */}
+                            {!monthlyPaymentCompleted && (paymentDue?.amountDue ?? 0) > 0 && (
+                                <PayPalButtons
+                                    createOrder={async () => {
+                                        const agreement = agreements.find(a => a?._id === paymentAgreementId);
+                                        if (!agreement) return "";
+
+                                        const workerId = typeof agreement.worker === "string"
+                                            ? agreement.worker
+                                            : agreement.worker?._id;
+
+                                        const res = await dispatch(
+                                            createPaymentOrder({
+                                                workerId,
+                                                clientId: agreement.client?._id,
+                                                paymentMethod: "paypal"
+                                            })
+                                        ).unwrap();
+
+                                        return res.orderId;
+                                    }}
+                                    onApprove={async (data) => {
+                                        const agreement = agreements.find(a => a?._id === paymentAgreementId);
+                                        if (!agreement) return;
+
+                                        const workerId = typeof agreement.worker === "string"
+                                            ? agreement.worker
+                                            : agreement.worker?._id;
+
+                                        await dispatch(
+                                            capturePayment({
+                                                orderId: data.orderID,
+                                                workerId,
+                                                clientId: agreement.client?._id,
+                                                paymentMethod: "paypal"
+                                            })
+                                        );
+
+                                        setMonthlyPaymentCompleted(true);
+
+                                        // Refresh payment due info to reflect new state
+                                        dispatch(fetchPaymentDue({
+                                            workerId,
+                                            clientId: agreement.client?._id
+                                        }));
+                                    }}
+                                    onError={(err) => console.error(err)}
+                                    style={{
+                                        layout: "horizontal",
+                                        height: isMobile ? 25 : 38,
+                                        shape: "rect",
+                                        color: "blue",
+                                        label: "pay",
+                                        tagline: false
+                                    }}
+                                />
+                            )}
+
+                            {monthlyPaymentCompleted && (
+                                <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-lg border border-green-200">
+                                    <CheckCircle className="h-4 w-4 shrink-0" />
+                                    <span className="font-medium">Payment successful! Next payment due in 30 days.</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setPaymentDialogOpen(false);
+                                    setPaymentAgreementId(null);
+                                }}
+                            >
+                                Close
                             </Button>
                         </DialogFooter>
                     </DialogContent>

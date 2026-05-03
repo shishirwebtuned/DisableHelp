@@ -10,63 +10,61 @@ interface DaySlot {
   period: TimeSlot[];
 }
 
-export const generateSessionsFromSchedule = async (
-  agreement: any,
-  weeksToGenerate = 4,
-) => {
-  const availability: DaySlot[] = agreement.schedule || [];
+const DAY_MAP: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
 
+// How many sessions to generate per month, and the gap between them
+const FREQUENCY_CONFIG: Record<
+  string,
+  { occurrences: number; intervalWeeks: number }
+> = {
+  weekly: { occurrences: 4, intervalWeeks: 1 },
+  fortnightly: { occurrences: 2, intervalWeeks: 2 },
+  monthly: { occurrences: 1, intervalWeeks: 4 }, // intervalWeeks unused but kept for clarity
+};
+
+export const generateSessionsFromSchedule = async (agreement: any) => {
+  const availability: DaySlot[] = agreement.schedule || [];
   if (!availability.length) return [];
 
-  const dayMap: Record<string, number> = {
-    sunday: 0,
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-  };
+  const DEFAULT_CONFIG = { occurrences: 4, intervalWeeks: 1 };
+  const config = FREQUENCY_CONFIG[agreement.frequency] ?? DEFAULT_CONFIG;
+  const { occurrences, intervalWeeks } = config;
 
   const startDate = new Date(agreement.startDate);
+  startDate.setHours(0, 0, 0, 0);
 
   const sessions: any[] = [];
 
-  const frequencyInterval: Record<string, number> = {
-    weekly: 1,
-    fortnightly: 2,
-    monthly: 4,
-  };
-
-  const intervalWeeks = frequencyInterval[agreement.frequency] || 1;
-
   for (const slot of availability) {
-    const targetDay = dayMap[slot.day.toLowerCase()];
-
+    const targetDay = DAY_MAP[slot.day.toLowerCase()];
     if (targetDay === undefined) continue;
 
-    for (let i = 0; i < weeksToGenerate; i++) {
-      const base = new Date(startDate);
+    // Find the first occurrence of this weekday on or after startDate
+    const startDayOfWeek = startDate.getDay();
+    const daysUntilTarget = (targetDay - startDayOfWeek + 7) % 7;
 
-      base.setDate(startDate.getDate() + i * intervalWeeks * 7);
+    const firstOccurrence = new Date(startDate);
+    firstOccurrence.setDate(startDate.getDate() + daysUntilTarget);
 
-      const diff = (targetDay - base.getDay() + 7) % 7;
-
-      const sessionDate = new Date(base);
-
-      sessionDate.setDate(base.getDate() + diff);
-
-      if (sessionDate < startDate) continue;
+    // Generate `occurrences` sessions, spaced `intervalWeeks` apart
+    for (let i = 0; i < occurrences; i++) {
+      const sessionDate = new Date(firstOccurrence);
+      sessionDate.setDate(firstOccurrence.getDate() + i * intervalWeeks * 7);
 
       for (const period of slot.period) {
-        const [startHour, startMin] = period.startTime.split(":");
-
-        const [endHour, endMin] = period.endTime.split(":");
+        const [startHour, startMin] = period.startTime.split(":").map(Number);
+        const [endHour, endMin] = period.endTime.split(":").map(Number);
 
         const startMinutes = Number(startHour) * 60 + Number(startMin);
-
         const endMinutes = Number(endHour) * 60 + Number(endMin);
-
         const durationMinutes = endMinutes - startMinutes;
 
         if (durationMinutes <= 0) continue;
@@ -75,25 +73,15 @@ export const generateSessionsFromSchedule = async (
 
         sessions.push({
           agreement: agreement._id,
-
           job: agreement.job,
-
           client: agreement.client,
-
           worker: agreement.worker,
-
-          date: sessionDate,
-
+          date: new Date(sessionDate), // clone to avoid mutation
           startTime: period.startTime,
-
           endTime: period.endTime,
-
           durationMinutes,
-
           hourlyRate: agreement.hourlyRate,
-
           totalAmount,
-
           status: "scheduled",
         });
       }
@@ -101,14 +89,7 @@ export const generateSessionsFromSchedule = async (
   }
 
   if (sessions.length) {
-    try {
-      await Session.insertMany(sessions);
-    } catch (error) {
-      console.error("SESSION INSERT ERROR:");
-      console.error(error);
-
-      throw error;
-    }
+    await Session.insertMany(sessions);
   }
 
   return sessions;

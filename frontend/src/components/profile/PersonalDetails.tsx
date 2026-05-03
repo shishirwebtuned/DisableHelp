@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { format } from 'date-fns';
+import { format, set } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +66,8 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
     });
 
     const [bio, setBio] = useState(initialData?.bio || '');
+    const [bioTouched, setBioTouched] = useState(false);
+    const [contactTouched, setContactTouched] = useState(false);
 
     const isInitialized = useRef(false);
 
@@ -136,6 +138,11 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
         onSave(currentData, true);
     }, [currentData, onSave]);
 
+
+    const isBioValid = bio.trim().length < 500 && bio.trim().length >= 5;
+    const isSuburbValid = contactInfo.suburb.trim().length > 0;
+    const isStateValid = contactInfo.state.trim().length > 0;
+    const isContactFormValid = isSuburbValid && isStateValid;
     const renderPersonalInfo = () => (
         <div className="space-y-6">
             <div>
@@ -207,22 +214,35 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                 <p className="text-muted-foreground lg:text-base md:text-[15px] text-[13px]">Tell clients about yourself and your approach to support work</p>
             </div>
             <Card className=' border-none p-0'>
-                <CardContent className="md:pt-4 pt-2 lg:pt-6 p-0 space-y-4">
+                <CardContent className="md:pt-4 pt-2 lg:pt-4 p-0 space-y-4">
                     <div>
-                        <Label>Your Bio (500 words max)</Label>
+                        <Label className='flex items-center gap-1'>
+                            Your Bio (500 words max){' '}
+                            <span className="text-red-500 text-lg">*</span>
+                        </Label>
                         <Textarea
                             rows={10}
                             placeholder="Tell clients about your experience, approach to care, and what makes you a great support worker..."
-                            className="mt-2 lg:text-base md:text-sm text-xs"
+                            className={`mt-2 lg:text-base md:text-sm text-xs ${bioTouched && !isBioValid ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
+                            onBlur={() => setBioTouched(true)}
                         />
+                        {bioTouched && !isBioValid && (
+                            <p className="text-red-500 text-sm mt-1">Bio is required and must be at least 5 characters long.</p>
+                        )}
                         <p className="md:text-[13px] text-[11px] lg:text-sm text-muted-foreground mt-2">{bio.trim() ? bio.trim().split(/\s+/).length : 0} / 500 words</p>
                     </div>
                 </CardContent>
             </Card>
             <div className=" disabled flex justify-end">
-                <Button onClick={handleSave} className="">
+                <Button
+                    onClick={() => {
+                        setBioTouched(true);
+                        if (isBioValid) handleSave();
+                    }}
+                    className=""
+                >
                     Save and Continue
                 </Button>
             </div>
@@ -243,7 +263,9 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                             <Input
                                 type="email"
                                 value={contactInfo.email}
-                                onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                                disabled
+                                readOnly
+                                // onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
                                 className="mt-2"
                             />
                         </div>
@@ -252,7 +274,9 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                             <Input
                                 type="tel"
                                 value={contactInfo.phone}
-                                onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                                disabled
+                                readOnly
+                                // onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
                                 className="mt-2"
                             />
                         </div>
@@ -265,21 +289,33 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                             />
                         </div>
                         <div>
-                            <Label>Suburb</Label>
+                            <Label className='flex items-center gap-1 relative'>
+                                Suburb <span className="text-red-500 text-lg absolute left-13">*</span>
+                            </Label>
                             <Input
                                 value={contactInfo.suburb}
                                 onChange={(e) => setContactInfo({ ...contactInfo, suburb: e.target.value })}
-                                className="mt-2"
+                                onBlur={() => setContactTouched(true)}
+                                className={`mt-2 ${contactTouched && !isSuburbValid ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
                             />
+
+                            {contactTouched && !isSuburbValid && (
+                                <p className="text-red-500 text-xs mt-1">Suburb is required</p>
+                            )}
                         </div>
                         <div>
-                            <Label>State</Label>
+                            <Label className='flex items-center gap-1 relative'>
+                                State <span className="text-red-500 text-lg absolute left-10">*</span>
+                            </Label>
                             <Select
                                 value={contactInfo.state}
-                                onValueChange={(value) => setContactInfo({ ...contactInfo, state: value })}
+                                onValueChange={(value) => {
+                                    setContactInfo({ ...contactInfo, state: value });
+                                    setContactTouched(true);
+                                }}
                             >
-                                <SelectTrigger className="mt-2 w-full">
-                                    <SelectValue />
+                                <SelectTrigger className={`mt-2 w-full ${contactTouched && !isStateValid ? 'border-red-400 ring-red-400' : ''}`}>
+                                    <SelectValue placeholder="Select state" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="NSW">New South Wales</SelectItem>
@@ -292,6 +328,9 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                                     <SelectItem value="ACT">Australian Capital Territory</SelectItem>
                                 </SelectContent>
                             </Select>
+                            {contactTouched && !isStateValid && (
+                                <p className="text-red-500 text-xs mt-1">State is required</p>
+                            )}
                         </div>
                         <div>
                             <Label>Postcode</Label>
@@ -305,7 +344,13 @@ export default function PersonalDetails({ onSave, currentView = 'personal-info',
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button onClick={handleSave} className="">
+                <Button
+                    onClick={() => {
+                        setContactTouched(true);
+                        if (isContactFormValid) handleSave();
+                    }}
+                    className=""
+                >
                     Save and Continue
                 </Button>
             </div>

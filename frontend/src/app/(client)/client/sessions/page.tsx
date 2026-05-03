@@ -54,6 +54,8 @@ export default function ClientSessionsPage() {
     const { items: sessions = [], loading } = useAppSelector((state) => state.sessions);
     const { items: services = [], loading: servicesLoading } = useAppSelector((state) => state.services);
 
+    const { user: currentUser } = useAppSelector((state) => state.auth);
+
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -486,11 +488,28 @@ export default function ClientSessionsPage() {
                                                                     <span> {formatTime(session.startTime)} - {formatTime(session.endTime)} (
                                                                         {formatDuration(session.durationMinutes)})</span>
                                                                 </div>
-                                                                {/* <div className="flex items-center gap-1.5">
-                                                                    {session.mode === 'remote' ? <Video className="h-3.5 w-3.5 text-blue-500" /> : <MapPin className="h-3.5 w-3.5 text-blue-500" />}
-                                                                    <span className="truncate max-w-[200px]">{session.location}</span>
-                                                                </div> */}
+
                                                             </div>
+                                                            {session.status === 'cancelled' && (() => {
+                                                                const cancelledByMe = session.cancelledBy === currentUser?._id;
+
+                                                                const cancelledByUser = session.cancelledBy === session.client._id
+                                                                    ? session.client
+                                                                    : session.worker;
+
+                                                                return (
+                                                                    <div className="mt-2 p-3 bg-red-50 text-red-700 rounded">
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold">
+                                                                                Cancelled by: {cancelledByMe ? 'You' : `${cancelledByUser.firstName} ${cancelledByUser.lastName}`}
+                                                                            </span>
+                                                                            {session.cancelledReason && (
+                                                                                <span> — Reason: {session.cancelledReason}</span>
+                                                                            )}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">

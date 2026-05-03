@@ -139,6 +139,7 @@ export const terminateAgreement = catchAsync(async (req, res) => {
         cancelledBy: userId,
         cancelledByRole: userRole,
         cancelledAt: new Date(),
+        cancelledReason: "Session cancelled due to agreement termination.",
         notes: `Session cancelled due to agreement termination: ${terminationReason}`,
       },
     },

@@ -57,10 +57,13 @@ export interface Agreement {
   startDate: string;
   schedule?: ScheduleDay[];
   frequency?: string;
-  terminationReason?: string;
   createdAt: string;
   updatedAt: string;
   termsAcceptedAt?: string;
+  terminatedAt?: string;
+  terminatedBy?: string;
+  terminatedByRole?: string;
+  terminationReason?: string;
 }
 
 interface AgreementsState {

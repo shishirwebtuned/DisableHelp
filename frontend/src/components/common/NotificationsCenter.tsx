@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, CheckCheck, Trash2, Briefcase, DollarSign, MessageSquare, UserCheck, AlertCircle } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, Briefcase, DollarSign, MessageSquare, UserCheck, AlertCircle, Calendar, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -33,8 +33,11 @@ const getIcon = (type: string) => {
         case 'agreement': return <UserCheck className="h-4 w-4" />;
         case 'system': return <AlertCircle className="h-4 w-4" />;
         default: return <Bell className="h-4 w-4" />;
+        case 'session': return <Calendar className="h-4 w-4" />;
+        case 'application': return <FileText className="h-4 w-4" />;
     }
 };
+
 
 const getIconColor = (type: string) => {
     switch (type) {
@@ -43,6 +46,8 @@ const getIconColor = (type: string) => {
         case 'message': return 'text-purple-600';
         case 'agreement': return 'text-indigo-600';
         case 'system': return 'text-orange-600';
+        case 'session': return 'text-red-600';
+        case 'application': return 'text-yellow-600';
         default: return 'text-gray-600';
     }
 };

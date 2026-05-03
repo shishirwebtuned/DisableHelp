@@ -9,9 +9,13 @@ import {
 
 const router = express.Router();
 
-router.get("/user", protect, getSessionsByUserId);
-router.get("/agreement/:agreementId", protect, getSessionsByAgreementId);
-router.get("/:sessionId", protect, getSessionById);
-router.patch("/:sessionId/terminate", protect, cancelSession);
+export const initSessionRoutes = (io: any) => {
+  router.get("/user", protect, getSessionsByUserId);
+  router.get("/agreement/:agreementId", protect, getSessionsByAgreementId);
+  router.get("/:sessionId", protect, getSessionById);
+  router.patch("/:sessionId/terminate", protect, cancelSession(io));
+
+  return router;
+};
 
 export default router;

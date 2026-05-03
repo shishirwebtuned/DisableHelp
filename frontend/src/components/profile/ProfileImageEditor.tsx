@@ -18,6 +18,8 @@ interface ProfileImageEditorProps {
     fileType?: string;
 }
 
+const DEFAULT_AVATAR = '/profileImg.jpg';
+
 export default function ProfileImageEditor({ onSave, initialData, fileType = 'avatar' }: ProfileImageEditorProps) {
     const dispatch = useAppDispatch();
     const [profileImage, setProfileImage] = useState(initialData?.base64 || '/profileImg.jpg');
@@ -29,6 +31,7 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [imageBinary, setImageBinary] = useState<Blob | null>(initialData?.binary || null);
+    const [showError, setShowError] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,6 +49,8 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
             setImageBinary(initialData.binary);
         }
     }, [initialData]);
+
+    const hasPhoto = profileImage && profileImage !== DEFAULT_AVATAR;
 
     useEffect(() => {
         console.log('ProfileImage Editor State:', {
@@ -71,6 +76,8 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
 
             // Store the file as binary
             setImageBinary(file);
+            setShowError(false);
+
             console.log('Image uploaded as binary:', {
                 name: file.name,
                 size: file.size,
@@ -186,10 +193,10 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
 
     const handleRemovePhoto = async () => {
         // Local removal first
-        setProfileImage('/profileImg.jpg');
+        setProfileImage(DEFAULT_AVATAR);
         setImageBinary(null);
         onSave({
-            base64: '/profileImg.jpg',
+            base64: DEFAULT_AVATAR,
             binary: null
         });
 
@@ -232,16 +239,27 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2">Profile Photo</h2>
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2 relative">
+                    Profile Photo <span className="text-red-500 absolute left-42">*</span>
+
+                </h2>
                 <p className="lg:text-base md:text-[15px] text-sm text-muted-foreground">Upload and edit your professional photo</p>
             </div>
-            <Card>
+            <Card className={showError && !hasPhoto ? 'border-red-400' : ''}>
                 <CardContent className="pt-4 md:pt-5 lg:pt-6">
                     <div className="flex flex-col items-center gap-6">
-                        <Avatar className="h-24 w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ring-2 ring-gray-200 dark:ring-gray-600">
-                            <AvatarImage src={profileImage} />
-                            <AvatarFallback>SJ</AvatarFallback>
-                        </Avatar>
+                        <div className='relative'>
+                            <Avatar className="h-24 w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 ring-2 ring-gray-200 dark:ring-gray-600">
+                                <AvatarImage src={profileImage} />
+                                <AvatarFallback>SJ</AvatarFallback>
+                            </Avatar>
+
+                            {!hasPhoto && (
+                                <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
+                                    <span className="text-white text-[10px] font-bold">!</span>
+                                </div>
+                            )}
+                        </div>
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -258,6 +276,9 @@ export default function ProfileImageEditor({ onSave, initialData, fileType = 'av
                                 Remove Photo
                             </Button>
                         </div>
+                        {showError && !hasPhoto && (
+                            <p className="text-red-500 text-sm -mt-2">A profile photo is required</p>
+                        )}
                     </div>
                     <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                         <h4 className="font-medium mb-2 lg:text-base md:text-[15px] text-sm">Photo Guidelines</h4>

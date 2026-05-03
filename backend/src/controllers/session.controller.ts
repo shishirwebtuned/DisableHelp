@@ -5,6 +5,7 @@ import { catchAsync } from "../utils/catchAsync.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import { buildFilter, getPagination } from "../utils/queryHelper.js";
 import { User } from "../models/user.model.js";
+import { Notification } from "../models/notification.model.js";
 
 export const createSession = catchAsync(async (req, res) => {
   const { agreementId, startDate, endDate } = req.body;
@@ -188,51 +189,77 @@ export const getSessionById = catchAsync(async (req, res) => {
   });
 });
 
-export const cancelSession = catchAsync(async (req, res) => {
-  const { sessionId } = req.params;
-  const { cancelledReason } = req.body;
+export const cancelSession = (io: any) =>
+  catchAsync(async (req, res) => {
+    const { sessionId } = req.params;
+    const { cancelledReason } = req.body;
 
-  const userId = req.user.id;
-  const userRole = req.user.role;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-  if (!sessionId) {
-    throw new AppError("Agreement ID is required", 400);
-  }
+    if (!sessionId) {
+      throw new AppError("Agreement ID is required", 400);
+    }
 
-  if (!cancelledReason) {
-    throw new AppError("Cancellation reason is required", 400);
-  }
+    if (!cancelledReason) {
+      throw new AppError("Cancellation reason is required", 400);
+    }
 
-  const session = await Session.findById(sessionId);
+    const session = await Session.findById(sessionId);
 
-  if (!session) {
-    throw new AppError("Session not found", 400);
-  }
+    if (!session) {
+      throw new AppError("Session not found", 400);
+    }
 
-  if (
-    session.client.toString() !== userId &&
-    session.worker.toString() !== userId &&
-    userRole !== "admin"
-  ) {
-    throw new AppError("You are not authorized to cancel this session", 403);
-  }
+    if (
+      session.client.toString() !== userId &&
+      session.worker.toString() !== userId &&
+      userRole !== "admin"
+    ) {
+      throw new AppError("You are not authorized to cancel this session", 403);
+    }
 
-  if (session.status !== "scheduled") {
-    throw new AppError("Only Scheduled Session can be cancelled", 400);
-  }
+    if (session.status !== "scheduled") {
+      throw new AppError("Only Scheduled Session can be cancelled", 400);
+    }
 
-  session.status = "cancelled";
-  session.cancelledBy = userId;
-  session.cancelledReason = cancelledReason;
-  session.cancelledByRole = userRole;
-  session.cancelledAt = new Date();
+    session.status = "cancelled";
+    session.cancelledBy = userId;
+    session.cancelledReason = cancelledReason;
+    session.cancelledByRole = userRole;
+    session.cancelledAt = new Date();
 
-  await session.save();
+    await session.save();
 
-  sendResponse(res, {
-    success: true,
-    statusCode: 200,
-    message: "Session cancelled successfully",
-    data: session,
+    const senderName = `${req?.user?.firstName} ${req?.user?.lastName}`;
+
+    const cancellerRole =
+      session.worker.toString() === userId ? "worker" : "client";
+    const recipientId =
+      cancellerRole === "worker" ? session.client : session.worker;
+
+    const recipientRole = cancellerRole === "worker" ? "client" : "worker";
+
+    const notificationMessage =
+      cancellerRole === "worker"
+        ? `Your session scheduled on ${session.date.toDateString()} has been cancelled by the worker (${senderName}).`
+        : `Your session scheduled on ${session.date.toDateString()} has been cancelled by the client (${senderName}).`;
+
+    const cancelledNotification = await Notification.create({
+      recipient: recipientId,
+      sender: userId,
+      type: "session",
+      title: "Session Cancelled",
+      message: notificationMessage,
+      actionUrl: `/${recipientRole}/sessions`,
+    });
+
+    io.to(`user:${recipientId}`).emit("newNotification", cancelledNotification);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      message: "Session cancelled successfully",
+      data: session,
+    });
   });
-});
